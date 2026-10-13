@@ -206,8 +206,8 @@ function compactHud(s, font) {
   // is still full for a moment, and the segment must not blink out.
   const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
-  const rightExt = showBreath ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
-  const leftExt = showArmor || (!s.creative && s.mekasuit);
+  const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
+  const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
   ccPlate(g, { left: leftExt, right: !!rightExt });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
@@ -263,6 +263,8 @@ function compactHud(s, font) {
     if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max, opt);
     meterAt(id, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max, opt);
   };
+  if (s.orbs) ccOrbs(g, s);   // orbs in place of the wing meters (hud-compact-orbs.js)
+  else {
   // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
   if (s.creative) ccGearRow(g, (CC.left.iconC - 3 + CC.left.x + CC.meterW) / 2, 39);   // the empty vitals wing
   if (!s.creative) {
@@ -305,6 +307,7 @@ function compactHud(s, font) {
   } else if (showBreath) row(Rt, 'ear', air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
   else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
   else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
+  }
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -152 : 152, 39);   // no dodge roll mod: a pressed-in cog
   else {
