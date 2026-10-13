@@ -28,7 +28,8 @@ Mods:
   for Create's screens, and a config screen. Needs Create.
 - **haven-mob-health-bars** (built here): floating health bars over nearby mobs and players, with its own config.
   Works on its own.
-- **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified.
+- **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified: a button on inventory
+  screens cycles 4 shades, from vanilla light mode through toasted light and less perfect dark to perfect dark.
 
 Resource packs:
 - **haven-create-hud** (built here): the action bar's art, the inventory, Curios, Cosmetic Armor, TrashSlot and

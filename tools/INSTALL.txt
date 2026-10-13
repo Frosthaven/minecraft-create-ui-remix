@@ -7,6 +7,6 @@ Create UI Remix, for Create Ultimate Selection 2 (Minecraft 1.21.1, NeoForge). C
    (From an older version: delete the old Create-HUD and DarkModeEverywhere-Veil-Fix packs and the
    createdarkinventory jar in mods/; they are now haven-create-hud and haven-create-ui-ux.)
 3. Start the game. Options > Resource Packs: enable haven-create-hud at the top of the list.
-4. The "Dark Mode" button in any inventory screen turns dark mode on and off.
+4. The "Dark Mode" button in any inventory screen cycles 4 shades, from vanilla light mode to perfect dark.
 
 Updates: download the zip again and replace the files.
