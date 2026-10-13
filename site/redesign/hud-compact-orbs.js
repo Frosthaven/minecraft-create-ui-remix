@@ -40,7 +40,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       const a2 = a0 + (a1 - a0) * Math.min(1, lit);
       // A lit segment stands proud of the rim (wider than the bezel, dark outline) and glows in its colour.
       // Segmented (armor): thick iron plates reaching from the rim across the seat into the housing; smooth: on the rim.
-      const p0 = r - 0.35, p1 = ring.smooth ? R1 + 0.45 : R1 + 2.1;
+      const p0 = r - 0.35, p1 = ring.smooth ? R1 + 0.45 : ORB.housing - 0.35;   // armor plates stay on the housing (not past its dome)
       const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
       if (!ring.smooth) {   // a plate casts a soft shadow onto the housing it is bolted to
         g.save(); g.translate(0.35, 0.55); seg(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
