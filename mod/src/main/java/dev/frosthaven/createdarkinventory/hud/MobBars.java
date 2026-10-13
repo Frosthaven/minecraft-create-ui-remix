@@ -70,6 +70,7 @@ public final class MobBars {
         if (e.distanceToSqr(mc.player) > (double) range * range) return;
         int col;
         if (e instanceof Player) {
+            if (isWebGhost(e)) return;   // Haven Link's web map viewers: never a bar
             if (!UiConfig.MOB_BARS_PLAYERS.get()) return;
             Long hit = ATTACKERS.get(e);
             col = UiConfig.MOB_BARS_AGGRESSIVE.get() && hit != null && System.currentTimeMillis() - hit < ATTACKER_MS ? ATTACKER : PLAYER;
@@ -111,6 +112,13 @@ public final class MobBars {
     }
 
     /** The trail's current end: on damage it holds the health before the hit, waits, then drains to the health. */
+    /** Haven Link's web map ghosts: client-only players on its "haven_web_ghosts" team, with name-based (version 3)
+     *  UUIDs, where real accounts have version 4. Either marks one. */
+    private static boolean isWebGhost(LivingEntity e) {
+        var team = e.getTeam();
+        return team != null && "haven_web_ghosts".equals(team.getName()) || e.getUUID().version() == 3;
+    }
+
     /** A player hit a player (RecentAttackerMixin, any PvP): their bar is magenta for {@link #ATTACKER_MS}. */
     public static void attackedBy(Player attacker) {
         if (ATTACKERS.put(attacker, System.currentTimeMillis()) == null) LOG.once("attacker:" + attacker.getUUID(), "recently aggressive: " + attacker.getName().getString());
