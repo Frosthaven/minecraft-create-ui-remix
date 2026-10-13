@@ -69,10 +69,7 @@ function ccInstruments(g, s) {
   items.forEach((it) => {
     const cx = cur + cell / 2 - 0.5, cy = y + h / 2; cur += cellW(it);
     if (it === 'ghost') {   // a pale ghost (web map viewers) and how many
-      g.beginPath(); g.moveTo(cx - 2.6, cy + 3); g.lineTo(cx - 2.6, cy - 0.6); g.arc(cx, cy - 0.6, 2.6, Math.PI, 0); g.lineTo(cx + 2.6, cy + 3);
-      for (let k = 0; k < 3; k++) { const bx = cx + 2.6 - (k + 0.5) * (5.2 / 3); g.lineTo(bx, cy + 2.1); g.lineTo(bx - 5.2 / 6, cy + 3); }
-      g.closePath(); g.fillStyle = 'rgba(220,235,255,0.92)'; g.fill();
-      g.fillStyle = '#152030'; g.fillRect(cx - 1.4, cy - 1.2, 0.8, 1.1); g.fillRect(cx + 0.6, cy - 1.2, 0.8, 1.1);
+      ccInstruments.ghost(g, cx, cy);
       return ccNumber(g, String(s.followers), cx + 4, cy - 1.6, '#dcebff', 'rgba(0,0,0,0.8)', 0.625);
     }
     if (it === 'clock') return ccDial(g, cx, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
@@ -89,9 +86,11 @@ function ccSlotMarks(g, s) {
   // Toolbox-linked: two glass tubes of red liquid (the toolbox's red) up both sides of the socket, over the bezel.
   for (const i of s.toolboxSlots || []) {
     const [x, y] = CC.slot(i);
-    for (const tx of [x + 0.3, x + 16.3]) {
-      rrect(g, tx, y + 2.5, 1.4, 13, 0.7); g.fillStyle = steel(g, y + 2.5, y + 15.5); g.fill();
-      rrect(g, tx + 0.3, y + 2.8, 0.8, 12.4, 0.4); g.fillStyle = vgrad(g, y + 2.8, y + 15.2, [[0, '#ff8a7a'], [0.4, '#d0202a'], [1, '#4a0610']]); g.fill();
+    // Each tube sits in a brass casing that grows out of the socket's bezel (wider than the bezel, rounded ends).
+    for (const tx of [x - 0.2, x + 15.8]) {
+      rrect(g, tx, y + 1.8, 2.4, 14.4, 1.2); g.fillStyle = brass(g, y + 1.8, y + 16.2); g.fill();
+      rim(g, () => rrect(g, tx, y + 1.8, 2.4, 14.4, 1.2), y + 1.8, y + 16.2, P.brassHi, 0.2);
+      rrect(g, tx + 0.6, y + 2.6, 1.2, 12.8, 0.6); g.fillStyle = vgrad(g, y + 2.6, y + 15.4, [[0, '#ff8a7a'], [0.4, '#d0202a'], [1, '#4a0610']]); g.fill();
     }
   }
   if (s.schematicSlot != null) {
@@ -108,3 +107,10 @@ function ccComfortFx(g, s, [x, y, w, h]) {
   g.fillStyle = gr; g.fillRect(x + p - 6, y, 12, h);
   g.restore();
 }
+/** The follower ghost centred on (cx, cy), about 5 wide and 6 tall. */
+ccInstruments.ghost = (g, cx, cy) => {
+  g.beginPath(); g.moveTo(cx - 2.6, cy + 3); g.lineTo(cx - 2.6, cy - 0.6); g.arc(cx, cy - 0.6, 2.6, Math.PI, 0); g.lineTo(cx + 2.6, cy + 3);
+  for (let k = 0; k < 3; k++) { const bx = cx + 2.6 - (k + 0.5) * (5.2 / 3); g.lineTo(bx, cy + 2.1); g.lineTo(bx - 5.2 / 6, cy + 3); }
+  g.closePath(); g.fillStyle = 'rgba(220,235,255,0.92)'; g.fill();
+  g.fillStyle = '#152030'; g.fillRect(cx - 1.4, cy - 1.2, 0.8, 1.1); g.fillRect(cx + 0.6, cy - 1.2, 0.8, 1.1);
+};

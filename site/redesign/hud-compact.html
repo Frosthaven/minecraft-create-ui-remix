@@ -69,6 +69,8 @@
 <div class="compare">
   <div class="scene" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
 </div>
+<h2>Files (for the game)</h2>
+<div id="sheet"></div>
 <script src="material.js"></script>
 <script src="sprites.js"></script>
 <script src="meters.js"></script>
@@ -78,6 +80,7 @@
 <script src="hud-compact.js"></script>
 <script src="hud-compact-status.js"></script>
 <script src="hud-compact-mods.js"></script>
+<script src="hud-compact-export.js"></script>
 <script>
 const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, underwater: false, tank: 0, tankMax: 900,
   effect: '', hardcore: false, regen: false, hurtAt: -1e9, hunger: false, holdFood: 0, riding: false, mount: 22, mountMax: 30,
@@ -161,7 +164,7 @@ setInterval(() => {
   if (moving) render();
 }, 60);
 addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; st.itemName = ITEMS[st.slot]; st.nameAt = performance.now(); render(); } });
-(async () => { try { await packTextures(); font = SCREEN.font; } catch (e) {} render(); })();
+(async () => { try { await packTextures(); font = SCREEN.font; } catch (e) {} render(); fileList(compactExports()); })();
 render();
 </script>
 <script src="../live.js"></script>

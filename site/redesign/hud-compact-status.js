@@ -110,11 +110,12 @@ function ccHealthPreview(g, s, [x, y, w, h], max) {
   g.fillStyle = `rgba(255,200,200,${0.3 + 0.25 * Math.sin(s.t / 160)})`; g.fillRect(x + 0.5 + from, y, to - from, h);
   g.restore();
 }
-/** AppleSkin's exhaustion (0 to 4, a food point lost at 4): a hairline along the food glass's bottom. */
+/** AppleSkin's exhaustion (0 to 4, a food point lost at 4): its own hairline track just under the food meter. */
 function ccExhaustion(g, s, [x, y, w, h]) {
-  if (!s.exhaustion) return;
-  g.fillStyle = 'rgba(255,255,255,0.75)';
-  g.fillRect(x + 1, y + h - 0.9, (w - 2) * Math.min(1, s.exhaustion / 4), 0.35);
+  if (s.exhaustion == null) return;
+  const ly = y + h + 0.8, lw = w - 3;
+  g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(x + 1.5, ly, lw, 0.5);
+  g.fillStyle = 'rgba(240,235,225,0.85)'; g.fillRect(x + 1.5, ly, lw * Math.min(1, s.exhaustion / 4), 0.5);
 }
 /** The mount icon for a camel: a head on a long neck, sandy. 9 x 9. */
 function ccCamel() {
