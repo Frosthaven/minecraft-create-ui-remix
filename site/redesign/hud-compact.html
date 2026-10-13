@@ -11,11 +11,11 @@
 <header>
   <h1>Compact HUD: one console (concept)</h1>
   <p>Everything the action bar shows, gathered into one blackened iron console instead of floating rows. The hotbar sits
-     in the raised middle with experience as a glass pipe along its top edge and the level on a brass badge. The left
-     wing holds the offhand, health (absorption in gold) with armor plating along its top, and Iron's mana. The right
-     wing mirrors it: food with AppleSkin saturation on top, Ars mana, and the two dodge roll charges. Air rises out of
-     the right wing only under water. Preview only: shipping it needs Create Dark Inventory to replace the HUD layers
-     and draw this layout itself.</p>
+     in the raised middle with experience as a glass pipe along its top edge, split around a small level window. The
+     left wing is vitals: the offhand (a faint shield marks it when empty), then health (absorption in gold), food and
+     armor. The right wing is magic: Iron's mana and Ars mana, then air, which appears only under water; our dash icon
+     and count sit at its end. Every meter is the same size and carries the HUD's own icon. Preview only: shipping it
+     needs Create Dark Inventory to replace the HUD layers and draw this layout itself.</p>
 </header>
 <div class="bar">
   <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button>
@@ -42,9 +42,9 @@ function render() {
 }
 const tap = (id, f) => document.getElementById(id).addEventListener('click', () => { f(); render(); });
 tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; });
-tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.saturation = Math.min(st.food, st.saturation + 4); });
+tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); });
 tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
-tap('roll', () => { st.rolls = (st.rolls + 2) % 3; });
+tap('roll', () => { st.rolls = st.rolls <= 0 ? 2 : Math.round((st.rolls - 0.5) * 10) / 10; });
 tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
 tap('water', () => {
   const on = st.air === 1; document.getElementById('water').setAttribute('aria-pressed', String(on));

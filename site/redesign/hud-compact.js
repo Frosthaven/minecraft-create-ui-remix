@@ -1,19 +1,29 @@
 // Compact HUD concept (preview only, not packed): one iron console instead of the floating bits. Shipping it needs
 // Create Dark Inventory to cancel the vanilla and mod HUD layers and draw this layout itself (RenderGuiLayerEvent).
-// Logical units, x centred on the screen (0), the console's bottom at y 50. Uses sprites.js, meters.js (LIQUID),
-// modhud.js (MANA, ROLL_TIERS), mcfont.js.
-const CX = 170, BOTTOM = 50;   // canvas origin: x = CX + layout x
+// Logical units, x centred on the screen (0), the console's bottom at y 50. Every meter is the same size, with the
+// HUD's own sprite as its icon (heart, drumstick, shield, porthole bubble). Uses sprites.js, meters.js (LIQUID),
+// modhud.js (MANA, rollIcon, rollTier), mcfont.js.
+const CX = 172, BOTTOM = 50;
 const CC = {
-  plate: { x0: -168, x1: 168, wing: 27, mid: 22 },     // wing tops at y 27, the hotbar section from y 22
-  slot: i => [-90 + 20 * i, 29],                        // socket top left (item at +1)
-  offhand: [-165, 29], roll: [148, 29],
-  xp: [-90, 23.6, 180, 3.2], badge: [0, 18],
-  left: { icon: -146, x: -139, w: 44 }, right: { icon: 140, x: 95, w: 44 },
-  rowMeter: [30.5, 6], rowStrip: [27.8, 1.6], rowMana: [40.5, 4],
+  plate: { x0: -172, x1: 172, wing: 26, mid: 21, step: 5, r: 2 },
+  slot: i => [-90 + 20 * i, 29],          // socket top left (item at +1)
+  offhand: [-168, 29],
+  rows: [28, 35, 42], meterH: 5, meterW: 38, icon: 7,
+  left: { icon: -147, x: -138 },          // vitals: health, food, armor
+  right: { icon: 140, x: 100 },           // magic: Iron's mana, Ars mana; air under water
+  roll: [148, 29],
+  xp: { y: 22.6, h: 3.2, x0: -90, x1: 90, gap: 9 },   // the pipe, split around the level window
 };
 
-/** A horizontal glass gauge: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
-function ccGauge(g, x, y, w, h, frac, liq, segs = 0, from = 'left') {
+/** A path through pts with every corner rounded by r (the plate's single corner style). */
+function roundedPoly(g, pts, r) {
+  const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  g.beginPath(); g.moveTo(...mid(pts[n - 1], pts[0]));
+  for (let i = 0; i < n; i++) g.arcTo(...pts[i], ...pts[(i + 1) % n], r);
+  g.closePath();
+}
+/** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
+function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left') {
   const r = h / 2;
   rrect(g, x, y, w, h, r); g.fillStyle = steel(g, y, y + h); g.fill();
   rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5); g.fillStyle = '#060708'; g.fill();
@@ -24,88 +34,80 @@ function ccGauge(g, x, y, w, h, frac, liq, segs = 0, from = 'left') {
   for (let k = 1; k < segs; k++) g.fillRect(x + 0.5 + (w - 1) * k / segs - 0.15, y, 0.3, h);
   g.restore();
 }
-/** A thin plating strip (armor, saturation): pips that light up to n of max. */
-function ccStrip(g, x, y, w, h, n, max, on, off, from = 'left') {
-  const pw = w / max;
-  for (let k = 0; k < max; k++) {
-    const px = from === 'left' ? x + k * pw : x + w - (k + 1) * pw;
-    rrect(g, px + 0.2, y, pw - 0.4, h, 0.3); g.fillStyle = k < n ? on : off; g.fill();
+/** A mana drop icon (7 x 7 cell at x, y) in the mana's colours. */
+function ccDrop(g, x, y, liq) {
+  const cx = x + 3.5;
+  g.beginPath(); g.moveTo(cx, y + 0.3); g.quadraticCurveTo(cx + 3.2, y + 3.8, cx, y + 6.7); g.quadraticCurveTo(cx - 3.2, y + 3.8, cx, y + 0.3);
+  g.fillStyle = vgrad(g, y, y + 7, [[0, liq[0]], [0.5, liq[1]], [1, liq[2]]]); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.35; g.stroke();
+}
+// The level in a 3 x 5 pixel digit set (crisp at any GUI scale; the game font is 7 tall and would cover the pipe).
+const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001',
+  '111100111001111', '111100111101111', '111001010010010', '111101111101111', '111101111001111'];
+function ccNumber(g, s, x, y, col) {
+  for (const [i, ch] of [...s].entries()) {
+    const bits = CC_DIGITS[+ch];
+    for (let k = 0; k < 15; k++) if (bits[k] === '1') { g.fillStyle = col; g.fillRect(x + i * 4 + (k % 3), y + Math.floor(k / 3), 1, 1); }
   }
 }
-/** Small flat glyphs beside the gauges, centred on (x, y). */
-const CC_GLYPHS = {
-  heart: (g, x, y, col) => { g.save(); g.translate(x - 2.6, y - 2.4); g.scale(0.58, 0.58); heartPath(g); g.fillStyle = col; g.fill(); g.restore(); },
-  food: (g, x, y, col) => { g.save(); g.translate(x - 2.6, y - 2.6); g.scale(0.58, 0.58); meatPath(g); g.fillStyle = col; g.fill(); g.restore(); },
-  drop: (g, x, y, col) => { g.beginPath(); g.moveTo(x, y - 2.6); g.quadraticCurveTo(x + 2.4, y + 0.4, x, y + 2.4); g.quadraticCurveTo(x - 2.4, y + 0.4, x, y - 2.6); g.fillStyle = col; g.fill(); },
-  bubble: (g, x, y, col) => { circle(g, x, y, 2); g.strokeStyle = col; g.lineWidth = 0.6; g.stroke(); },
-};
 
-/** The console plate: blackened iron, wings either side of a raised hotbar section, a lit brass top edge. */
+/** The console plate: blackened iron, wings either side of a raised hotbar section, one corner radius throughout. */
 function ccPlate(g) {
-  const { x0, x1, wing, mid } = CC.plate, b = BOTTOM, path = () => {
-    g.beginPath(); g.moveTo(x0, b); g.lineTo(x0, wing + 3); g.quadraticCurveTo(x0, wing, x0 + 3, wing);
-    g.lineTo(-97, wing); g.lineTo(-92, mid); g.lineTo(92, mid); g.lineTo(97, wing);
-    g.lineTo(x1 - 3, wing); g.quadraticCurveTo(x1, wing, x1, wing + 3); g.lineTo(x1, b); g.closePath();
-  };
+  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM;
+  const path = () => roundedPoly(g, [[x0, b], [x0, wing], [-92 - step, wing], [-92, mid], [92, mid], [92 + step, wing], [x1, wing], [x1, b]], r);
   g.save(); g.translate(0, -0.6); path(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
   path(); g.fillStyle = iron(g, mid, b); g.fill(); ironSurface(g, path);
   rim(g, path, mid, b, P.brassHi, 0.35);
-  // Rivets at the wing ends and the section steps.
-  for (const x of [x0 + 2.5, x1 - 2.5]) rivet(g, x, b - 3, 0.7);
-  for (const x of [-94, 94]) rivet(g, x, b - 3, 0.7);
 }
 
-/** The whole console for a state. Returns a canvas (logical 340 x 50). */
+/** The whole console for a state; a canvas of logical 344 x 50. */
 function compactHud(s, font) {
-  const [c, g] = hires(340, 50);
+  const [c, g] = hires(344, 50);
   g.translate(CX, 0);
   ccPlate(g);
-  // Hotbar: nine sockets, the selection frame, the offhand socket on the left wing.
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
-  socket(g, ...CC.offhand);
-  // Experience: a glass pipe along the hotbar section's top edge, the level on a brass badge above its middle.
-  const [xx, xy, xw, xh] = CC.xp;
-  ccGauge(g, xx, xy, xw, xh, s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08'], 18);
+  // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
+  const [ox, oy] = CC.offhand;
+  socket(g, ox, oy);
+  g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
+  shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
+  // Experience: the glass pipe along the section's top edge, split around a small level window (the same pill shape).
+  const X = CC.xp, half = (X.x1 - X.x0 - 2 * X.gap) / 2, fill = Math.max(0, Math.min(1, s.xp)) * 2;
+  const xpLiq = ['#d8ff9a', '#5fd02a', '#1d5a08'];
+  ccMeter(g, X.x0, X.y, half, X.h, Math.min(1, fill), xpLiq, 9);
+  ccMeter(g, X.gap, X.y, half, X.h, Math.max(0, fill - 1), xpLiq, 9);
   if (s.level > 0) {
-    const txt = String(s.level), tw = font ? mcWidth(font, txt) : 6, bw = tw + 6, [bx, by] = CC.badge;
-    rrect(g, bx - bw / 2, by, bw, 9, 2); g.fillStyle = brass(g, by, by + 9); g.fill();
-    rrect(g, bx - bw / 2 + 0.6, by + 0.6, bw - 1.2, 7.8, 1.6); g.fillStyle = '#0d0e0b'; g.fill();
-    if (font) mcText(g, font, txt, bx - tw / 2 + 0.5, by + 1, 1, '#80ff20', true);
+    const txt = String(s.level), tw = txt.length * 4 - 1, wy = X.y + X.h / 2 - 3.4, ww = Math.max(tw + 4, 2 * X.gap - 2);
+    rrect(g, -ww / 2, wy, ww, 6.8, 3.4); g.fillStyle = steel(g, wy, wy + 6.8); g.fill();
+    rrect(g, -ww / 2 + 0.5, wy + 0.5, ww - 1, 5.8, 2.9); g.fillStyle = '#060708'; g.fill();
+    ccNumber(g, txt, -tw / 2, wy + 0.9, '#80ff20');
+  } else {
+    rrect(g, -X.gap + 1, X.y, 2 * X.gap - 2, X.h, X.h / 2); g.fillStyle = steel(g, X.y, X.y + X.h); g.fill();
   }
-  // Left wing: health (blood, absorption in gold over it), armor plating along its top, Iron's mana below.
-  const L = CC.left, [my, mh] = CC.rowMeter, [sy, sh] = CC.rowStrip, [ny, nh] = CC.rowMana;
-  CC_GLYPHS.heart(g, L.icon + 2.6, my + mh / 2, '#e0404a');
-  ccGauge(g, L.x, my, L.w, mh, s.health / 20, LIQUID.blood, 10);
-  if (s.absorb) ccGauge(g, L.x, my, L.w * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
-  ccStrip(g, L.x + 1, sy, L.w - 2, sh, Math.round(s.armor / 2), 10, '#c9ccd0', 'rgba(60,64,70,0.9)');
-  CC_GLYPHS.drop(g, L.icon + 2.6, ny + nh / 2, MANA.irons[1]);
-  ccGauge(g, L.x, ny, L.w, nh, s.irons, MANA.irons, 0);
-  // Right wing (mirrored, filling from the right like vanilla food): food, AppleSkin saturation on top, Ars mana.
-  const Rt = CC.right;
-  CC_GLYPHS.food(g, Rt.icon + 2.6, my + mh / 2, '#e08a3a');
-  ccGauge(g, Rt.x, my, Rt.w, mh, s.food / 20, LIQUID.broth, 10, 'right');
-  ccStrip(g, Rt.x + 1, sy, Rt.w - 2, sh, Math.round(s.saturation / 2), 10, '#ffd36a', 'rgba(60,64,70,0.9)', 'right');
-  CC_GLYPHS.drop(g, Rt.icon + 2.6, ny + nh / 2, MANA.ars[1]);
-  ccGauge(g, Rt.x, ny, Rt.w, nh, s.ars, MANA.ars, 0, 'right');
-  // Air: only under water, a gauge that rises out of the right wing's edge.
-  if (s.air < 1) {
-    const ay = CC.plate.wing - 5.2;
-    rrect(g, Rt.x - 1, ay - 0.6, Rt.w + 2, 5.6, 1.6); g.fillStyle = iron(g, ay, ay + 5); g.fill();
-    ccGauge(g, Rt.x, ay, Rt.w, 4, s.air, LIQUID.air, 10, 'right');
-    CC_GLYPHS.bubble(g, Rt.icon + 2.6, ay + 2, LIQUID.air[1]);
+  // Meters: every one the same size, with the HUD's own sprite as its icon.
+  const { rows, meterH: mh, meterW: mw, icon: is } = CC, L = CC.left, Rt = CC.right;
+  const row = (side, k, iconDraw, frac, liq, segs, from) => {
+    const y = rows[k];
+    iconDraw(side.icon, y + mh / 2 - is / 2);
+    ccMeter(g, side.x, y, mw, mh, frac, liq, segs, from);
+  };
+  const sprite = img => (x, y) => g.drawImage(img, x, y, is, is);
+  row(L, 0, sprite(heart(false)), s.health / 20, LIQUID.blood, 10);
+  if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
+  row(L, 1, (x, y) => g.drawImage(food('full'), x - 1.5, y - 1.8, is + 3, is + 3), s.food / 20, LIQUID.broth, 10);   // its drawing fills less of its cell
+  row(L, 2, sprite(armor('full')), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10);
+  row(Rt, 0, (x, y) => ccDrop(g, x, y, MANA.irons), s.irons, MANA.irons, 0);
+  row(Rt, 1, (x, y) => ccDrop(g, x, y, MANA.ars), s.ars, MANA.ars, 0);
+  if (s.air < 1) row(Rt, 2, sprite(air(false)), s.air, LIQUID.air, 10);
+  // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
+  const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
+  g.drawImage(rollIcon(tier), rx, ry, 18, 18);
+  if (font) {
+    const t = String(Math.floor(s.rolls)), tx = rx + 16, ty = ry + 10;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) mcText(g, font, t, tx + dx, ty + dy, 1, '#000000');
+    mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
   }
-  // Dodge roll: two charge lamps stacked on the right wing's end.
-  const [rx, ry] = CC.roll;
-  for (let k = 0; k < 2; k++) {
-    const y = ry + 2 + k * 8, on = k < s.rolls;
-    rrect(g, rx, y, 16, 6, 1.5); g.fillStyle = steel(g, y, y + 6); g.fill();
-    rrect(g, rx + 0.6, y + 0.6, 14.8, 4.8, 1.1); g.fillStyle = '#060708'; g.fill();
-    g.beginPath();
-    for (const dx of [3.5, 8]) { g.moveTo(rx + dx, y + 1.4); g.lineTo(rx + dx + 3, y + 3); g.lineTo(rx + dx, y + 4.6); }
-    g.strokeStyle = on ? ROLL_TIERS.green : ROLL_TIERS.grey; g.lineWidth = 1; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke();
-  }
-  // The selected slot last, over its neighbours.
-  const [sx, sy2] = CC.slot(s.slot);
-  g.drawImage(selection(), sx - 3, sy2 - 3, 24, 23);
+  const [sx, sy] = CC.slot(s.slot);
+  g.drawImage(selection(), sx - 3, sy - 3, 24, 23);
   return c;
 }
