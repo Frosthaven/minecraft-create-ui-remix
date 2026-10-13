@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enchanting Redesign</title>
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+<nav><a href="./">HUD</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="enchanting.html" aria-current="page">Enchanting</a><a href="../">Almanac</a></nav>
+<header>
+  <h1>Enchanting Redesign: Create, dark steampunk</h1>
+  <p>The enchanting table as an arcane study: a dark oak desk, a bookshelf (bookshelves power enchanting), a
+     candle, faint runes round the floating book, a leather book whose pages are the three options, an obsidian
+     item slot and a lapis slot with a dotted ghost, and the player's inventory below, identical to every
+     other screen's. Options are
+     raised parchment pages (the game's brown text reads on them), violet when hovered (for its yellow text),
+     dim and flat when they cannot be used. Layout read from the game's code; both views drawn by the same
+     rules. Item art (the book, the item, lapis) is the game's and is shown as placeholders or left out.</p>
+</header>
+<div class="bar">
+  <span style="color:var(--muted);align-self:center">State</span>
+  <button data-st="ready">Ready</button><button data-st="costly">One too costly</button><button data-st="empty">No item</button>
+  <span style="color:var(--muted);align-self:center">Hover</span>
+  <button data-hv="-1">None</button><button data-hv="0">1</button><button data-hv="1">2</button><button data-hv="2">3</button>
+  <button id="sockets" aria-pressed="false">Show slots</button>
+  <span style="color:var(--muted);align-self:center">GUI scale</span>
+  <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4">4</button>
+  <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
+</div>
+<div class="compare">
+  <div class="scene screen" id="beforeScene"><span class="label">Before: current enchanting table (your packs)</span><canvas id="before"></canvas></div>
+  <div class="scene screen" id="afterScene"><span class="label after">After: Create redesign</span><canvas id="after"></canvas></div>
+</div>
+<h2>Files</h2>
+<div id="sheet"></div>
+<script src="material.js"></script>
+<script src="sprites.js"></script>
+<script src="panel-art.js"></script>
+<script src="components.js"></script>
+<script src="mcfont.js"></script>
+<script src="screen-page.js"></script>
+<script src="enchanting.js"></script>
+<script>
+const state = { st: pageQuery.get('st') ?? 'ready', hv: pageQuery.get('hv') ?? '-1', showSlots: false };
+let before = null, after = null, sga = null;
+// Sample costs per state; the names are random words in the enchanting font, as the game draws them.
+const STATES = { ready: { costs: [3, 14, 30], afford: [true, true, true] }, costly: { costs: [3, 14, 30], afford: [true, true, false] },
+  empty: { costs: [0, 0, 0], afford: [false, false, false] } };
+const NAMES = ['scrolls fire', 'elements anima spirit', 'free beast shadow imbue'];
+
+/** The game's drawWordWrap: words onto lines no wider than width, 9 px apart. */
+function wordWrap(g, font, text, x, y, width, scale, color) {
+  let line = '';
+  for (const word of text.split(' ')) {
+    const next = line ? line + ' ' + word : word;
+    if (line && mcWidth(font, next) > width) { mcText(g, font, line, x, y, scale, color); y += 9; line = word; } else line = next;
+  }
+  if (line) mcText(g, font, line, x, y, scale, color);
+}
+
+/** The enchanting screen, as EnchantmentScreen.renderBg and renderLabels draw it. */
+function compose(T, scale) {
+  const { c, g, put, text } = screenCanvas(ENCH.w, ENCH.h, scale);
+  const S = STATES[state.st], hv = +state.hv;
+  put(T.panel, 0, 0, ENCH.w, ENCH.h);
+  if (state.st === 'empty') put(T.lapisGhost, ...ENCH.lapis, 16, 16);
+  else { put(T.item, ...ENCH.item, 16, 16); put(T.lapisItem, ...ENCH.lapis, 16, 16); }
+  for (let k = 0; k < 3; k++) {
+    const [ox, oy, ow, oh] = ENCH.option(k), cost = S.costs[k];
+    if (!cost) { put(T.slot.disabled, ox, oy, ow, oh); continue; }
+    const s = String(cost), n = 86 - mcWidth(SCREEN.font, s), [tx, ty] = ENCH.text(k);
+    let costColor;
+    if (!S.afford[k]) {
+      put(T.slot.disabled, ox, oy, ow, oh); put(T.level[k].disabled, ...ENCH.level(k));
+      if (sga) wordWrap(g, sga, NAMES[k], tx, ty, n, scale, ENCH.color.disabled);
+      costColor = ENCH.color.costNo;
+    } else {
+      const lit = hv === k;
+      put(lit ? T.slot.highlighted : T.slot.enabled, ox, oy, ow, oh); put(T.level[k].enabled, ...ENCH.level(k));
+      if (sga) wordWrap(g, sga, NAMES[k], tx, ty, n, scale, lit ? ENCH.color.hover : ENCH.color.text);
+      costColor = ENCH.color.cost;
+    }
+    if (SCREEN.font) mcText(g, SCREEN.font, s, ENCH.cost(k)[0] - mcWidth(SCREEN.font, s), ENCH.cost(k)[1], scale, costColor, true);
+  }
+  text('Enchant', ...ENCH.title);
+  text('Inventory', ...ENCH.invLabel);
+  if (state.showSlots) {
+    g.strokeStyle = 'rgba(255,255,255,0.6)'; g.setLineDash([3, 3]);
+    for (const [x, y] of enchSlots()) g.strokeRect(x * scale + 0.5, y * scale + 0.5, 16 * scale - 1, 16 * scale - 1);
+    g.beginPath(); g.arc(ENCH.book[0] * scale, ENCH.book[1] * scale, 3 * scale, 0, Math.PI * 2); g.stroke();   // book centre
+  }
+  return c;
+}
+
+screenPage(compose, () => (before ? { before, after } : {}));
+pageToggle('sockets', on => { state.showSlots = on; });
+for (const [attr, key] of [['st', 'st'], ['hv', 'hv']]) {
+  const all = document.querySelectorAll(`[data-${attr}]`);
+  for (const b of all) {
+    b.setAttribute('aria-pressed', String(b.dataset[attr] === state[key]));
+    b.addEventListener('click', () => { state[key] = b.dataset[attr]; for (const o of all) o.setAttribute('aria-pressed', String(o === b)); SCREEN.render(); });
+  }
+}
+/** Placeholders for item art (not part of these textures): the same in both views. */
+function placeholder(kind) {
+  const [c, g] = hires(16, 16);
+  if (kind === 'lapis') { g.beginPath(); g.moveTo(8, 3); g.lineTo(12.5, 7); g.lineTo(10.5, 13); g.lineTo(5.5, 13); g.lineTo(3.5, 7); g.closePath(); g.fillStyle = '#2c55b8'; g.fill(); }
+  else { rrect(g, 3, 2, 10, 12, 1); g.fillStyle = '#9aa0a6'; g.fill(); g.fillStyle = '#5d6166'; g.fillRect(4.5, 4, 1.2, 8); }
+  return c;
+}
+(async () => {
+  const tex = await packTextures();
+  const sgaImg = await tex('textures/font/ascii_sga');
+  if (sgaImg) sga = mcFont(sgaImg);
+  const sp = p => tex('sprites/container/enchanting_table/' + p);
+  const items = { item: placeholder('item'), lapisItem: placeholder('lapis') };
+  before = { panel: await tex('container/enchanting_table'), lapisGhost: await tex('sprites/container/slot/lapis_lazuli'), ...items,
+    slot: { enabled: await sp('enchantment_slot'), highlighted: await sp('enchantment_slot_highlighted'), disabled: await sp('enchantment_slot_disabled') },
+    level: [] };
+  for (const n of [1, 2, 3]) before.level.push({ enabled: await sp('level_' + n), disabled: await sp(`level_${n}_disabled`) });
+  after = { panel: enchantingPanel(sga), lapisGhost: lapisGhost(), ...items,
+    slot: { enabled: optionSprite('enabled'), highlighted: optionSprite('highlighted'), disabled: optionSprite('disabled') },
+    level: [1, 2, 3].map(n => ({ enabled: levelSprite(n, false), disabled: levelSprite(n, true) })) };
+  SCREEN.render();
+  fileList([['container/enchanting_table', sheetTexture(after.panel)],
+    ...['enabled', 'highlighted', 'disabled'].map(k => [`sprites/container/enchanting_table/enchantment_slot${k === 'enabled' ? '' : '_' + k}`, after.slot[k]]),
+    ...[1, 2, 3].flatMap(n => [[`sprites/container/enchanting_table/level_${n}`, after.level[n - 1].enabled], [`sprites/container/enchanting_table/level_${n}_disabled`, after.level[n - 1].disabled]]),
+    ['sprites/container/slot/lapis_lazuli', after.lapisGhost]]);
+})();
+</script>
+<script src="../live.js"></script>
+</body>
+</html>

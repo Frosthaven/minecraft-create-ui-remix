@@ -1,0 +1,35 @@
+/* Shared styles for the redesign pages. */
+:root { --bg: #15161a; --panel: #1d1f25; --raised: #262932; --text: #e6e6ea; --muted: #9aa0ad;
+        --accent: #e8a33d; --border: #30333d; --seam: rgba(255, 255, 255, 0.14); }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, sans-serif; }
+header { padding: 18px 24px 6px; }
+header h1 { margin: 0; font-size: 21px; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 980px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 24px; }
+.bar button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised);
+              color: var(--text); font: inherit; cursor: pointer; }
+.bar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 14px; margin: 6px 24px; }
+.scene { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; position: relative;
+         background: linear-gradient(#7fb0ff 0%, #b8d4ff 46%, #6aa84f 46.2%, #4f8a37 100%); }
+.scene .label { position: absolute; top: 8px; left: 10px; padding: 2px 8px; border-radius: 5px; font-size: 12px;
+                font-weight: 600; background: rgba(0, 0, 0, 0.55); color: #fff; }
+.scene .label.after { color: var(--accent); }
+.scene canvas { display: block; margin: 0 auto; max-width: 100%; }
+#before { image-rendering: pixelated; }
+.pair { display: flex; gap: 10px; align-items: flex-end; }
+.pair small { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; text-align: center; }
+h2 { font-size: 16px; margin: 22px 24px 10px; }
+#sheet { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 24px 40px; }
+.sprite { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.sprite .stage { line-height: 0; background: repeating-conic-gradient(#202228 0 25%, #1a1b20 0 50%) 0 0 / 16px 16px; display: inline-block; }
+.sprite .pair > div:first-child canvas { image-rendering: pixelated; }
+.sprite .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.sprite .meta b { color: var(--text); }
+.sprite a { color: var(--accent); }
+.scene.screen { background: radial-gradient(#3a3f4a, #1b1d22); }
+.scene.screen canvas { margin: 34px auto 18px; }
+nav { display: flex; gap: 14px; padding: 12px 24px 0; font-size: 13px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a[aria-current="page"] { color: var(--accent); }

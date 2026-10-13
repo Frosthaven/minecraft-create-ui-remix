@@ -9,7 +9,9 @@ tex_dir = os.path.join(out, "tex")
 os.makedirs(tex_dir, exist_ok=True)
 # Screen art: textures/gui (most mods and vanilla), and the other folders mods use for screens
 # (Mekanism keeps it in assets/<ns>/gui/). Item icons and map markers are left out.
-GUI = re.compile(r"^assets/([^/]+)/((?:textures/(?:gui|guis|hud|screens?|jei|contextmenu|waystones_gui|slot|crosshair)|gui)/.+)\.png$")
+GUI = re.compile(r"^assets/([^/]+)/((?:textures/(?:gui|guis|hud|screens?|jei|contextmenu|waystones_gui|slot|crosshair)|gui)/.+"
+                 r"|textures/font/ascii(?:_sga)?|textures/icons)\.png$")  # the GUI and enchanting fonts, for the mockups;
+                                                                         # AppleSkin's HUD overlay sheet
 
 def mod_name(z):
     try:

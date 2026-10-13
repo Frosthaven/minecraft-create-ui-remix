@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backpack Redesign</title>
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+<nav><a href="./">HUD</a><a href="inventory.html">Inventory</a><a href="backpack.html" aria-current="page">Backpack</a><a href="enchanting.html">Enchanting</a><a href="../">Almanac</a></nav>
+<header>
+  <h1>Backpack Redesign: Create, dark steampunk</h1>
+  <p>Sophisticated Backpacks as a leather pack: a stitched leather body with a canvas title label, the
+     player slots in a pocket below (stepping in where the original does), a side pouch for upgrades, and
+     light oak flaps for the tabs (raised, since they are controls; the oak of the inventory's workbench). The crafting arrow and result slot, buttons,
+     switches and tank and battery gauges are the shared components. Both views are assembled with the
+     mod's own cutting rules, so the art holds for every tier, the small-screen scrolling layout and an open
+     tab. The scrollbar and the search box are drawn in code by the mod and cannot be restyled.</p>
+</header>
+<div class="bar">
+  <span style="color:var(--muted);align-self:center">Tier</span>
+  <button data-tier="leather">Leather</button><button data-tier="copper">Copper</button><button data-tier="iron">Iron</button>
+  <button data-tier="gold">Gold</button><button data-tier="diamond">Diamond</button><button data-tier="netherite">Netherite</button>
+  <span style="color:var(--muted);align-self:center">Upgrades</span>
+  <button data-set="items">Crafting + magnet</button><button data-set="fluids">Pump + tank</button>
+  <span style="color:var(--muted);align-self:center">Open tab</span>
+  <button data-open="">None</button><button data-open="crafting">Crafting</button><button data-open="pump">Pump</button>
+  <button id="results" aria-pressed="false">Several results</button>
+  <button id="small" aria-pressed="false">Small screen (scroll)</button>
+  <button id="sockets" aria-pressed="false">Show slots</button>
+  <span style="color:var(--muted);align-self:center">GUI scale</span>
+  <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4">4</button>
+  <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
+</div>
+<div class="compare">
+  <div class="scene screen" id="beforeScene"><span class="label">Before: current backpack (your packs)</span><canvas id="before"></canvas></div>
+  <div class="scene screen" id="afterScene"><span class="label after">After: Create redesign</span><canvas id="after"></canvas></div>
+</div>
+<h2>Files</h2>
+<div id="sheet"></div>
+<script src="material.js"></script>
+<script src="sprites.js"></script>
+<script src="panel-art.js"></script>
+<script src="components.js"></script>
+<script src="mcfont.js"></script>
+<script src="screen-page.js"></script>
+<script src="backpack-art.js"></script>
+<script src="backpack.js"></script>
+<script>
+const state = { tier: pageQuery.get('tier') ?? 'iron', set: pageQuery.get('set') ?? 'items', open: pageQuery.get('open') ?? '', results: pageQuery.has('results'), small: pageQuery.has('small'), showSlots: false };
+let before = null, after = null;
+
+screenPage((T, scale) => bpCompose(T, bpLayout(state.tier, state.set, state.small ? 5 : Infinity), scale, state),
+  () => (before ? { before, after } : {}));
+pageToggle('small', on => { state.small = on; }, state.small);
+pageToggle('results', on => { state.results = on; }, state.results);
+pageToggle('sockets', on => { state.showSlots = on; });
+/** A row of buttons choosing one value of state[key] by their data-<attr>. */
+function choice(attr, key) {
+  const all = document.querySelectorAll(`[data-${attr}]`);
+  for (const b of all) {
+    b.setAttribute('aria-pressed', String(b.dataset[attr] === state[key]));
+    b.addEventListener('click', () => {
+      state[key] = b.dataset[attr];
+      for (const o of all) o.setAttribute('aria-pressed', String(o === b));
+      SCREEN.render();
+    });
+  }
+}
+choice('tier', 'tier'); choice('set', 'set'); choice('open', 'open');
+(async () => {
+  const tex = await packTextures(), core = p => tex(p, 'sophisticatedcore');
+  const icons = Object.fromEntries(['crafting', 'magnet', 'pump', 'tank'].map(k => [k, upgradeIcon(k)]));
+  const keys = ['9', '9_wider', '12', '12_wider'];
+  const iconSheet = await core('icons'), origControls = await core('gui_controls');
+  before = { bg: {}, slots: await core('slots_background'), controls: origControls, iconSheet, icons };
+  for (const k of keys) before.bg[k] = await core('storage_background_' + k);
+  after = { bg: {}, slots: slotsBackground(), controls: guiControls(origControls), iconSheet: bpIcons(iconSheet, SCREEN.font), icons };
+  for (const k of keys) after.bg[k] = storageBackground(+k.slice(0, 2).replace('_', ''), k.endsWith('wider'));
+  SCREEN.render();
+  fileList([...keys.map(k => ['sophisticatedcore: storage_background_' + k, after.bg[k]]),
+    ['sophisticatedcore: slots_background', after.slots], ['sophisticatedcore: gui_controls', after.controls],
+    ['sophisticatedcore: icons', after.iconSheet]]);
+})();
+</script>
+<script src="../live.js"></script>
+</body>
+</html>

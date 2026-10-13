@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventory Redesign</title>
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+<nav><a href="./">HUD</a><a href="inventory.html" aria-current="page">Inventory</a><a href="backpack.html">Backpack</a><a href="enchanting.html">Enchanting</a><a href="../">Almanac</a></nav>
+<header>
+  <h1>Inventory Redesign: Create, dark steampunk</h1>
+  <p>The player inventory in the HUD's theme, keeping the spirit of the current panel: its scrolls become
+     Create schematics (the armor column; the offhand and recipe book), its crafting table a workbench top
+     (planks, an inlaid tray, a burnt-in arrow, an ember-lit result frame). Slots are thin sunken cells, empty
+     armor and shield slots show dotted blueprint ghosts, and the Curios and Cosmetic Armor buttons sit where
+     those mods put them. The title uses the game's font on light wood. Every slot is at its vanilla position;
+     the panel ships as <code>container/inventory</code> (176x166 of 256x256).</p>
+</header>
+<div class="bar">
+  <button id="sockets" aria-pressed="false">Show slots</button>
+  <button id="hover" aria-pressed="false">Hover recipe book</button>
+  <span style="color:var(--muted);align-self:center">GUI scale</span>
+  <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4" aria-pressed="true">4</button>
+  <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
+</div>
+<div class="compare">
+  <div class="scene screen" id="beforeScene"><span class="label">Before: current inventory (your packs)</span><canvas id="before"></canvas></div>
+  <div class="scene screen" id="afterScene"><span class="label after">After: Create redesign</span><canvas id="after"></canvas></div>
+</div>
+<h2>Files</h2>
+<div id="sheet"></div>
+<script src="material.js"></script>
+<script src="sprites.js"></script>
+<script src="panel-art.js"></script>
+<script src="components.js"></script>
+<script src="inventory.js"></script>
+<script src="mcfont.js"></script>
+<script src="screen-page.js"></script>
+<script>
+let showSlots = false, hover = false, before = {}, after = {};
+
+/** The inventory screen: panel, slot icons, buttons and title, as InventoryScreen and the mods place them. */
+function compose(set, scale) {
+  const { c, g, put, text } = screenCanvas(INV.w, INV.h, scale);
+  put(set.panel, 0, 0, INV.w, INV.h);
+  // Empty-slot silhouettes, as the game draws them in empty armor and offhand slots.
+  ['helmet', 'chestplate', 'leggings', 'boots'].forEach((k, i) => put(set.icons[k], ...INV.armor[i], 16, 16));
+  put(set.icons.shield, ...INV.offhand, 16, 16);
+  const [bx, by, bw, bh] = INV.book;
+  put(hover ? set.bookHover : set.book, bx, by, bw, bh);
+  for (const k of ['curios', 'cosmetic', 'cosToggle']) put(set[k], ...INV[k]);
+  text('Crafting', ...INV.title);   // the game's font and colour, no shadow
+  if (showSlots) {
+    g.strokeStyle = 'rgba(255,255,255,0.6)'; g.setLineDash([3, 3]);
+    for (const [x, y] of invSlots()) g.strokeRect(x * scale + 0.5, y * scale + 0.5, 16 * scale - 1, 16 * scale - 1);
+    const [x0, y0, x1, y1] = INV.model; g.strokeRect(x0 * scale, y0 * scale, (x1 - x0) * scale, (y1 - y0) * scale);
+  }
+  return c;
+}
+screenPage(compose, () => ({ before, after }));
+pageToggle('sockets', on => { showSlots = on; });
+pageToggle('hover', on => { hover = on; });
+(async () => {
+  const icons = k => Object.fromEntries(['helmet', 'chestplate', 'leggings', 'boots', 'shield'].map(n => [n, k(n)]));
+  after = { panel: inventoryPanel(), book: bookButton(false), bookHover: bookButton(true), icons: icons(slotIcon),
+    curios: miniButton(10, 10, GLYPHS.curios), curiosHover: miniButton(10, 10, GLYPHS.curios, true), cosmetic: miniButton(10, 10, GLYPHS.cosmetic), cosToggle: miniButton(5, 5, GLYPHS.toggle) };
+  const tex = await packTextures();
+  const widget = await tex('sprites/widget/button');
+  before = { panel: await tex('container/inventory'), book: await tex('sprites/recipe_book/button'), bookHover: await tex('sprites/recipe_book/button_highlighted'),
+    icons: {}, curios: await tex('curios/button', 'curios'), cosmetic: widget, cosToggle: widget };
+  for (const n of ['helmet', 'chestplate', 'leggings', 'boots', 'shield']) before.icons[n] = await tex('sprites/container/slot/' + n);
+  SCREEN.render();
+  fileList([['container/inventory', sheetTexture(after.panel)], ['sprites/recipe_book/button', after.book],
+    ['sprites/recipe_book/button_highlighted', after.bookHover], ['curios: curios/button', after.curios], ['curios: curios/button_highlighted', after.curiosHover],
+    ...Object.entries(after.icons).map(([n, img]) => ['sprites/container/slot/' + n, img])]);
+})();
+</script>
+<script src="../live.js"></script>
+</body>
+</html>
