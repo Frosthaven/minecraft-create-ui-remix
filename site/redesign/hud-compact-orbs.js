@@ -19,13 +19,8 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   circle(g, cx, cy, R1); g.fillStyle = brass(g, cy - R1, cy + R1); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08);   // a light brushed finish
   if (ring) {
-    // Every segment shows while the ring does: empty ones in very dull brass, full ones as bright plates.
-    const n = 10, gap = 0.07, r0 = r + 0.12, r1 = R1 - 0.12;
-    for (let k = 0; k < n; k++) {
-      const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
-      g.beginPath(); g.arc(cx, cy, r1, a0, a1); g.arc(cx, cy, r0, a1, a0, true); g.closePath();
-      g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#5a4a2e'], [1, '#2e2414']]); g.fill();
-    }
+    // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim.
+    const n = 10, gap = 0.07;
     for (let k = 0; k < n; k++) {
       const lit = ring.frac * n - k;   // >= 1 full, 0..1 partial
       if (lit <= 0) break;
