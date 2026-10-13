@@ -45,7 +45,9 @@ const copper = (g, y0, y1) => vgrad(g, y0, y1, [[0, P.copperHi], [0.2, P.copper]
 const iron = (g, y0, y1) => vgrad(g, y0, y1, [[0, P.iron2], [0.12, P.iron1], [0.7, P.iron0], [1, P.void]]);
 /** A thin highlight on the upper half of a shape's outline (light from above). */
 function rim(g, path, y0, y1, col = P.brassHi, lw = 0.3) {
-  g.save(); g.beginPath(); g.rect(-1e4, y0, 2e4, (y1 - y0) / 2); g.clip();   // any x: some art is drawn around 0
+  // The clip starts a line width above the top: the stroke is centred on the outline, and clipping at y0 cut its upper
+  // half off at the crest (round tops looked flat). Any x: some art is drawn around 0.
+  g.save(); g.beginPath(); g.rect(-1e4, y0 - lw, 2e4, (y1 - y0) / 2 + lw); g.clip();
   path(); g.strokeStyle = vgrad(g, y0, y0 + (y1 - y0) / 2, [[0, col], [1, 'rgba(0,0,0,0)']]); g.lineWidth = lw; g.stroke();
   g.restore();
 }
