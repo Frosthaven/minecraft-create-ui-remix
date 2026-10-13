@@ -273,10 +273,10 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
       circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,120,175,${a})`; g.fill();   // pink
     }
   }
-  if (!riding && s.nourished && s.food > 0) {   // Nourishment: a soft gold glow filling the food half up to its level, breathing (CC_NOURISH)
-    const top = level(s.food / 20), a = ccNourishGlow(s), e = CC_NOURISH.edge;
-    g.fillStyle = vgrad(g, top, top + e, [[0, `rgba(${CC_NOURISH.rgb},0)`], [1, `rgba(${CC_NOURISH.rgb},${a})`]]); g.fillRect(cx, top, r, e);
-    g.fillStyle = `rgba(${CC_NOURISH.rgb},${a})`; g.fillRect(cx, top + e, r, cy + r - top - e);
+  const nsat = Math.min(s.saturation, s.food) / 20;
+  if (!riding && s.nourished && nsat > 0) {   // Nourishment: a gold glow up to saturation's own cut line, breathing (CC_NOURISH)
+    const ys = level(nsat);
+    g.fillStyle = `rgba(${CC_NOURISH.rgb},${ccNourishGlow(s)})`; g.fillRect(cx, ys, r, cy + r - ys);
   }
   if (s.comfort && s.saturation <= 0 && hp < 1) {   // shows alongside Regeneration's motes   // Comfort: a slow pink glow rising through the health half's whole glass
     const y = cy + r + 4 - ((s.t / 2600) % 1) * (2 * r + 8);

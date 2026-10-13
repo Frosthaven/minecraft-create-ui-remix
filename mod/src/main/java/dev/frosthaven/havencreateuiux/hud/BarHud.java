@@ -79,12 +79,9 @@ final class BarHud {
             meter(g, f, LEFT_X, y1, liq, ff);
             span(g, LEFT_X, y1, "saturation", 0, Math.min(f.saturation, f.food) / 20.0);
             if (f.food <= 6) inner(g, LEFT_X, y1, ix + ffill, ix + iw, argb(warn(t), 0xDC7814));
-            if (f.nourished && ffill > 0) {   // Nourishment: a soft gold glow up to the food level, breathing, its end faded
-                double a = f.nourishGlow(), e = Math.min(HudFrame.NOURISH_EDGE, ffill / 2), x1 = ix + ffill;
-                inner(g, LEFT_X, y1, ix, x1 - e, argb(a, HudFrame.NOURISH));
-                for (int i = 0; i < 4; i++)   // the fade in four steps (inner fills solid)
-                    inner(g, LEFT_X, y1, x1 - e + e * i / 4, x1 - e + e * (i + 1) / 4, argb(a * (1 - (i + 0.5) / 4), HudFrame.NOURISH));
-            }
+            double sat = Math.min(f.saturation, f.food) / 20.0;
+            if (f.nourished && sat > 0)   // Nourishment: a gold glow over the saturated part (to its exact edge), breathing
+                inner(g, LEFT_X, y1, ix, spanEnd(LEFT_X, sat), argb(f.nourishGlow(), HudFrame.NOURISH));
             if (f.apple != null && f.apple[0] > 0)   // AppleSkin: what the held food restores
                 inner(g, LEFT_X, y1, ix + ffill, ix + iw * Math.min(20, f.food + f.apple[0]) / 20.0, argb(0.35 + 0.25 * Math.sin(t / 160.0), 0xFFE6B4));
             // Exhaustion: a slim solid strip under the food meter (the page's CC_EXH_STRIP), full at 0, draining from the right.
@@ -151,6 +148,10 @@ final class BarHud {
         int w = WING_W - 2 * INSET, h = WING_H - 2 * INSET, v = wingLiquidV(liquid) + INSET;
         int from = (int) Math.round(w * clamp(a)), to = (int) Math.round(w * clamp(b));
         if (to > from) part(g, INSET + from, v, to - from, h, x(mx) + INSET + from, y(my) + INSET);
+    }
+    /** Where span(.., b) ends, in units: a fill to here meets its edge on the same texel. */
+    private static double spanEnd(double mx, double b) {
+        return (x(mx) + INSET + Math.round((WING_W - 2 * INSET) * clamp(b))) / (double) K;
     }
     /** A fill over the meter's glass (x0..x1 units), clipped to its rounded inner shape. */
     private static void inner(GuiGraphics g, double mx, double my, double x0, double x1, int argb) {
