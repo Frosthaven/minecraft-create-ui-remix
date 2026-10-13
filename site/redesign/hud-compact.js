@@ -11,16 +11,16 @@ const CX = 172, BOTTOM = 50;
 // (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
 const GAP = 4;
 const CC = {
-  plate: { x0: -165, x1: 165, wing: 26, mid: 21, step: 8, r: 2.5 },
+  plate: { x0: -165, x1: 165, wing: 26, mid: 21, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
   slot: i => [-89 + 20 * i, 29],          // socket top left (item at +1); centred on x 0
   offhand: [-161, 29],
   rows: [32.5, 39.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 38)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 93 },           // magic: Iron's mana, Ars mana (breath extends the band above)
-  ext: { l: [-140, -92], r: [92, 140], y: 22.6, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
+  ext: { l: [-140, -85], r: [85, 140], y: 22.6, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 29],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 22.6, h: 3.2, x0: -89, x1: 89 },   // the level window, then the pipe
+  xp: { y: 22.6, h: 3.2, x0: -84, x1: 84 },   // the level window, then the pipe (inside the section)
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
@@ -112,7 +112,7 @@ function ccPlate(g, ears = {}) {
   const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM;
   // The top edge as level runs [x from, x to, y], joined by S curves: the raised band (the hotbar section, plus any
   // extension over a wing) between the two wing runs.
-  const E = CC.ext, b0 = ears.left ? E.l[0] : -92, b1 = ears.right ? E.r[1] : 92;
+  const E = CC.ext, sec = CC.plate.sec, b0 = ears.left ? E.l[0] : -sec, b1 = ears.right ? E.r[1] : sec;
   const runs = [[x0, b0 - step, wing], [b0, b1, mid], [b1 + step, x1, wing]];
   const top = Math.min(...runs.map(q => q[2]));
   const path = () => {
@@ -130,7 +130,7 @@ function ccPlate(g, ears = {}) {
   path(); g.fillStyle = iron(g, top, b); g.fill(); ironSurface(g, path);
   // Extensions in a darker tone, bounded on the inside by the hotbar section's own S step (kept as the divider
   // leading into the experience band), on the outside by the extension's S down to the wing.
-  const k = step / 2, ext = (o0, i0, dir) => {   // o0: outer run end, i0: the section's edge (±92), dir: -1 left, 1 right
+  const k = step / 2, ext = (o0, i0, dir) => {   // o0: outer run end, i0: the section's edge (±sec), dir: -1 left, 1 right
     const oW = o0 + dir * step, iW = i0 + dir * step;
     g.beginPath(); g.moveTo(oW, wing); g.bezierCurveTo(oW - dir * k, wing, o0 + dir * k, mid, o0, mid);
     g.lineTo(i0, mid); g.bezierCurveTo(i0 + dir * k, mid, iW - dir * k, wing, iW, wing); g.closePath();
@@ -140,8 +140,8 @@ function ccPlate(g, ears = {}) {
     g.save(); g.translate(-dir * 0.4, 0); g.strokeStyle = 'rgba(244,216,152,0.35)'; g.lineWidth = 0.25; g.stroke(); g.restore();
   };
   g.save(); path(); g.clip();
-  if (ears.left) ext(E.l[0], -92, -1);
-  if (ears.right) ext(E.r[1], 92, 1);
+  if (ears.left) ext(E.l[0], -sec, -1);
+  if (ears.right) ext(E.r[1], sec, 1);
   g.restore();
   rim(g, path, top, b, P.brassHi, 0.35);
 }
@@ -186,9 +186,9 @@ function compactHud(s, font) {
         'rgba(0,0,0,0.85)', NK);
     }
   };
-  // Extension pipes line up with the wing meters below them on the outside (icon centre, outer end) and stop short of
-  // the S divider on the inside (it spans the 8 px before the hotbar section).
-  const E = CC.ext, extW = mw - 10, extL = [L.x, E.y, extW, E.h], extR = [Rt.x + 10, E.y, extW, E.h];
+  // Extension pipes match the wing meters below them (same x, width, icon centre); the section's S divider runs
+  // between their inner ends (±93 at the wing's level) and the XP band (±85).
+  const E = CC.ext, extL = [L.x, E.y, mw, E.h], extR = [Rt.x, E.y, mw, E.h];
   const row = (side, k, img, frac, liq, segs, value, max) => {
     const id = (side === L ? 'L' : 'R') + k;
     if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max);
