@@ -176,7 +176,7 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
     g.fillStyle = `rgba(200,20,30,${a})`; g.fillRect(cx - r, cy - r, r, level(hp) - (cy - r));
   }
   const since = s.t - (s.hurtAt || -1e9);
-  if (since < 400) { g.fillStyle = `rgba(255,255,255,${0.6 * (1 - since / 400)})`; leftHalf(); g.fill(); }
+  if (since < 400) { g.fillStyle = `rgba(255,40,40,${0.55 * (1 - since / 400)})`; leftHalf(); g.fill(); }   // damage: a red flash
   const sweep = (period, col) => {   // a soft band of light rising through the health half
     const y = level(hp) + (1 - (s.t / period) % 1) * (cy + r - level(hp) + 6) - 3;
     g.save(); leftHalf(); g.clip(); g.beginPath(); g.rect(cx - r, level(hp), r, cy + r - level(hp)); g.clip();
