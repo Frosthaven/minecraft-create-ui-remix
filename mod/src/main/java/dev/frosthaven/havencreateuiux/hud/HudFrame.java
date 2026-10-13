@@ -16,9 +16,7 @@ import net.minecraft.world.entity.LivingEntity;
 final class HudFrame {
     private static final ResourceLocation COMFORT = ResourceLocation.fromNamespaceAndPath("farmersdelight", "comfort");
     private static final ResourceLocation NOURISHMENT = ResourceLocation.fromNamespaceAndPath("farmersdelight", "nourishment");
-    private static final Smooth AIR = new Smooth(), TANK = new Smooth();
-    private static float lastExhaustion;
-    private static long flakeTime = Long.MIN_VALUE / 2;
+    private static final Smooth AIR = new Smooth(), TANK = new Smooth(), EXHAUSTION = new Smooth();
 
     /** A mana pool: its atlas name, value and maximum. */
     record Pool(String name, float cur, float max) {
@@ -31,7 +29,8 @@ final class HudFrame {
     final boolean orbs, hurtable, lefty, nums, underwater, showArmor, showBreath, hardcore, regen, comfort, nourished, hunger;
     final float hp, maxHp, absorb, saturation, exhaustion;
     final int armor, food;
-    final long hurtSince, flakeAt;
+    final long hurtSince;
+    final double exhaustShown;   // 0..1 (exhaustion / 4), eased between ticks and back to 0 when a point is taken
     final String healthLiquid;
     final float[] tank, apple, irons, ars, roll;
     final double airShown, tankShown;
@@ -39,6 +38,7 @@ final class HudFrame {
     final float mountHp, mountMax;
     final Float meka, flamingo, hull;
     final boolean primaryArs;
+    final double side;   // the side bars' size (config)
     final Ends ends;
 
     HudFrame(Minecraft mc, LocalPlayer p, float partial, boolean numbersKey) {
@@ -47,6 +47,7 @@ final class HudFrame {
         now = Util.getMillis();
         orbs = UiConfig.METER_DISPLAY.get() == UiConfig.MeterDisplay.ORBS;
         primaryArs = UiConfig.PRIMARY_MANA.get() == UiConfig.PrimaryMana.ARS;
+        side = UiConfig.SIDE_SCALE.get();
         hurtable = mc.gameMode != null && mc.gameMode.canHurtPlayer();
         lefty = p.getMainArm() == HumanoidArm.LEFT;
         nums = numbersKey || mc.screen != null;
@@ -73,9 +74,7 @@ final class HudFrame {
         food = fd.getFoodLevel();
         saturation = fd.getSaturationLevel();
         exhaustion = fd.getExhaustionLevel();
-        if (exhaustion < lastExhaustion - 0.5f) flakeTime = now;   // wrapped: a point was taken
-        lastExhaustion = exhaustion;
-        flakeAt = flakeTime;
+        exhaustShown = EXHAUSTION.get(Math.min(1, exhaustion / 4.0), now, 50, 400);
         apple = hurtable ? HudExtras.appleSkin(mc, p) : null;
         mount = p.getVehicle() instanceof LivingEntity m && m.showVehicleHealth() ? m : null;
         mountHp = mount == null ? 0 : mount.getHealth();
@@ -104,7 +103,7 @@ final class HudFrame {
     }
 
     /** Where each wing ends (the page's ccEnds): out from the orb's housing (or the meters) a gap, the end item (the
-     *  offhand slot, 18 wide, or the dash dial, 14.6), then plate. The MekaSuit gauge takes its own slot next to the
+     *  offhand slot, 18 wide, or the dash dial), then plate. The MekaSuit gauge takes its own slot next to the
      *  vitals. Left-handed mirrors which end holds which. Units: x0, x1 (the wings' outer edges), offhand (the slot's
      *  left x), dash (the dial's centre x), meka (the gauge's centre x); wide: the plate with the MekaSuit's slot. */
     static final class Ends {
@@ -112,17 +111,28 @@ final class HudFrame {
         final boolean wide;
 
         Ends(boolean orbs, boolean mekaSlot, boolean lefty) {
-            double gap = orbs ? 1.5 : 4, end = orbs ? 3 : 4, inner = orbs ? OrbHud.RX + OrbHud.HOUSING * OrbHud.S : 131, dialW = 14.6, slotW = 18;
-            double left = inner + gap + (mekaSlot ? 3.4 : 0), right = inner + gap;
+            // Orbs: the dial's width is its housing's reach at the plate's edge; bars: the dial alone, in the tall wing.
+            double gap = orbs ? 1.5 : 4, end = orbs ? 3 : 4, inner = orbs ? OrbHud.RX + OrbHud.HOUSING * OrbHud.S : BarHud.OUTER, slotW = 18;
+            double dialW = orbs ? 2 * domeHalf(dialHousing(), DIAL_Y) : 2 * (DIAL_R + DIAL_B) * DIAL_S;
+            double ms = orbs ? 1 : BarHud.GAUGE;   // the MekaSuit gauge's scale: bar mode's meter block height
+            double left = inner + gap + (mekaSlot ? 3.4 * ms : 0), right = inner + gap;
             double leftW = lefty ? dialW : slotW, rightW = lefty ? slotW : dialW;
             double span = Math.max(left + leftW, right + rightW);
-            double leftItem = -(left + leftW / 2), rightItem = right + rightW / 2;
+            // Each end item centred in its wing's end space (the wider wing's), so neither end leaves dead plate.
+            double leftItem = -(left + span) / 2, rightItem = (right + span) / 2;
             x0 = -span - end;
             x1 = span + end;
             offhand = (lefty ? rightItem : leftItem) - slotW / 2;
-            dash = lefty ? -(left + span) / 2 : (right + span) / 2;
-            meka = -(inner + gap + 1.7);
+            dash = lefty ? leftItem : rightItem;
+            meka = -(inner + gap + 1.7 * ms);
             wide = mekaSlot && !lefty;
         }
     }
+
+    /** The dash dial (the page's CC_DASH, CC_DIAL): radius and rim at its own size, drawn DIAL_S x; orbs: in a housing
+     *  (radius dialHousing()) centred at DIAL_Y; bars: centred on the meter block. */
+    static final double DIAL_R = 6.2, DIAL_B = 1.1, DIAL_S = 2, DIAL_Y = 30.6;
+    static double dialHousing() { return (DIAL_R + DIAL_B + 1.4) * DIAL_S; }
+    /** How far a housing's outline reaches each side at the plate's top edge (its fillets' ends). */
+    static double domeHalf(double r, double cy) { return Math.sqrt((r + 3) * (r + 3) - (28 - 3 - cy) * (28 - 3 - cy)); }
 }

@@ -112,7 +112,8 @@ public final class CompactHud {
         boolean steam = HudExtras.steampunk(p);
         var cooldowns = HudExtras.artifactCooldowns(p, delta);
         String fol = String.valueOf(followers);
-        int w = (followers > 0 ? 9 * K + digitsWidth(fol) + K : 0) + (steam ? 18 * K : 0) + cooldowns.size() * 9 * K;
+        int fw = (int) Math.round(digitsWidth(fol) * 1.5);   // the count at 1.5x
+        int w = (followers > 0 ? 9 * K + fw + K : 0) + (steam ? 18 * K : 0) + cooldowns.size() * 9 * K;
         if (w == 0) return;
         w += 3 * K;
         int x0 = -w / 2, y0 = y(MID - 9 - 2.5), cap = 4 * K;
@@ -122,8 +123,13 @@ public final class CompactHud {
         int cur = x0 + 2 * K;
         if (followers > 0) {
             part(g, 2 * K, GHOST_PLATE_V, 8 * K, GHOST_PLATE_H, cur, y0);   // the ghost from the follower plate
-            digits(g, fol, cur + 9 * K, y0 + 4 * K - DIGIT_H / 2, 9, WHITE, WHITE);
-            cur += 9 * K + digitsWidth(fol) + K;
+            var pose = g.pose();
+            pose.pushPose();
+            pose.translate(cur + 9 * K, y0 + 4 * K, 0);
+            pose.scale(1.5f, 1.5f, 1);
+            digits(g, fol, 0, -DIGIT_H / 2, 9, WHITE, WHITE);
+            pose.popPose();
+            cur += 9 * K + fw + K;
         }
         if (steam && mc.level != null) {
             float day = mc.level.getTimeOfDay(delta);
@@ -160,7 +166,7 @@ public final class CompactHud {
 
     /** The centre plate's top edge, the XP pipe and the level window (the page's CC.plate.mid, CC.xp, CC_LEVEL). */
     static final double MID = 24.4, XP_Y = 25.6, XP_H_U = 3, XP_X0 = -88.5, XP_X1 = 88.5;
-    static final double LEVEL_K = 0.55, LEVEL_H = 4.6, ICON_W = 9, ICON_H = 7;
+    static final double LEVEL_K = 0.85, LEVEL_H = 6.6, ICON_W = 9, ICON_H = 7;   // readable at GUI scale 2-3
 
     private static void render(GuiGraphics g, DeltaTracker delta) {
         if (!active()) return;
@@ -186,8 +192,8 @@ public final class CompactHud {
         LocalPlayer p = mc.player;
         int cx = g.guiWidth() / 2, bottom = g.guiHeight();
         HudFrame f = new HudFrame(mc, p, delta, NUMBERS.isDown());
-        HudLog.changed("config", f.orbs + "/" + f.primaryArs + "/" + scale, "config: meter display {}, primary mana {}, size {}",
-                f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale);
+        HudLog.changed("config", f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side, "config: meter display {}, primary mana {}, size {}, side bars size {}",
+                f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, f.side);
         HudLog.changed("mode", (f.hurtable ? "survival" : "creative") + (f.lefty ? ", left-handed" : "") + (f.hardcore ? ", hardcore" : ""),
                 "mode: {}{}{}", f.hurtable ? "survival" : "creative (vitals hidden)", f.lefty ? ", left-handed (offhand on the right)" : "", f.hardcore ? ", hardcore (skull)" : "");
         // Mod extras, each read as the mod's own HUD reads it (HudExtras); null / -1 when absent or not showing.
@@ -208,12 +214,21 @@ public final class CompactHud {
         pose.translate(cx, bottom, 0);
         pose.scale(1f / K, 1f / K, 1);
         RenderSystem.enableBlend();
-        g.blit(plate(f.orbs, f.ends.wide), PLATE_X, PLATE_Y, 0, 0, PLATE_W, PLATE_H, PLATE_W, PLATE_H);
+        // The plate in three parts: the centre, and each wing at the side bars' size (attached at WING_ANCHOR).
+        ResourceLocation plate = plate(f.orbs, f.ends.wide);
+        int cut = x(-WING_ANCHOR) - PLATE_X, mid = PLATE_W - 2 * cut;   // each wing part: the plate's edge to the anchor
+        g.blit(plate, x(-WING_ANCHOR), PLATE_Y, cut, 0, mid, PLATE_H, PLATE_W, PLATE_H);
+        side(g, -1, f.side, () -> g.blit(plate, PLATE_X, PLATE_Y, 0, 0, cut, PLATE_H, PLATE_W, PLATE_H));
+        side(g, 1, f.side, () -> g.blit(plate, x(WING_ANCHOR), PLATE_Y, cut + mid, 0, cut, PLATE_H, PLATE_W, PLATE_H));
+        double offSide = f.lefty ? 1 : -1;   // the offhand's wing; the dash takes the other
 
         // Hotbar sockets, the offhand socket (its shield ghost while empty), the selection frame.
         for (int i = 0; i < 9; i++) part(g, SOCKET_U, 0, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
-        part(g, SOCKET_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(30));
-        if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(30));
+        double oy = offhandY(f);
+        side(g, offSide, f.side, () -> {
+            part(g, SOCKET_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(oy));
+            if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(oy));
+        });
         // Create's slot marks (toolbox chips, the schematic tool's frame), the attack cooldown shade, then the selection
         // (a toolbox slot's in red, its chips lit over the ring).
         int sel = p.getInventory().selected;
@@ -229,24 +244,37 @@ public final class CompactHud {
 
         xpPipe(g, p, cast, train, engine);
         if (f.orbs) OrbHud.draw(g, f); else BarHud.draw(g, f);
-        if (f.hurtable && f.meka != null) mekaGauge(g, f);
-        dash(g, f);
+        if (f.hurtable && f.meka != null) side(g, -1, f.side, () -> mekaGauge(g, f));
+        side(g, -offSide, f.side, () -> dash(g, f));
         instruments(g, mc, p, delta);
-        if (f.hardcore) part(g, SKULL_U, 0, SKULL_W, SKULL_H, x(f.ends.offhand + 9 - 4.5), y(28 - 9 - 2.5));   // a skull above the offhand
-        HudEffects.draw(g, p, cx, bottom, scale, f.ends.x0 + 1, f.orbs ? OrbHud.OY - OrbHud.HOUSING * OrbHud.S - 2 : MID - 2);   // orbs: above the domes
+        double wingTop = f.orbs ? 28 : BarHud.TOP;   // the plate's top over the offhand
+        if (f.hardcore) side(g, offSide, f.side, () -> part(g, SKULL_U, 0, SKULL_W, SKULL_H, x(f.ends.offhand + 9 - 4.5), y(wingTop - 9 - 2.5)));   // a skull above the offhand
+        // The effects rail: above the orbs' domes; bar mode: above the tall wings (and the skull); following the side size.
+        double railTop = f.orbs ? OrbHud.OY - OrbHud.HOUSING * OrbHud.S : BarHud.TOP - (f.hardcore ? 9 + 2.5 + 1 : 0);
+        HudEffects.draw(g, p, cx, bottom, scale, sideX(f.ends.x0, f.side) + 1, sideY(railTop, f.side) - 2);
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.
         for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
         pose.pushPose();
-        double ox = f.ends.offhand + 1;
-        pose.translate(ox - Math.floor(ox), 0, 0);
-        slotItem(g, mc, p, p.getOffhandItem(), cx + (int) Math.floor(ox), bottom - 19, 10);
+        // In its socket (bars: centred on the meter block), at the side bars' size.
+        if (f.side != 1) {
+            double a = offSide * WING_ANCHOR;
+            pose.translate(cx + a, bottom, 0);
+            pose.scale((float) f.side, (float) f.side, 1);
+            pose.translate(-(cx + a), -bottom, 0);
+        }
+        double ox = f.ends.offhand + 1, oyItem = offhandY(f) + 1 - 50;
+        pose.translate(ox - Math.floor(ox), oyItem - Math.floor(oyItem), 0);
+        slotItem(g, mc, p, p.getOffhandItem(), cx + (int) Math.floor(ox), bottom + (int) Math.floor(oyItem), 10);
         pose.popPose();
         // The bar is about 31 px tall: later HUD layers (mod texts, Create's prompts) stack above it.
         mc.gui.leftHeight = Math.max(mc.gui.leftHeight, (int) Math.ceil(33 * scale));
         mc.gui.rightHeight = Math.max(mc.gui.rightHeight, (int) Math.ceil(33 * scale));
     }
+
+    /** The offhand socket's top (units): orbs: level with the hotbar; bars: centred on the wing's meter block. */
+    private static double offhandY(HudFrame f) { return f.orbs ? 30 : BarHud.MID - 9; }
 
     /** The shared pipe: XP, or a takeover (first wins: a charging spell (Iron's), a mount's dash cooldown or jump, a
      *  train's speed, an engine) with its icon in a larger window. The level in a small window centred on the pipe. */
@@ -284,6 +312,16 @@ public final class CompactHud {
 
     /** MekaSuit energy: the upright gauge in its slot beside the vitals, filling from the bottom. */
     private static void mekaGauge(GuiGraphics g, HudFrame f) {
+        if (!f.orbs) {   // bar mode: as tall as the meter block, centred on it
+            var pose = g.pose();
+            pose.pushPose();
+            pose.translate(x(f.ends.meka), y(BarHud.MID), 0);
+            pose.scale((float) BarHud.GAUGE, (float) BarHud.GAUGE, 1);
+            pose.translate(-x(f.ends.meka), -y(39), 0);
+            try { gauge(g, f); } finally { pose.popPose(); }
+        } else gauge(g, f);
+    }
+    private static void gauge(GuiGraphics g, HudFrame f) {
         int gx = x(f.ends.meka - 1.2), gy = y(30);
         part(g, MEKA_CASE_U, 0, MEKA_W, MEKA_H, gx, gy);
         double fh = (18 - 0.8) * clamp(f.meka), top = 30 + 18 - 0.4 - fh;
@@ -296,7 +334,17 @@ public final class CompactHud {
     private static void dash(GuiGraphics g, HudFrame f) {
         float[] roll = f.roll;
         HudLog.changed("roll", roll == null ? "none" : String.valueOf((int) roll[1]), "dodge roll: {}", roll == null ? "not found (a pressed-in cog takes its place)" : "found, " + (int) roll[1] + " charges");
-        double cx = f.ends.dash * K, cy = (39 - 50) * K;
+        // Orbs: in its own housing (a parts piece over the plate); bars: centred on the meter block. Drawn DIAL_S x.
+        double dy = f.orbs ? HudFrame.DIAL_Y : BarHud.MID, cx = f.ends.dash * K, cy = (dy - 50) * K;
+        if (f.orbs) part(g, DOME_U, DOME_V, DOME_W, DOME_H, x(f.ends.dash - DOME_HALF), y(DOME_TOP));
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(cx, cy, 0);
+        pose.scale((float) HudFrame.DIAL_S, (float) HudFrame.DIAL_S, 1);
+        pose.translate(-cx, -cy, 0);
+        try { dial(g, roll, cx, cy); } finally { pose.popPose(); }
+    }
+    private static void dial(GuiGraphics g, float[] roll, double cx, double cy) {
         if (roll == null || roll[1] <= 0) {
             part(g, DASH_COG_U, DASH_COG_V, DASH_COG, DASH_COG, (int) Math.round(cx) - DASH_COG / 2, (int) Math.round(cy) - DASH_COG / 2);
             return;

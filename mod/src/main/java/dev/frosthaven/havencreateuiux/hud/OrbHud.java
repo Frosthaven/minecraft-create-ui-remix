@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 /**
  * Orb mode (the page's hud-compact-orbs.js): two glass orbs in the wing plates' housings. Left: health (absorption above
  * it) and food (or the mount's health) split down the middle, armor as bolted plates on the bezel, the statuses as
- * effects in the glass, exhaustion as cracks in the food half. Right: the mana pools (the primary on the left half, one
+ * effects in the glass, exhaustion as a soft crescent glow on the food half's edge. Right: the mana pools (the primary on the left half, one
  * mod fills the orb), breath / the backtank / Helium Flamingo / an aircraft as a smooth ring. Drawn from the orbs atlas
  * in the page's order: bezel, ring, glass, liquids, divider, glass front, glow, effects, numbers.
  */
@@ -30,12 +30,12 @@ final class OrbHud {
     }
 
     static void draw(GuiGraphics g, HudFrame f) {
-        scaled(g, LX, () -> left(g, f));
-        scaled(g, RX, () -> right(g, f));
-        // Numbers and the tank's time at the bar's own scale (not doubled with the orb).
-        if (f.nums && f.hurtable) numbers(g, LX, new String[][] {
+        side(g, -1, f.side, () -> scaled(g, LX, () -> left(g, f)));
+        side(g, 1, f.side, () -> scaled(g, RX, () -> right(g, f)));
+        // Numbers and the tank's time doubled with the orbs (readable at the bigger size).
+        if (f.nums && f.hurtable) side(g, -1, f.side, () -> scaled(g, LX, () -> numbers(g, LX, new String[][] {
                 {Math.round(f.hp) + "/" + Math.round(f.maxHp), f.healthLiquid},
-                f.mount != null ? new String[] {Math.round(f.mountHp) + "/" + Math.round(f.mountMax), "mount"} : new String[] {f.food + "/20", "broth"}});
+                f.mount != null ? new String[] {Math.round(f.mountHp) + "/" + Math.round(f.mountMax), "mount"} : new String[] {f.food + "/20", "broth"}})));
         var pools = f.pools();
         if (f.nums && !pools.isEmpty()) {
             String[][] lines = new String[pools.size()][];
@@ -43,12 +43,12 @@ final class OrbHud {
                 var p = pools.get(i);
                 lines[i] = new String[] {Math.round(p.cur()) + "/" + Math.round(p.max()), p.name()};
             }
-            numbers(g, RX, lines);
+            side(g, 1, f.side, () -> scaled(g, RX, () -> numbers(g, RX, lines)));
         }
         // The backtank's time, always on (players rely on it), above the right orb's housing.
         if (f.showBreath && f.tank != null && f.tank[0] > 0) {
             String t = HudFrame.mmss(f.tank[0]);
-            text(g, t, tx(RX) - textWidth(t, 0.6) / 2, ty(OY - HOUSING * S - 4.2), 0.6, tintV("tank"), tintV("black"));
+            side(g, 1, f.side, () -> scaled(g, RX, () -> text(g, t, tx(RX) - textWidth(t, 0.6) / 2, ty(OY - HOUSING - 4.2), 0.6, tintV("tank"), tintV("black"))));
         }
     }
 
@@ -212,29 +212,10 @@ final class OrbHud {
             if (!riding && f.apple[0] > 0)
                 discFill(g, cx, cy, r, tx(gm), tx(gr), ty(level(Math.min(20, f.food + f.apple[0]) / 20.0)), ty(level(f.food / 20.0)), argb(pulse, 0xFFE6B4));
         }
-        if (!riding) {   // exhaustion: cracks in the food half's glass; flakes fall when it wraps
-            int stage = (int) Math.min(4, Math.ceil(f.exhaustion));
-            if (stage > 0) orbCell(g, "crack" + stage, cx, cy);
-            long since = t - f.flakeAt;
-            if (since >= 0 && since <= 900) flakes(g, cx, cy, r, since / 900.0);
-        }
-    }
-
-    // The cracks (the page's CC_CRACKS): an angle on the rim and inward steps.
-    private static final double[] CRACK_A = {-0.75, 0.1, 0.9};
-    private static final double[][][] CRACK_STEPS = {
-            {{-1.3, 0.9}, {-1.1, 0.4}, {-1.2, 1.1}, {-0.9, 0.5}},
-            {{-1.5, -0.3}, {-1.0, 0.6}, {-1.3, -0.2}, {-1.1, 0.5}},
-            {{-1.0, -1.1}, {-1.2, -0.5}, {-0.8, -1.0}, {-1.2, -0.4}}};
-    private static void flakes(GuiGraphics g, double cx, double cy, double r, double k) {
-        for (int c = 0; c < 3; c++) {
-            double px = LX + Math.cos(CRACK_A[c]) * (R - 0.1), py = OY + Math.sin(CRACK_A[c]) * (R - 0.1);
-            for (int j = 0; j < 4; j++) {
-                px += CRACK_STEPS[c][j][0] * 1.3; py += CRACK_STEPS[c][j][1] * 1.3;
-                if (j != 1 && j != 3) continue;   // from the 2nd and 4th points
-                double fx = px + (c - 1) * 0.6 * k, fy = py + 9 * k * k;
-                discFill(g, cx, cy, r, tx(fx), tx(fx + 0.45), ty(fy), ty(fy + 0.45), argb(0.6 * (1 - k), 0xE1EBF5));
-            }
+        if (!riding) {   // exhaustion: a soft crescent glow on the food half's edge, full at 0, draining from the top (screen)
+            double fr = 1 - clamp(f.exhaustShown);
+            double[] c = cell("exhaust");
+            if (fr > 0.001) screen(() -> sector(g, ORBS, ORBS_W, ORBS_H, c[0], c[1], cx, cy, CELL_HALF, Math.PI / 2 - Math.PI * fr, Math.PI / 2));
         }
     }
 

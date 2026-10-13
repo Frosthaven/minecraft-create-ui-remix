@@ -45,7 +45,7 @@
 <div class="bar">
   <button id="effect" title="Cycle the heart effect">Effect: none</button><button id="hardcore" aria-pressed="false">Hardcore</button>
   <button id="regen" aria-pressed="false">Regeneration</button><button id="hunger" aria-pressed="false">Hunger effect</button>
-  <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button><button id="exhaust" title="Exhaustion +1 (0 to 4; at 4 a point is taken: orb mode cracks the food glass, flakes fall when it wraps)">Exhaustion: 2.4</button>
+  <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button><button id="exhaust" title="Exhaustion +1 (0 to 4; at 4 a point is taken: orb mode fills a crescent on the food half, easing back to empty)">Exhaustion: 2.4</button>
   <button id="riding" title="Cycle: on foot, horse, camel">Riding: no</button><button id="dashBtn" title="Camel dash (rides a camel)">Camel dash</button><button id="jump" title="Charge a mount jump (rides a horse if on foot)">Jump</button>
   <button id="castBtn" title="Iron's: charge a spell">Cast spell</button><button id="attack" title="Attack cooldown, hotbar mode">Attack</button>
   <button id="creative" aria-pressed="false">Creative</button><button id="spectator" aria-pressed="false">Spectator</button>
@@ -70,7 +70,7 @@
   <button id="effectsBtn" aria-pressed="false" title="Buffs and debuffs above the bar, with their time left">Buffs and debuffs</button>
   <button id="manyEffects" aria-pressed="false" title="A long list: 13 buffs and 5 debuffs">Many effects</button>
   <button id="rollCount" title="Roll charges the player has (server config default 2; gear can change it)">Roll charges: 2</button>
-  <button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
+  <button id="sideSize" title="Config: side bars size (orbs or meters, offhand, dash), cycles">Side size: 1</button><button id="barSize" title="Config: action bar size (the whole bar), cycles">Bar size: 1</button><button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
 </div>
 <div class="compare">
   <div class="scene galaxy" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
@@ -100,6 +100,9 @@ const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Picka
 let font = null, waterTimer = null;
 function render() {
   st.t = performance.now();
+  // Exhaustion eases to its new value (the game: between ticks; back to empty when a point is taken).
+  const ek = Math.min(1, (st.t - (st.exhAt ?? -1e9)) / 400);
+  st.exhShown = st.exhAt == null ? st.exhaustion : st.exhFrom + (st.exhaustion - st.exhFrom) * (1 - (1 - ek) ** 2);
   const img = compactHud(st, font), out = document.getElementById('hud');
   out.width = img.width / 2; out.height = img.height / 2;   // 4 px per GUI px
   const g = out.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, out.width, out.height);
@@ -191,7 +194,10 @@ tap('manaMods', () => { manaSet = (manaSet + 1) % MANA_SETS.length; const [name,
   st.irons = i; st.ars = a; document.getElementById('manaMods').textContent = 'Mana mods: ' + name; });
 tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
 flag('orbsBtn', 'orbs');
-tap('exhaust', () => { st.exhaustion += 1; if (st.exhaustion >= 4) { st.exhaustion -= 4; st.flakeAt = performance.now(); }
+const SIZES = [1, 1.25, 1.5, 0.75];
+tap('sideSize', () => { st.side = SIZES[(SIZES.indexOf(st.side ?? 1) + 1) % SIZES.length]; document.getElementById('sideSize').textContent = 'Side size: ' + st.side; });
+tap('barSize', () => { st.barScale = SIZES[(SIZES.indexOf(st.barScale ?? 1) + 1) % SIZES.length]; document.getElementById('barSize').textContent = 'Bar size: ' + st.barScale; });
+tap('exhaust', () => { st.exhFrom = st.exhShown ?? st.exhaustion; st.exhAt = performance.now(); st.exhaustion += 1; if (st.exhaustion >= 4) st.exhaustion -= 4;
   document.getElementById('exhaust').textContent = 'Exhaustion: ' + st.exhaustion.toFixed(1); });
 tap('primary', () => { st.manaPrimary = st.manaPrimary === 'irons' ? 'ars' : 'irons'; document.getElementById('primary').textContent = 'Primary mana: ' + (st.manaPrimary === 'irons' ? "Iron's" : 'Ars'); });
 tap('rollCount', () => { st.rollCount = (st.rollCount || 2) % 5 + 1; st.rolls = st.rollCount; document.getElementById('rollCount').textContent = 'Roll charges: ' + st.rollCount; });
@@ -207,7 +213,7 @@ tap('castBtn', () => ramp('cast', 1500, null, () => { if (st.irons != null) st.i
 tap('attack', () => ramp('attack', 625, null));
 // Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
 setInterval(() => {
-  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.flakeAt ?? -1e9) < 1000 || st.jump != null || st.cast != null || st.attack != null;
+  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.exhAt ?? -1e9) < 500 || st.jump != null || st.cast != null || st.attack != null;
   if (moving) render();
 }, 60);
 addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; st.itemName = ITEMS[st.slot]; st.nameAt = performance.now(); render(); } });

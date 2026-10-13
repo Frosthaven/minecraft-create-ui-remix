@@ -13,7 +13,7 @@ final class CompactAtlas {
     static final int K = 8;   // texels per GUI pixel
     static final ResourceLocation PARTS = tex("parts"), ORBS = tex("orbs");
     static final int PARTS_SIZE = 256 * K, ORBS_W = 384 * K, ORBS_H = 320 * K;
-    static final int PLATE_W = 372 * K, PLATE_H = 66 * K, PLATE_X = -186 * K, PLATE_Y = (-15 - 50) * K;
+    static final int PLATE_W = 424 * K, PLATE_H = 66 * K, PLATE_X = -212 * K, PLATE_Y = (-15 - 50) * K;
 
     static final List<String> WIN_ICONS = List.of("flask", "horse", "camel", "train", "engine");
     static final List<String> WING_LIQUIDS = List.of("blood", "poison", "wither", "frozen", "absorb", "broth", "hunger", "saturation",
@@ -34,6 +34,11 @@ final class CompactAtlas {
     static final int WINDOW_U = 78 * K, WINDOW_W = 10 * K, WINDOW_CAP = 2 * K, ICON_WIN_U = 90 * K;
     static final int WIN_ICON_U = 100 * K, WIN_ICON = 7 * K;
     static final int MEKA_CASE_U = 136 * K, MEKA_FILL_U = 140 * K, MEKA_W = 19, MEKA_H = 18 * K;   // 2.4 x 18
+    // The dash dial's housing (orb mode): 42 x 38 at (182, 92), drawn at (dash - 21, 12.5) of the bar.
+    static final int DOME_U = 182 * K, DOME_V = 92 * K, DOME_W = 42 * K, DOME_H = 38 * K;
+    static final double DOME_HALF = 21, DOME_TOP = 12.5;
+    // Bar mode's exhaustion glow band (on black, screen-blended): 34 x 4 at (182, 132), drawn at (meter x - 1, y + h - 1.5).
+    static final int EXH_U = 182 * K, EXH_V = 132 * K, EXH_W = 34 * K, EXH_H = 4 * K;
     static final int WING_CASE_V = 236 * K, XP_CASE_V = 26 * K;   // the wing casing below everything: in rows 20..24 it
     // sat inside the selection cell (20, 0, 24 x 23), which drew a piece of it under the selected item
     static final int WING_W = 32 * K, WING_H = 4 * K, XP_W = 177 * K, XP_H = 3 * K;
@@ -47,11 +52,12 @@ final class CompactAtlas {
             {"socket", 0, 0, 18, 18}, {"selection", 20, 0, 24, 23}, {"offhand ghost", 46, 0, 18, 18}, {"skull plate", 66, 0, 9, 10},
             {"level window", 78, 0, 10, 5}, {"icon window", 90, 0, 9, 7}, {"window icons", 100, 0, 35, 7}, {"MekaSuit casing", 136, 0, 3, 18},
             {"MekaSuit fill", 140, 0, 3, 18}, {"XP casing", 0, 26, 177, 3}, {"wing liquids", 0, 30, 32, 80}, {"XP liquids", 0, 112, 177, 24},
-            {"digits 0.625", 0, 140, 56, 20}, {"glyphs 0.6", 180, 20, 39, 53}, {"glyphs 0.55", 180, 76, 39, 11},
+            {"digits 0.625", 0, 140, 56, 20}, {"glyphs 0.6", 180, 20, 39, 53}, {"level glyphs 0.85", 180, 76, 39, 15},
             {"follower plate", 0, 190, 24, 9}, {"gear row", 30, 190, 32, 12}, {"groove", 80, 190, 32, 4}, {"dash cog", 120, 190, 18, 18},
             {"effect frames", 140, 190, 34, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
             {"toolbox selection", 40, 210, 24, 23}, {"schematic frame", 66, 210, 18, 18}, {"instrument plate", 86, 210, 24, 9},
-            {"clock", 112, 210, 9, 9}, {"compass", 122, 210, 9, 9}, {"wing casing", 0, 236, 32, 4}};
+            {"clock", 112, 210, 9, 9}, {"compass", 122, 210, 9, 9}, {"wing casing", 0, 236, 32, 4},
+            {"dial housing", 182, 92, 42, 38}, {"exhaustion band", 182, 132, 34, 4}};
 
     static void checkLayout() {
         for (int i = 0; i < PARTS_PIECES.length; i++) {
@@ -81,10 +87,10 @@ final class CompactAtlas {
     static int digitAdv(char c) { return digitW(c) + 5; }
     static int digitV(int row) { return (140 + 4 * row) * K; }
     static final int DIGIT_H = 25;
-    /** The 0.6 (k = 0.6) and 0.55 glyph sets: a glyph's cell (3 units apart), its row by tint. */
+    /** The 0.6 (k = 0.6) and level (0.85) glyph sets: a glyph's cell (3 units apart), its row by tint. */
     static int glyphU(char c) { return (180 + 3 * GLYPHS.indexOf(c)) * K; }
     static int tintV(String tint) { return (int) Math.round((20 + 3.5 * TINTS.indexOf(tint)) * K); }
-    static int levelV(int row) { return (int) Math.round((76 + 3.5 * row) * K); }
+    static int levelV(int row) { return (int) Math.round((76 + 5 * row) * K); }
 
     static final int GHOST_PLATE_V = 190 * K, GHOST_PLATE_W = 24 * K, GHOST_PLATE_H = 9 * K;
     // Effect frames (10x10): buff, debuff, ambient.
@@ -105,8 +111,7 @@ final class CompactAtlas {
 
     private static List<String> orbCells() {
         List<String> l = new ArrayList<>(List.of("blood", "poison", "wither", "frozen", "broth", "hunger", "brothSat", "hungerSat", "mount",
-                "absorb", "irons", "ars", "glassL", "glassR", "front", "divider", "bezelL", "bezelR", "cog", "crack1", "crack2", "crack3",
-                "crack4", "glow_blood", "glow_poison", "glow_wither", "glow_frozen", "glow_broth", "glow_hunger", "glow_mount", "glow_irons",
+                "absorb", "irons", "ars", "glassL", "glassR", "front", "divider", "bezelL", "bezelR", "cog", "exhaust", "glow_blood", "glow_poison", "glow_wither", "glow_frozen", "glow_broth", "glow_hunger", "glow_mount", "glow_irons",
                 "glow_ars"));
         for (String t : DASH_TIERS) l.add("dash_" + t);
         for (String t : DASH_TIERS) for (int n = 1; n <= DASH_MAX_N; n++) l.add("ring_" + t + "_" + n);

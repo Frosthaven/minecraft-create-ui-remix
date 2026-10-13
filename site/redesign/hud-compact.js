@@ -6,16 +6,28 @@
 // worn; under water), extend the raised hotbar band sideways over their wing only then, in a darker iron, as slim
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
-const CX = 192, BOTTOM = 50, TOPM = 90;
+const CX = 222, BOTTOM = 50, TOPM = 90;
 const CC_TANK = ['#c98a5a', '#7a3e1c', '#2e1206'];   // Create's backtank: copper   // TOPM: room above the bar for the game's text (item name, action bar)
 // Three floating plates: the centre (hotbar and XP band, -91..91) and a wing plate each side (±96..±165), 5 px apart. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
 // socket / the dodge roll (18), 4, the plate's edge.
 const GAP = 4;
+/** Bar mode's meter blocks drawn S x around (±anchor, by) (twice the hotbar's scale, like the orbs): the left block
+ *  spans -165..-101 and 13.8..45.8 (mid 29.8); each wing is one plate at top's height out to its edge, the block
+ *  centred in it; outer: the blocks' outer edge plus 2. The end items (offhand, dial, MekaSuit gauge) centre on mid. */
+const CC_WING = { S: 2, anchor: 97, by: 49, top: 9.6, mid: 29.8, outer: 167, gauge: 32 / 18 };
+/** Where the side bars attach (± from the centre), between the centre plate (±91) and the wings. */
+const CC_SIDE = 93.5;
+/** Draws f with a side bar's size k, scaled around (sign CC_SIDE, the bar's bottom). */
+function ccSide(g, sign, k, f) { if (k === 1) return f(); ccScaled(g, sign * CC_SIDE, BOTTOM, k, f); }
+/** A point of a side bar after its scaling: x, y. */
+const ccSideX = (x, k) => Math.sign(x) * CC_SIDE + (x - Math.sign(x) * CC_SIDE) * k, ccSideY = (y, k) => BOTTOM + (y - BOTTOM) * k;
+/** Draws f clipped to x0..x1 (logical). */
+function ccClipX(g, x0, x1, f) { g.save(); g.beginPath(); g.rect(x0, -1e3, x1 - x0, 2e3); g.clip(); f(); g.restore(); }
 const CC = {
   plate: { x0: -165, x1: 165, wing: 28, mid: 24.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
   slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
   offhand: [-161, 30],
-  rows: [31.4, 37.2, 43.4], meterH: 4, meterW: 32, icon: 5.6,   // three rows a wing, centred on the sockets' middle (y 39);
+  rows: [31.4, 37.4, 43.4], meterH: 4, meterW: 32, icon: 5.6,   // three rows a wing, centred on the sockets' middle (y 39);
   // the gap under food holds AppleSkin's exhaustion line
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 99 },           // magic: Iron's mana, Ars mana (breath extends the band above)
@@ -176,9 +188,9 @@ function ccGearRow(g, cx, cy) {
   }
 }
 /** An empty meter-shaped groove pressed into the plate (a row with no meter). */
-function ccGroove(g, x, y, w, h) {
-  rrect(g, x, y, w, h, h / 2); g.fillStyle = 'rgba(0,0,0,0.22)'; g.fill();
-  ccEngrave(g, () => rrect(g, x, y, w, h, h / 2), 0.4);
+function ccGroove(g, x, y, w, h) {   // a quiet recess (an empty row), darker, no lit rim
+  rrect(g, x, y, w, h, h / 2); g.fillStyle = 'rgba(0,0,0,0.32)'; g.fill();
+  rrect(g, x, y, w, h, h / 2); g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 0.3; g.stroke();
 }
 /** No dodge roll in the pack: one cog with a hex hub pressed into the plate where the dash would be. */
 function ccDashFiller(g, cx, cy) {
@@ -191,23 +203,28 @@ function ccDashFiller(g, cx, cy) {
  *  dash (dial centre x), meka (gauge centre x) }. */
 function ccEnds(s) {
   // Orb mode: the item tucks in close to the housing's curve (1.5 px) with 3 px of plate past it; meter mode: 4 and 4.
-  const G = s.orbs ? 1.5 : 4, E = s.orbs ? 3 : 4, inner = s.orbs ? ORB.rx + ORB_H() : 131, dialW = 14.6, slotW = 18;
+  // The dial's width: its housing's reach at the plate's edge (the dial and its housing scale with the orbs).
+  const G = s.orbs ? 1.5 : 4, E = s.orbs ? 3 : 4, inner = s.orbs ? ORB.rx + ORB_H() : CC_WING.outer, slotW = 18;
+  // Orbs: the dial's housing reach at the plate's edge; bars: the dial alone (inside the wing's plate).
+  const dialW = s.orbs ? 2 * ccDomeHalf(ccDialR(), CC_DIAL.y) : 2 * (CC_DASH.r + CC_DASH.B) * CC_DIAL.S;
   const meka = !s.creative && s.mekasuit;
-  const left = inner + G + (meka ? 3.4 : 0), right = inner + G;   // meka: its gauge's slot   // the vitals (left) side holds the gauge
+  const MS = s.orbs ? 1 : CC_WING.gauge;   // the gauge: as tall as bar mode's meter block, as before beside the orbs
+  const left = inner + G + (meka ? 3.4 * MS : 0), right = inner + G;   // meka: its gauge's slot (the vitals side)
   const leftW = s.leftHanded ? dialW : slotW, rightW = s.leftHanded ? slotW : dialW;
   const span = Math.max(left + leftW, right + rightW);   // each wing's extent (the wider one's): the dial centres in its space
-  const leftItem = -(left + leftW / 2), rightItem = right + rightW / 2;
+  // Each end item centred in its wing's end space (the wider wing's), so neither end leaves dead plate.
+  const leftItem = -(left + span) / 2, rightItem = (right + span) / 2;
   const dialC = s.leftHanded ? -(left + span) / 2 : (right + span) / 2;
   return {
     // Both wings the same width (the wider one's), so the bar reads symmetric about the hotbar.
     x0: -span - E, x1: span + E,
     offhand: (s.leftHanded ? rightItem : leftItem) - slotW / 2,
     dash: dialC,
-    meka: -(inner + G + 1.7),
+    meka: -(inner + G + 1.7 * MS),
   };
 }
 /** The level window: k the digits' size, h its height for digits; iconW x iconH while an icon (size icon) shows. */
-const CC_LEVEL = { k: 0.55, h: 4.6, iconW: 9, iconH: 7, icon: 5 };
+const CC_LEVEL = { k: 0.85, h: 6.6, iconW: 9, iconH: 7, icon: 5 };   // k: readable at GUI scale 2-3
 function ccLevelWindow(g, x, y, w, h) {
   rrect(g, x, y, w, h, 1.2); g.fillStyle = steel(g, y, y + h); g.fill();
   rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, 0.8); g.fillStyle = '#060708'; g.fill();
@@ -263,9 +280,10 @@ function ccPlate(g, ears = {}) {
     g.lineTo(edge, mid); g.lineTo(edge, wing); g.closePath(); g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
     g.restore();
   };
-  const left = plate(ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], -inner, mid]] : [[x0, -inner, wing]], ears.gradTop);
+  const R = ears.raise;   // bar mode: each wing one plate at this height, out to its edge
+  const left = plate(R != null ? [[x0, -inner, R]] : ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], -inner, mid]] : [[x0, -inner, wing]], ears.gradTop);
   if (ears.left) tab(left[0], E.l[0], -inner, -1);
-  const right = plate(ears.right ? [[inner, E.r[1], mid], [E.r[1] + step, x1, wing]] : [[inner, x1, wing]], ears.gradTop);
+  const right = plate(R != null ? [[inner, x1, R]] : ears.right ? [[inner, E.r[1], mid], [E.r[1] + step, x1, wing]] : [[inner, x1, wing]], ears.gradTop);
   if (ears.right) tab(right[0], E.r[1], inner, 1);
   const centre = plate([[-sec, sec, mid]]);
   for (const [path, top] of [left, right, centre]) rim(g, path, top, b, P.brassHi, 0.35);
@@ -275,6 +293,7 @@ function ccPlate(g, ears = {}) {
 function compactHud(s, font) {
   const [c, g] = hires(2 * CX, BOTTOM + TOPM);
   g.translate(CX, TOPM);
+  if ((s.barScale || 1) !== 1) { g.translate(0, BOTTOM); g.scale(s.barScale, s.barScale); g.translate(0, -BOTTOM); }   // the action bar size
   ccGameText(g, s, font);   // the game's own text above the bar (not ours; shown for spacing)
   if (s.spectator) return c;   // spectator: vanilla draws no hotbar or vitals (only its own menu when opened)
   CC.hit = {};
@@ -283,15 +302,26 @@ function compactHud(s, font) {
   // is still full for a moment, and the segment must not blink out.
   const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
   const ends = CC.lay = ccEnds(s);
-  ccPlate(g, { left: false, right: false,   // no raised tabs: bar mode puts armor and breath in a third row
-    inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB_H() : undefined });
+  // The side bars at their own size (s.side, the config's "side bars size"): scaled around (±CC_SIDE, the bottom), so
+  // they stay attached to the centre plate. The plate is drawn per part, each clipped to its side of the anchor.
+  const offSide = s.leftHanded ? 1 : -1, side = (sign, f) => ccSide(g, sign, s.side || 1, f);
+  const plateAll = () => ccPlate(g, { left: false, right: false,   // no raised tabs: bar mode puts armor and breath in a third row
+    inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB_H() : undefined,
+    raise: s.orbs ? null : CC_WING.top });
+  ccClipX(g, -CC_SIDE, CC_SIDE, plateAll);
+  side(-1, () => ccClipX(g, -1e3, -CC_SIDE, plateAll));
+  side(1, () => ccClipX(g, CC_SIDE, 1e3, plateAll));
+  // Orbs: the dash dial in its own housing at the wing's end, the plate's gradient (bars: inside the tall wing plate).
+  if (s.orbs) side(-offSide, () => ccHousing(g, ends.dash, CC_DIAL.y, 0, ccDialR(), ORB.y - ORB_H(), (CC_DASH.r + CC_DASH.B) * CC_DIAL.S, CC_DIAL.S));
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
-  const [ox, oy] = [ends.offhand, CC.offhand[1]];
-  socket(g, ox, oy);
-  g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
-  shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
+  const [ox, oy] = [ends.offhand, s.orbs ? CC.offhand[1] : CC_WING.mid - 9];   // bars: centred on the meter block
+  side(offSide, () => {
+    socket(g, ox, oy);
+    g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
+    shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
+  });
   // Experience: one glass pipe along the section's top edge (0 to 100 % in one run, behind the window); the level in a
   // small window centred on the pipe.
   // The pipe is shared: casting a spell (Iron's), a camel's dash cooldown and a mount's jump charge take it over (vanilla
@@ -324,7 +354,8 @@ function compactHud(s, font) {
     // Meter mode carries no icons (space): the meters' colours and their order say what they are.
     ccMeter(g, x, y, w, h, frac, liq, segs, 'left', opt.style);
     if (opt.after) opt.after(g, s, [x, y, w, h]);
-    CC.hit[id] = [x, y, w, h];
+    const T = CC.hitT;   // drawn scaled (bar mode's wings): the hover box on the page in bar units
+    CC.hit[id] = T ? [T.ax + (x - T.ax) * T.S, T.ay + (y - T.ay) * T.S, w * T.S, h * T.S] : [x, y, w, h];
     if ((s.numbers || s.hover === id) && value != null) {
       // Dim the liquid behind the digits; not on the slim extension pipes (thinner than the digits: the shadow does).
       if (h >= 4) { rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill(); }
@@ -335,8 +366,14 @@ function compactHud(s, font) {
   };
   const row = (side, k, img, frac, liq, segs, value, max, opt) =>
     meterAt((side === L ? 'L' : 'R') + k, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max, opt);
-  if (s.orbs) ccOrbs(g, s);   // orbs in place of the wing meters (hud-compact-orbs.js)
+  if (s.orbs) {   // orbs in place of the wing meters (hud-compact-orbs.js), each side at the side bars' size
+    side(-1, () => ccClipX(g, -1e3, -CC_SIDE, () => ccOrbs(g, s)));
+    side(1, () => ccClipX(g, CC_SIDE, 1e3, () => ccOrbs(g, s)));
+  }
   else {
+  const wing = (sign, f) => { const ax = sign * CC_WING.anchor, ay = CC_WING.by, S = CC_WING.S;   // a wing's meter block, S x
+    CC.hitT = { ax, ay, S }; side(sign, () => ccScaled(g, ax, ay, S, f)); CC.hitT = null; };
+  wing(-1, () => {
   // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
   if (s.creative) ccGearRow(g, L.x + mw / 2, (rows[0] + rows[2] + mh) / 2);   // the empty vitals wing: centred on its three rows
   if (!s.creative) {
@@ -351,6 +388,8 @@ function compactHud(s, font) {
   }
   // Armor (row 2): the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
   if (showArmor) row(L, 2, armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
+  });
+  wing(1, () => {
   // The right wing: row 0 breath (the backtank while it holds air), else the Helium Flamingo's charge, else an
   // aircraft's health, else an empty groove; rows 1 and 2 the mana pools, the primary (the setting) on row 1. One mana
   // mod: its pool on row 1, row 2 a groove; none: engraved gears fill rows 1 and 2.
@@ -373,13 +412,20 @@ function compactHud(s, font) {
   else if (s.flamingo != null) row(Rt, 0, ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
   else if (s.aircraft) row(Rt, 0, ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   else ccGroove(g, Rt.x, rows[0], mw, mh);
+  });
   }
-  if (!s.creative && s.mekasuit) ccMekaGauge(g, s);
+  if (!s.creative && s.mekasuit) side(-1, () => {   // bars: as tall as the meter block, centred on it
+    if (s.orbs) ccMekaGauge(g, s);
+    else { g.save(); g.translate(CC.lay.meka, CC_WING.mid); g.scale(CC_WING.gauge, CC_WING.gauge); g.translate(-CC.lay.meka, -39); ccMekaGauge(g, s); g.restore(); }
+  });
   // Dodge roll: a small dial like the orbs (stone rim, dark rivets, glass) with the dash chevrons behind the glass in
   // the tier colour and a ring segment per charge, lit as charges are ready. Centred in its space at the wing's end.
   // No dodge roll mod: a pressed-in cog there instead.
-  if (s.rolls == null) ccDashFiller(g, ends.dash, 39);
-  else ccDashDial(g, ends.dash, 39, s.rolls, s.rollCount || 2);
+  const dy = s.orbs ? CC_DIAL.y : CC_WING.mid;   // orbs: in its housing; bars: centred on the meter block
+  side(-offSide, () => ccScaled(g, ends.dash, dy, CC_DIAL.S, () => {   // the dial at the orbs' scale
+    if (s.rolls == null) ccDashFiller(g, ends.dash, dy);
+    else ccDashDial(g, ends.dash, dy, s.rolls, s.rollCount || 2);
+  }));
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);
   ccAttackShade(g, s, [sx, sy]);
@@ -387,7 +433,7 @@ function compactHud(s, font) {
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
   ccInstruments(g, s);
-  ccHardcore(g, s);
+  side(offSide, () => ccHardcore(g, s));
   if (s.effects && s.effects.length) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }

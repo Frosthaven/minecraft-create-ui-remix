@@ -12,16 +12,32 @@ import net.minecraft.client.gui.GuiGraphics;
  * aircraft's health, or a groove; then the mana pools, the primary first; one pool: the last row a groove.
  */
 final class BarHud {
-    static final double[] ROWS = {31.4, 37.2, 43.4};
+    static final double[] ROWS = {31.4, 37.4, 43.4};
     static final double MW = 32, MH = 4, LEFT_X = -131, RIGHT_X = 99;
+    /** The meter blocks are drawn S x around (±ANCHOR, BY) (the page's CC_WING): the left spans -165..-101 and 13.8..45.8,
+     *  centred (MID) in the wing plate (top TOP); OUTER: the blocks' outer edge plus 2. GAUGE: the MekaSuit gauge's
+     *  scale (as tall as the block). */
+    static final double S = 2, ANCHOR = 97, BY = 49, TOP = 9.6, MID = 29.8, OUTER = 167, GAUGE = 32.0 / 18;
     private static final java.util.Set<String> MANA = java.util.Set.of("irons", "ars"), BROTH = java.util.Set.of("broth", "hunger");
 
     private BarHud() {}
 
     static void draw(GuiGraphics g, HudFrame f) {
-        if (!f.hurtable) gears(g, LEFT_X + MW / 2, (ROWS[0] + ROWS[2] + MH) / 2);   // the empty vitals wing
-        else left(g, f);
-        right(g, f);
+        side(g, -1, f.side, () -> scaled(g, -ANCHOR, () -> {
+            if (!f.hurtable) gears(g, LEFT_X + MW / 2, (ROWS[0] + ROWS[2] + MH) / 2);   // the empty vitals wing
+            else left(g, f);
+        }));
+        side(g, 1, f.side, () -> scaled(g, ANCHOR, () -> right(g, f)));
+    }
+
+    /** A wing's meter block, S x around (ax, BY). */
+    private static void scaled(GuiGraphics g, double ax, Runnable draw) {
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(x(ax), y(BY), 0);
+        pose.scale((float) S, (float) S, 1);
+        pose.translate(-x(ax), -y(BY), 0);
+        try { draw.run(); } finally { pose.popPose(); }
     }
 
     private static void left(GuiGraphics g, HudFrame f) {
@@ -70,10 +86,9 @@ final class BarHud {
             }
             if (f.apple != null && f.apple[0] > 0)   // AppleSkin: what the held food restores
                 inner(g, LEFT_X, y1, ix + ffill, ix + iw * Math.min(20, f.food + f.apple[0]) / 20.0, argb(0.35 + 0.25 * Math.sin(t / 160.0), 0xFFE6B4));
-            // Exhaustion (a food point lost at 4): its own hairline track just under the food meter.
-            double ly = y1 + MH + 0.8, lw = MW - 3;
-            g.fill(x(LEFT_X + 1.5), y(ly), x(LEFT_X + 1.5 + lw), y(ly + 0.5), argb(0.55, 0));
-            g.fill(x(LEFT_X + 1.5), y(ly), x(LEFT_X + 1.5 + lw * Math.min(1, f.exhaustion / 4)), y(ly + 0.5), argb(0.85, 0xF0EBE1));
+            // Exhaustion: a soft glow hugging the food meter's lower edge, full at 0, draining from the right (screen).
+            int ew = (int) Math.round(EXH_W * (1 - clamp(f.exhaustShown)));
+            if (ew > 0) screen(() -> part(g, EXH_U, EXH_V, ew, EXH_H, x(LEFT_X - 1), y(y1 + MH - 1.5)));
             if (f.nums) numbers(g, LEFT_X, y1, f.food + "/20", liq);
         }
         if (f.showArmor) {   // armor: the meter shows up to 20 (as vanilla's ten icons); the number the real value

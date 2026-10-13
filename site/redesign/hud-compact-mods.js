@@ -61,7 +61,7 @@ function ccInstruments(g, s) {
   if (s.steampunk) items.push('clock', 'compass');
   for (const cd of s.artifactCooldowns || []) items.push(cd);
   if (!items.length) return;
-  const cellW = it => it === 'ghost' ? 9 + ccNumberWidth(String(s.followers), 0.625) + 1 : 9;
+  const cellW = it => it === 'ghost' ? 9 + ccNumberWidth(String(s.followers), 0.94) + 1 : 9;   // the count at 0.94 (1.5x)
   const cell = 9, w = items.reduce((a, it) => a + cellW(it), 0) + 3, h = 9, x = -w / 2, y = CC.plate.mid - h - 2.5, r = CC.plate.r;
   ccFloatPlate(g, x, y, w, h);
   let cur = x + 2;
@@ -69,7 +69,7 @@ function ccInstruments(g, s) {
     const cx = cur + cell / 2 - 0.5, cy = y + h / 2; cur += cellW(it);
     if (it === 'ghost') {   // a pale ghost (web map viewers) and how many
       ccInstruments.ghost(g, cx, cy);
-      return ccNumber(g, String(s.followers), cx + 4, cy - 1.6, ccTint('#9ac8ff'), 'rgba(0,0,0,0.8)', 0.625);
+      return ccNumber(g, String(s.followers), cx + 4, cy - 2.35, ccTint('#9ac8ff'), 'rgba(0,0,0,0.8)', 0.94);
     }
     if (it === 'clock') return ccDial(g, cx, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
     if (it === 'compass') return ccDial(g, cx, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
@@ -118,7 +118,7 @@ function ccComfortFx(g, s, [x, y, w, h]) {
 const CC_SKULL_PLATE = { w: 9, h: 9, lift: 2.5 };
 function ccHardcore(g, s) {
   if (!s.hardcore) return;
-  const { w, h, lift } = CC_SKULL_PLATE, x = CC.lay.offhand + 9 - w / 2, y = CC.plate.wing - h - lift;
+  const { w, h, lift } = CC_SKULL_PLATE, x = CC.lay.offhand + 9 - w / 2, y = (s.orbs ? CC.plate.wing : CC_WING.top) - h - lift;
   ccFloatPlate(g, x, y, w, h);
   ccSkull(g, x + w / 2, y + h / 2);
 }

@@ -210,43 +210,26 @@ function ccOrbGlow(g, cx, cy, x0, w, liq, levelY) {
   g.restore();
 }
 
-/** Exhaustion (0 to 4; a food point or saturation is taken at 4) as hairline cracks in the food half's glass: three
- *  cracks from the rim, a segment more of each per stage (ceil of the exhaustion), thin and low contrast. */
-const CC_CRACKS = [   // each: an angle on the rim (from the right, clockwise) and its inward steps [dx, dy]
-  [-0.75, [[-1.3, 0.9], [-1.1, 0.4], [-1.2, 1.1], [-0.9, 0.5]]],
-  [0.1, [[-1.5, -0.3], [-1.0, 0.6], [-1.3, -0.2], [-1.1, 0.5]]],
-  [0.9, [[-1.0, -1.1], [-1.2, -0.5], [-0.8, -1.0], [-1.2, -0.4]]],
-];
-function ccOrbCrackPoints(cx, cy, k, upto) {
-  const [a, steps] = CC_CRACKS[k], r = ORB.r - 0.1;
-  const pts = [[cx + Math.cos(a) * r, cy + Math.sin(a) * r]];
-  for (let i = 0; i < upto; i++) { const [px, py] = pts[pts.length - 1]; pts.push([px + steps[i][0] * 1.3, py + steps[i][1] * 1.3]); }
-  return pts;
-}
-function ccOrbCracks(g, cx, cy, stage) {
-  if (stage <= 0) return;
-  g.save(); g.beginPath(); g.rect(cx, cy - ORB.r, ORB.r, 2 * ORB.r); g.clip(); circle(g, cx, cy, ORB.r); g.clip();
-  for (let k = 0; k < CC_CRACKS.length; k++) {
-    const pts = ccOrbCrackPoints(cx, cy, k, stage);
-    for (const [dy, col, lw] of [[0.15, 'rgba(0,0,0,0.35)', 0.22], [0, 'rgba(225,235,245,0.32)', 0.16]]) {
-      g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y + dy) : g.moveTo(x, y + dy));
-      g.strokeStyle = col; g.lineWidth = lw; g.stroke();
-    }
-  }
+/** Exhaustion (0 to 4; a food point or saturation is taken at 4) as a soft glow in a crescent over the food half's glass
+ *  edge: widest at the middle of the food side, tapering to points at the divider's foot and top, blurred so it fades
+ *  into the glass, added with a screen blend and dim. Full at 0 exhaustion, it drains from the top point down as
+ *  exhaustion rises to 4 (frac = 1 - exhaustion / 4) and refills smoothly when the game takes the point. Inside the glass edge, clear of the armor plates on the bezel.
+ *  The export draws it on black (the game screen-blends it, revealed by angle like the breath ring). */
+const CC_EXH = { w: 2.2, col: 'rgba(232,200,140,0.4)', blur: 0.45 };
+function ccOrbExhaustPiece(g, cx, cy) {
+  const r = ORB.r - 0.3, n = 48;
+  g.save(); g.filter = `blur(${CC_EXH.blur * g.getTransform().a}px)`;   // in device px: the blur in orb units at any scale
+  g.beginPath();
+  for (let i = 0; i <= n; i++) { const a = -Math.PI / 2 + Math.PI * i / n; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); }
+  for (let i = n; i >= 0; i--) { const a = -Math.PI / 2 + Math.PI * i / n, rr = r - CC_EXH.w * Math.cos(a); g.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
+  g.closePath(); g.fillStyle = CC_EXH.col; g.fill();
   g.restore();
 }
-/** When exhaustion wraps (a point taken), glass flakes fall from the cracks' ends and fade (since: ms since). */
-function ccOrbFlakes(cx, cy, since) {
-  if (since < 0 || since > 900) return [];
-  const k = since / 900, out = [];
-  for (let c = 0; c < CC_CRACKS.length; c++) {
-    const pts = ccOrbCrackPoints(cx, cy, c, 4);
-    for (const j of [2, 4]) {
-      const [x, y] = pts[j];
-      out.push([x + (c - 1) * 0.6 * k, y + 9 * k * k, `rgba(225,235,245,${0.6 * (1 - k)})`]);
-    }
-  }
-  return out;
+function ccOrbExhaust(g, cx, cy, frac) {
+  if (frac <= 0.001) return;
+  g.save(); g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, ORB.r + 1, Math.PI / 2 - Math.PI * Math.min(1, frac), Math.PI / 2); g.closePath(); g.clip();
+  g.beginPath(); g.rect(cx, cy - ORB.r, ORB.r, 2 * ORB.r); g.clip(); circle(g, cx, cy, ORB.r); g.clip();   // the food half's glass
+  g.globalCompositeOperation = 'screen'; ccOrbExhaustPiece(g, cx, cy); g.restore();
 }
 
 /** The health orb's status effects (the meters had them; same rules): the damage flash, Regeneration's rising light,
@@ -298,9 +281,8 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
     if (s.holdHeal) { g.fillStyle = `rgba(255,200,200,${pulse})`; g.fillRect(cx - r, level(hp + s.holdHeal / max), r, level(hp) - level(hp + s.holdHeal / max)); }
     if (!riding) { const a = s.food / 20, b = Math.min(20, s.food + s.holdFood) / 20; g.fillStyle = `rgba(255,230,180,${pulse})`; g.fillRect(cx, level(b), r, level(a) - level(b)); }
   }
-  if (!riding && s.exhaustion != null) {   // exhaustion: cracks in the food half's glass; flakes fall when it wraps
-    ccOrbCracks(g, cx, cy, Math.min(4, Math.ceil(s.exhaustion)));
-    for (const [x, y, col] of ccOrbFlakes(cx, cy, s.t - (s.flakeAt ?? -1e9))) { g.fillStyle = col; g.fillRect(x, y, 0.45, 0.45); }
+  if (!riding && s.exhaustion != null) {   // exhaustion: the crescent on the food half (eased: s.exhShown)
+    ccOrbExhaust(g, cx, cy, 1 - (s.exhShown ?? s.exhaustion) / 4);   // full at 0, draining as exhaustion rises
   }
   g.restore();
 }
@@ -328,8 +310,9 @@ function ccNebula() {
 /** The orb's housing, part of its wing plate: the plate rises into a round iron boss around the orb (the plate's own
  *  iron and texture, so they read as one casting), its brass rim continuing over the top where it rises above the
  *  plate, and a dark seat line where the orb sits recessed. Drawn after the plate, before the orb. */
-function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the right, -1 to the left
-  const R = ORB_H(), S = ORB.S, wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
+function ccHousing(g, cx, cy, inner, R = ORB_H(), gradTop = cy - R, seatR = (ORB.r + ORB.bezel) * ORB.S, S = ORB.S) {
+  // inner: +1 when the hotbar is to the right, -1 to the left, 0: fillets both sides (the dash dial's, mid-plate).
+  const wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
   // The boss's outline above the plate: the plate's top edge, a concave fillet into the circle, over the top, a fillet
   // back down to the edge, so the outline flows from the straight edge into the curve without a corner.
   const fy = wing - f, dy = fy - cy, dx = Math.sqrt((R + f) ** 2 - dy ** 2);
@@ -337,26 +320,39 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
   // Toward the hotbar there is no fillet: the plate ends at the housing's edge (ORB.innerEnd), so the curve runs down
   // to the circle's side and the plate's straight end continues below it. Drawn for inner = +1, mirrored for -1.
   const outline = (close) => {
-    g.save(); g.translate(cx, 0); g.scale(inner, 1); g.translate(-cx, 0);
+    g.save(); g.translate(cx, 0); g.scale(inner || 1, 1); g.translate(-cx, 0);
     g.beginPath(); g.moveTo(cx - dx - 0.01, wing);
     g.arc(cx - dx, fy, f, Math.PI / 2, Math.atan2(cy - fy, dx), true);
-    g.arc(cx, cy, R, tL, 0, false);
-    g.lineTo(cx + R, close ? b : cy);
-    if (close) { g.lineTo(cx - dx, b); g.closePath(); }
+    if (inner) {
+      g.arc(cx, cy, R, tL, 0, false);
+      g.lineTo(cx + R, close ? b : cy);
+      if (close) { g.lineTo(cx - dx, b); g.closePath(); }
+    } else {
+      g.arc(cx, cy, R, tL, tR, false);
+      g.arc(cx + dx, fy, f, Math.atan2(cy - fy, -dx), Math.PI / 2, true);
+      if (close) { g.lineTo(cx + dx + 0.01, b); g.lineTo(cx - dx - 0.01, b); g.closePath(); }
+    }
     g.restore();
   };
-  // The plate's own gradient (shared, from the dome's peak), plus a soft light on the dome's crown so it reads round.
-  outline(true); g.fillStyle = iron(g, cy - R, b); g.fill(); ironSurface(g, () => outline(true));
+  // The plate's own gradient (shared, from the plate's top), plus a soft light on the dome's crown so it reads round.
+  outline(true); g.fillStyle = iron(g, gradTop, b); g.fill(); ironSurface(g, () => outline(true));
   g.save(); outline(true); g.clip();
   circle(g, cx, cy - R * 0.55, R * 0.75); g.fillStyle = radial(g, cx, cy - R * 0.7, R * 0.75, [[0, 'rgba(255,240,220,0.10)'], [1, 'rgba(255,240,220,0)']]); g.fill();
   g.restore();
   // The rim along the smooth outline only (not the closing sides inside the plate).
   outline(false); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.6; g.stroke();   // an even dark edge (no shifted shadow: it read as a flat top)
   rim(g, () => outline(false), cy - R, cy + R, P.brassHi, 0.35);
-  // The seat: a recessed groove the orb's bezel drops into.
-  circle(g, cx, cy, (ORB.r + ORB.bezel + 0.4) * S); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.7 * S; g.stroke();
-  g.save(); g.translate(0, 0.45 * S); circle(g, cx, cy, (ORB.r + ORB.bezel + 0.8) * S); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3 * S; g.stroke(); g.restore();
+  // The seat: a recessed groove the orb's (or dial's) bezel drops into.
+  circle(g, cx, cy, seatR + 0.4 * S); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.7 * S; g.stroke();
+  g.save(); g.translate(0, 0.45 * S); circle(g, cx, cy, seatR + 0.8 * S); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3 * S; g.stroke(); g.restore();
 }
+/** How far a housing's outline reaches each side at the plate's top edge (its fillets' ends). */
+const ccDomeHalf = (R, cy) => Math.sqrt((R + 3) ** 2 - (CC.plate.wing - 3 - cy) ** 2);
+/** The dash dial, scaled with the orbs (S x its own size), in its own housing on the wing's end. */
+const CC_DIAL = { S: 2, y: 30.6 };
+const ccDialR = () => (CC_DASH.r + CC_DASH.B + 1.4) * CC_DIAL.S;   // its housing's radius
+/** Draw f scaled S x around (cx, cy). */
+function ccScaled(g, cx, cy, S, f) { g.save(); g.translate(cx, cy); g.scale(S, S); g.translate(-cx, -cy); f(); g.restore(); }
 
 /** The dodge roll dial at (cx, cy): a stone-rimmed glass with the dash chevrons in the tier colour, and around the rim a
  *  segment per charge, each lit (glowing, within the rim) once that charge is ready (partial while recharging).
@@ -437,7 +433,7 @@ function ccOrbs(g, s) {
     });
     const hr = ORB.r * ORB.S;
     CC.hit.orbL = [ORB.lx - hr, ORB.y - hr, 2 * hr, 2 * hr];
-    if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, liq[1]], riding ? [s.mount, s.mountMax, CC_MOUNT[1]] : [s.food, 20, LIQUID.broth[1]]]);
+    if (showNums) ccOrbScaled(g, ORB.lx, () => ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, liq[1]], riding ? [s.mount, s.mountMax, CC_MOUNT[1]] : [s.food, 20, LIQUID.broth[1]]]));   // doubled with the orb
   } else ccOrbScaled(g, ORB.lx, () => ccHousingCog(g, ORB.lx, ORB.y));   // creative: a cog pressed into the housing's face
   // Right: the mana pools (primary the liquid, the other the crescent), breath as the ring under water.
   const pools = [['irons', s.irons, MANA.irons, 200], ['ars', s.ars, MANA.ars, 150]].filter(p => p[1] != null);
@@ -451,12 +447,12 @@ function ccOrbs(g, s) {
     ccOrbScaled(g, ORB.rx, () => ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring }));
     const hr = ORB.r * ORB.S;
     CC.hit.orbR = [ORB.rx - hr, ORB.y - hr, 2 * hr, 2 * hr];
-    if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], p[2][1]]));
+    if (showNums) ccOrbScaled(g, ORB.rx, () => ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], p[2][1]])));
   } else if (ring) ccOrbScaled(g, ORB.rx, () => ccOrb(g, ORB.rx, ORB.y, { ring }));   // no mana mod: an empty orb still carries the ring
   else ccOrbScaled(g, ORB.rx, () => ccHousingCog(g, ORB.rx, ORB.y));                 // no mana mod: a cog pressed into the housing's face
   // The backtank's time, always on (players rely on it), just above the right orb's housing.
   if (breath && tank > 0) {
     const t = `${Math.floor(Math.ceil(tank) / 60)}:${String(Math.ceil(tank) % 60).padStart(2, '0')}`;
-    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y - ORB_H() - 4.2, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6);   // above the housing's dome
+    ccOrbScaled(g, ORB.rx, () => ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y - ORB.housing - 4.2, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6));   // above the dome, doubled
   }
 }

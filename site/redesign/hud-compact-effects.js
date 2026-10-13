@@ -56,21 +56,21 @@ function ccEffectsCorner(effects, icons, w = 180) {
  *  under 10 s; none when infinite). At most PER_ROW in a row (the right wing's width, clear of the centre),
  *  more wrap onto another row above, so a long list grows upward instead of sideways into anything.
  *  effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
-const CC_EFFECTS = { size: 10, cell: 13, rowH: 17.5, k: 0.625, perRow: 10 };   // a line: the bar's left edge to x -32
+const CC_EFFECTS = { size: 10, cell: 13, rowH: 19.5, k: 0.625, tk: 1.5, perRow: 10 };   // tk: the times' digits scale (the bigger bar)   // a line: the bar's left edge to x -32
 /** Time left, short: plain seconds under a minute ("45"), minutes under an hour ("3m"), else hours ("1h"). */
 function ccEffectTime(secs) {
   const sec = Math.ceil(secs);
   return sec < 60 ? String(sec) : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
 }
 function ccEffectsRail(g, s, icons) {
-  const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, left = (CC.lay || CC.plate).x0;   // the bar's left edge
+  const list = s.effects || [], { size, cell, rowH, k, tk, perRow } = CC_EFFECTS, left = ccSideX((CC.lay || CC.plate).x0, s.side || 1);   // the bar's left edge
   // Two lines: buffs nearest the bar, debuffs above them at 1.5x. A line that runs out of room wraps upward.
   // Each line starts with its always-on effects (infinite or a beacon's), then the timed ones.
   const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));
   const green = line('buff'), red = line('debuff');
   // Debuffs at 1.5x (socket, spacing, digits): the ones to act on stand out.
   const draw = (e, x, y, m) => {
-    const sz = size * m, kk = k * m;
+    const sz = size * m, kk = k * m * tk;
     g.save(); g.translate(x, y); g.scale(sz / 24, sz / 24);
     ccEffect(g, 0, 0, e.kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
     g.restore();
@@ -80,7 +80,7 @@ function ccEffectsRail(g, s, icons) {
     const n = /[mh]$/.test(t) ? t.length - 1 : t.length, hot = e.secs <= 10;   // the number bright, its unit (m, h) dimmer
     ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, i => { const hue = hot ? '#ff3a2a' : e.kind === 'buff' ? '#3fd060' : '#ff5a4a'; return ccTint(hue); }, 'rgba(0,0,0,0.95)', kk);
   };
-  let top = s.orbs ? ORB.y - ORB_H() - 2 : CC.plate.mid - 2;   // with orbs, above the housings' domes
+  let top = ccSideY(s.orbs ? ORB.y - ORB_H() : CC_WING.top - (s.hardcore ? CC_SKULL_PLATE.h + CC_SKULL_PLATE.lift + 1 : 0), s.side || 1) - 2;   // above the domes / the wings (and the skull), at the side size
   for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top
     const per = Math.floor(perRow / m);
     for (let r = 0; r * per < all.length; r++) {

@@ -23,6 +23,22 @@ final class HudDraw {
     private HudDraw() {}
 
     static int x(double l) { return (int) Math.round(l * K); }
+    /** Where the side bars attach (units, ± from the centre): between the centre plate (±91) and the wings. */
+    static final double WING_ANCHOR = 93.5;
+    /** Draws a side bar's part at the config's side size: scaled around (sign WING_ANCHOR, the bar's bottom), so the
+     *  wing stays attached to the centre and grows outward and upward. */
+    static void side(GuiGraphics g, double sign, double s, Runnable draw) {
+        if (s == 1) { draw.run(); return; }
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(x(sign * WING_ANCHOR), 0, 0);
+        pose.scale((float) s, (float) s, 1);
+        pose.translate(-x(sign * WING_ANCHOR), 0, 0);
+        try { draw.run(); } finally { pose.popPose(); }
+    }
+    /** A point (units) of a side bar after its scaling (side()): x and y. */
+    static double sideX(double ux, double s) { return Math.signum(ux) * WING_ANCHOR + (ux - Math.signum(ux) * WING_ANCHOR) * s; }
+    static double sideY(double uy, double s) { return 50 + (uy - 50) * s; }
     static int y(double l) { return (int) Math.round((l - 50) * K); }
     static double clamp(double f) { return Math.max(0, Math.min(1, f)); }
 

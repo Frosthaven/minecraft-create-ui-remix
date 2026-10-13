@@ -14,5 +14,6 @@
   "haven_create_ui_ux.config.mob_bars_hostile": "Hostile mobs",
   "haven_create_ui_ux.config.mob_bars_not_hostile": "Other mobs",
   "haven_create_ui_ux.config.mob_bars_players": "Friendly players",
-  "haven_create_ui_ux.config.mob_bars_aggressive": "Hostile players"
+  "haven_create_ui_ux.config.mob_bars_aggressive": "Hostile players",
+  "haven_create_ui_ux.config.side_scale": "Side bars size"
 }

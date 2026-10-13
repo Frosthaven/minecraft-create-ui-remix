@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  */
 final class HudEffects {
     private static final int SIZE = 10 * K, CELL = 13 * K, PER_ROW = 10;
-    private static final double ROW_H = 17.5;
+    private static final double ROW_H = 19.5, TIME_K = 1.5;   // TIME_K: the times' digits scale (the bigger bar)
     /** The longest duration seen per effect: the border shows time left of that. */
     private static final Map<Holder<MobEffect>, Integer> START = new HashMap<>();
     /** Effect boxes on screen (GUI px) from the last frame, for the hover tooltip. */
@@ -89,7 +89,11 @@ final class HudEffects {
             if (dur >= 0) {
                 String t = time(dur / 20);
                 boolean hot = dur <= 200, unit = t.endsWith("m") || t.endsWith("h");
-                HudDraw.digits(g, t, SIZE / 2 - HudDraw.digitsWidth(t) / 2, SIZE + 8, t.length() - (unit ? 1 : 0), hot ? RED : WHITE, DIM);
+                pose.pushPose();
+                pose.translate(SIZE / 2f, SIZE + 8, 0);
+                pose.scale((float) TIME_K, (float) TIME_K, 1);
+                HudDraw.digits(g, t, -HudDraw.digitsWidth(t) / 2, 0, t.length() - (unit ? 1 : 0), hot ? RED : WHITE, DIM);
+                pose.popPose();
             }
         }
         pose.popPose();

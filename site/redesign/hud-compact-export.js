@@ -1,20 +1,22 @@
 // Compact HUD textures for the game (createhud:textures/gui/compact/*), drawn by the same functions as the page so
 // the game shows exactly the preview. haven-create-ui-ux's hud/ classes draw from them in 1/8 GUI px (one texel), so
 // every position here is a whole multiple of 1/8. KEEP IN STEP with CompactAtlas.java.
-//   plate_{bars,bars_meka,orbs,orbs_meka}: 372 x 66 at (-186, -15) of the bar (bottom at 50). Orbs: with the housings
-//     (the orbs are drawn at ORB.S x, so their domes rise to y -14).
+//   plate_{bars,bars_meka,orbs,orbs_meka}: 424 x 66 at (-212, -15) of the bar (bottom at 50). Orbs: with the housings
+//     (the orbs are drawn at ORB.S x, so their domes rise to y -14); bars: the wings one plate each at CC_WING.top.
+//     The dash dial's housing (orbs) is a separate piece in parts, so the plate does not depend on which hand.
 //     _meka: the left wing widened for the MekaSuit gauge's slot (right-handed only; ccEnds).
 //   parts (256 x 256):
 //     (0, 0) socket 18x18; (20, 0) selection 24x23; (46, 0) offhand ghost 18x18; (66, 0) the hardcore skull plate 9x10
 //     (shadow included); (78, 0) the level window 10 x 4.6 (caps 2 | middle | 2); (90, 0) the icon window 9x7;
 //     (100 + 7 k, 0) window icons 7x7 (icon 5 tall, centred): flask, horse, camel, train, engine;
-//     (136, 0) MekaSuit gauge casing 2.4 x 18, (140, 0) its fill.
+//     (136, 0) MekaSuit gauge casing 2.4 x 18, (140, 0) its fill; (182, 92) the dash dial's housing 42 x 38 (orbs);
+//     (182, 132) bar mode's exhaustion glow band 34 x 4 on black (under a meter at (183, 129.5)).
 //     (0, 236) wing casing 32x4 (clear of the selection cell's rows 0..23); (0, 26) XP casing 177x3.
 //     (0, 30 + 5 k) full wing meters (the game crops their inner 0.5-inset area), WING_LIQUIDS;
 //     (0, 112 + 4 k) full XP pipes, XP_LIQUIDS.
 //     (0, 140 + 4 r) digits "0123456789/:+smh" at 0.625, 3.5 apart (m is 5 wide): white, dim, green, black, red.
 //     (180, 20 + 3.5 r) digits "0123456789/:+" at 0.6, 3 apart, TINTS rows (meter and orb numbers, the tank time).
-//     (180, 76 + 3.5 r) the same at 0.55 (the level): green, dim, black.
+//     (180, 76 + 5 r) the same at CC_LEVEL.k (0.85, the level): green, dim, black.
 //     (0, 190) follower plate 24x9; gear row centred (46, 196); groove (80, 190) 32x4; dash cog centred (129, 199);
 //     effect frames 10x10 at (140|152|164, 190); overlays at y 210 (see compactExports).
 //   orbs (384 x 320): orb pieces centred in cells. Small cells (32 x 32): cell n centred at (28 + 32 (n % 11),
@@ -45,7 +47,7 @@ const CCX_STYLE = { blood: 'cloud', poison: 'cloud', wither: 'cloud', frozen: 'c
 const ccxTint = n => n === 'black' ? 'rgba(0,0,0,0.9)' : n === 'tank' ? ccTint('#d9874a') : ccTint(CCX_LIQ[n][1]);
 
 const ORB_CELLS = ['blood', 'poison', 'wither', 'frozen', 'broth', 'hunger', 'brothSat', 'hungerSat', 'mount', 'absorb', 'irons', 'ars',
-  'glassL', 'glassR', 'front', 'divider', 'bezelL', 'bezelR', 'cog', 'crack1', 'crack2', 'crack3', 'crack4',
+  'glassL', 'glassR', 'front', 'divider', 'bezelL', 'bezelR', 'cog', 'exhaust',
   'glow_blood', 'glow_poison', 'glow_wither', 'glow_frozen', 'glow_broth', 'glow_hunger', 'glow_mount', 'glow_irons', 'glow_ars',
   ...CCX.dashTiers.map(t => 'dash_' + t),
   ...CCX.dashTiers.flatMap(t => Array.from({ length: CCX.dashMaxN }, (_, i) => `ring_${t}_${i + 1}`))];
@@ -85,7 +87,10 @@ function ccxOrbs() {
       else if (name === 'divider') disc(ox, () => ccOrbDivider(g, ox, oy));
       else if (name === 'bezelL' || name === 'bezelR') ccOrbBezel(g, ox, oy);
       else if (name === 'cog') ccHousingCog(g, ox, oy);
-      else if (name.startsWith('crack')) ccOrbCracks(g, ox, oy, +name.slice(5));
+      else if (name === 'exhaust') {   // on black: the game screen-blends it, clipped to the food half's glass
+        g.fillStyle = '#000'; g.fillRect(ox - 16, oy - 16, 32, 32);
+        g.save(); g.beginPath(); g.rect(ox, oy - ORB.r, ORB.r, 2 * ORB.r); g.clip(); circle(g, ox, oy, ORB.r); g.clip(); ccOrbExhaustPiece(g, ox, oy); g.restore();
+      }
       else if (name.startsWith('glow_')) {   // on black: the game adds it with a screen blend (ONE, ONE_MINUS_SRC_COLOR)
         g.fillStyle = '#000'; g.fillRect(ox - 16, oy - 16, 32, 32);
         ccOrbGlow(g, ox, oy, ox - ORB.housing, 2 * ORB.housing, CCX_LIQ[name.slice(5)], oy - r - 4);
@@ -108,10 +113,10 @@ function ccxOrbs() {
 function compactExports() {
   const files = [];
   for (const [name, orbs, meka] of [['bars', false, false], ['bars_meka', false, true], ['orbs', true, false], ['orbs_meka', true, true]]) {
-    const [c, g] = hires(372, 66);
-    g.translate(186, 15);
+    const [c, g] = hires(424, 66);
+    g.translate(212, 15);
     const ends = ccEnds({ orbs, mekasuit: meka ? 1 : 0 });
-    ccPlate(g, { inner: orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: orbs ? ORB.y - ORB_H() : undefined });
+    ccPlate(g, { inner: orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: orbs ? ORB.y - ORB_H() : undefined, raise: orbs ? null : CC_WING.top });
     if (orbs) { ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1); }
     files.push(['createhud: compact/plate_' + name, c]);
   }
@@ -125,6 +130,13 @@ function compactExports() {
   ccLevelWindow(g, 90, 0, CC_LEVEL.iconW, CC_LEVEL.iconH);
   CCX.winIcons.forEach((n, k) => ccIcon(g, ccxIcon(n), 100 + 7 * k + 3.5, 3.5, CC_LEVEL.icon));
   ccMekaCasing(g, 136, 0); ccMekaFill(g, 140, 0);
+  // Bar mode's exhaustion glow band on black (182, 132) 34 x 4: a meter at (183, 129.5) (the game screen-blends it).
+  g.fillStyle = '#000'; g.fillRect(182, 132, 34, 4);
+  g.save(); g.beginPath(); g.rect(182, 132, 34, 4); g.clip(); ccExhaustBand(g, [183, 129.5, 32, 4]); g.restore();
+  // The dash dial's housing in orb mode (182, 92) 42 x 38: logical (dash - 21, 12.5) of the bar, fillets both sides.
+  g.save(); g.beginPath(); g.rect(182, 92, 42, 38); g.clip(); g.translate(182 + 21, 92 - 12.5);
+  ccHousing(g, 0, CC_DIAL.y, 0, ccDialR(), ORB.y - ORB_H(), (CC_DASH.r + CC_DASH.B) * CC_DIAL.S, CC_DIAL.S);
+  g.restore();
   const MW = CC.meterW;
   ccMeter(g, 0, 236, MW, 4, 0, CCX_LIQ.blood, 10);
   ccMeter(g, 0, 26, CC.xp.x1 - CC.xp.x0, CC.xp.h, 0, CCX_LIQ.xp, 18);
@@ -153,7 +165,7 @@ function compactExports() {
   CCX.xpLiquids.forEach((n, k) => fullMeter(0, 112 + 4 * k, CC.xp.x1 - CC.xp.x0, CC.xp.h, n, 18));
   CCX.digitRows.forEach((col, r) => [...CCX.digits].forEach((ch, k) => ccNumber(g, ch, 3.5 * k, 140 + 4 * r, col, null, 0.625)));
   CCX.tints.forEach((n, r) => [...CCX.glyphs].forEach((ch, k) => ccNumber(g, ch, 180 + 3 * k, 20 + 3.5 * r, ccxTint(n), null, 0.6)));
-  CCX.levelRows.forEach((col, r) => [...CCX.glyphs].forEach((ch, k) => ccNumber(g, ch, 180 + 3 * k, 76 + 3.5 * r, col === '#000000' ? 'rgba(0,0,0,0.9)' : col, null, CC_LEVEL.k)));
+  CCX.levelRows.forEach((col, r) => [...CCX.glyphs].forEach((ch, k) => ccNumber(g, ch, 180 + 3 * k, 76 + 5 * r, col === '#000000' ? 'rgba(0,0,0,0.9)' : col, null, CC_LEVEL.k)));
   // The follower plate: the bar's plate style, a ghost at its left.
   const plate = () => rrect(g, 0, 190, 24, 9, CC.plate.r);
   plate(); g.fillStyle = iron(g, 190, 199); g.fill(); ironSurface(g, plate); rim(g, plate, 190, 199, P.brassHi, 0.35);

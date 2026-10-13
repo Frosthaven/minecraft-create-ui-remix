@@ -119,8 +119,16 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 
 ## Compact HUD (`site/redesign/hud-compact.html`, `hud-compact*.js`): in game via the mod (`mod/CLAUDE.md`, hud/)
 
-- Orbs are drawn at `ORB.S` (2) x their own units around (ORB.lx | ORB.rx, ORB.y) (`ccOrbScaled`); the hotbar keeps its
-  size. The housings (`ORB_H()`), wing ends and the effects rail use the scaled size. Plates export 372 x 66 at (-186, -15).
+- The side bars are twice the hotbar's scale: orbs at `ORB.S` (2) x around (ORB.lx | ORB.rx, ORB.y) (`ccOrbScaled`);
+  bar mode's meter blocks at `CC_WING.S` around (±97, 49), each wing one flat plate at `CC_WING.top`, the offhand,
+  dial and MekaSuit gauge centred on the block (`CC_WING.mid`); the dash dial at `CC_DIAL.S` (orbs: in its own housing,
+  a separate parts piece so the plate does not depend on the hand). The hotbar, XP pipe and centre plate keep their
+  size. Plates export 424 x 66 at (-212, -15).
+- Sizes: config "Action bar size" scales everything around the bottom centre; "Side bars size" scales each wing
+  around (±`CC_SIDE` 93.5, the bottom), so the wings stay attached (page buttons Side size / Bar size).
+- Exhaustion: orbs: a soft screen-blended crescent glow on the food half's edge, full at 0 and draining from the top
+  as exhaustion rises, refilling smoothly at the reset; bars: the same glow under the food meter, draining from the
+  right. Numbers on the orbs and meters are doubled with them; the level digits are 0.85, effect times 1.5x.
 
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
 level window centred on it; the vitals and mana either as two orbs in housings on the wing plates (default) or as three

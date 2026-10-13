@@ -97,7 +97,12 @@ not a spectator.
 - `MipTexture`: the bar's textures load with 3 mip levels (alpha-weighted, transparent texels bled with their
   neighbours' colour) and linear filtering. With vanilla's nearest sampling, 8x textures drawn at 1/8 skip texels at GUI
   scale 2 to 4, so thin bright lines (rims, rivets, plate edges) showed as white specks. Logged once per texture.
-- `OrbHud`: the orbs at `S` (2) x around their centres (pose scale); numbers and the tank time at the bar's scale.
+- `OrbHud`: the orbs at `S` (2) x around their centres (pose scale), their numbers and the tank time too. `BarHud`: the
+  meter blocks at `S` (2) x around (±ANCHOR, BY). `HudFrame.Ends`: the page's ccEnds (dial sizes, item centring).
+- Side bars size (`UiConfig.SIDE_SCALE`): `HudDraw.side` scales each wing's parts around (±WING_ANCHOR, the bottom);
+  the plate is drawn in three crops (centre, each wing); the offhand item follows; the effects rail moves with it.
+- Exhaustion: `HudFrame.exhaustShown` eases (Smooth, 400 ms for the reset jump); orbs reveal the screen-blended
+  `exhaust` cell by angle, bars crop the `EXH` band.
 - Attack cooldown: on the selected socket whenever the attack indicator is not OFF, from `getAttackStrengthScale(partial
   tick)`; the indicator mode is logged on change.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
