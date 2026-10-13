@@ -45,6 +45,9 @@ public final class CompactHud {
             id("appleskin", "exhaustion_level"));
     private static final ResourceLocation NOURISHMENT = id("farmersdelight", "nourishment");
 
+    /** The bar's size in game: 1.1x its designed (vanilla-matched) size reads better on large screens. */
+    public static final float SCALE = 1.1f;
+
     private static List<String> packIds = List.of();
     private static boolean present;
 
@@ -145,6 +148,11 @@ public final class CompactHud {
         var pose = g.pose();
         pose.pushPose();
         try {
+            // The whole bar, items included, at SCALE around the screen's bottom centre (the hotbar stays centred).
+            float cx = g.guiWidth() / 2f, bottom = g.guiHeight();
+            pose.translate(cx, bottom, 0);
+            pose.scale(SCALE, SCALE, 1);
+            pose.translate(-cx, -bottom, 0);
             draw(g);
         } catch (Throwable t) {
             HudLog.error("render:" + t, "drawing the bar failed (skipping this frame; logged once per kind)", t);
@@ -228,6 +236,13 @@ public final class CompactHud {
                 icon(g, wingIconU("drumstick"), WING_ICON_V, x(-136), y(42.5));
                 meter(g, lx, row1, false, p.hasEffect(MobEffects.HUNGER) ? "hunger" : nourished ? "gilded" : "broth", food.getFoodLevel() / 20.0);
                 span(g, lx, row1, false, "saturation", 0, Math.min(food.getSaturationLevel(), food.getFoodLevel()) / 20.0);
+                // Exhaustion (a food point lost at 4): its own hairline track just under the food meter.
+                float ex = food.getExhaustionLevel();
+                {
+                    int tx = lx + 12, ty = row1 + WING_H + 6, tw = WING_W - 24;
+                    g.fill(tx, ty, tx + tw, ty + 4, 0x8C000000);
+                    g.fill(tx, ty, tx + (int) (tw * Math.min(1f, ex / 4f)), ty + 4, 0xD9F0EBE1);
+                }
                 if (nums) numbers(g, lx, row1, false, String.valueOf(food.getFoodLevel()), "20");
             }
         }
@@ -306,8 +321,8 @@ public final class CompactHud {
             pose.popPose();
         }
         // The bar is about 31 px tall: later HUD layers (mod texts, Create's prompts) stack above it.
-        mc.gui.leftHeight = Math.max(mc.gui.leftHeight, 33);
-        mc.gui.rightHeight = Math.max(mc.gui.rightHeight, 33);
+        mc.gui.leftHeight = Math.max(mc.gui.leftHeight, (int) Math.ceil(33 * SCALE));
+        mc.gui.rightHeight = Math.max(mc.gui.rightHeight, (int) Math.ceil(33 * SCALE));
     }
 
     private static void slotItem(GuiGraphics g, Minecraft mc, LocalPlayer p, ItemStack stack, int x, int y, int seed) {

@@ -73,6 +73,8 @@ not a spectator.
   centre, the bar's bottom at 50) times 8. Items at vanilla's exact spots (bottom - 19, centre - 88 + 20 i), so mods that
   mark hotbar slots line up. Sets `gui.leftHeight/rightHeight` to 33 for later layers. Key "Show HUD numbers (hold)",
   Left Alt by default (Controls); numbers also show while a screen is open. No dark mode on it (`HudLayers.MAIN`).
+- In game the whole bar (items included) is drawn at `CompactHud.SCALE` (1.1) around the screen's bottom centre.
+- Exhaustion: `FoodData.getExhaustionLevel()` (NeoForge), a hairline track under the food meter.
 - `CompactAtlas`: the textures' layout; KEEP IN STEP with `hud-compact-export.js`.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
   (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank
@@ -83,5 +85,5 @@ not a spectator.
 - `HudLog`: logging in latest.log, all lines prefixed `[compact HUD]`, never per frame: once per event or when a value
   changes (activation and why, each hidden layer, mods found and their values, extensions, mode, vehicle, followers,
   the roll mixin), errors with stack traces once per kind; a failing frame is skipped, not crashed.
-- In the preview but not in game yet: comfort sheen, regen sweep, hardcore trim, AppleSkin previews and exhaustion,
+- In the preview but not in game yet: comfort sheen, regen sweep, hardcore trim, AppleSkin previews,
   Iron's cast takeover, MekaSuit, aircraft, train, Helium Flamingo, instruments plate, attack shade, Create slot marks.
