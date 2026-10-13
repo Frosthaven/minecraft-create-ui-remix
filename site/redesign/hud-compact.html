@@ -9,21 +9,24 @@
 <body>
 <nav><a href="./">HUD</a><a href="hud-compact.html" aria-current="page">Compact HUD</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="../">Almanac</a></nav>
 <header>
-  <h1>Compact HUD: one console (concept)</h1>
-  <p>Everything the action bar shows, gathered into one blackened iron console instead of floating rows. The hotbar sits
-     in the raised middle with experience as one glass pipe along its top edge, the level in a small window at its left end. The
-     left wing is vitals: the offhand (a faint shield marks it when empty), then health (absorption in gold), food and
-     armor. The right wing is magic: Iron's mana and Ars mana, then breath: bubbles (full above water, draining under it), with a Create backtank's air layered on top in copper while diving (it drains first; its time left always shows, as Create's counter does); our dash icon
-     and count sit at its end. Every meter is the same size, in ten segments, with the HUD's own icon; hover a meter for its value (current bright, max dim). Preview only: shipping it
-     needs Create Dark Inventory to replace the HUD layers and draw this layout itself.</p>
+  <h1>Compact HUD: one action bar (concept)</h1>
+  <p>Everything the action bar shows, gathered into one blackened iron bar instead of floating rows. The hotbar sits in
+     the raised middle with experience as one glass pipe along its top edge, the level in a small window at its left end.
+     The left wing is vitals: the offhand (a faint shield marks it when empty), health (absorption in gold) and food. The
+     right wing is magic: Iron's mana and Ars mana, then our dash icon and count. Armor and breath appear only when the
+     game would show them, rising as raised ears above their wing: armor while you wear some, breath under water, with a
+     Create backtank's air layered on top in copper while diving (it drains first; its time left always shows, as
+     Create's counter does). Every meter is the same size, in ten segments, with the HUD's own icon; hover a meter for
+     its value (current bright, max dim). Preview only: shipping it needs Create Dark Inventory to replace the HUD layers
+     and draw this layout itself.</p>
 </header>
 <div class="bar">
   <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button><button id="dive" aria-pressed="false" title="Under water with a Create backtank and diving helmet">Diving (backtank)</button>
-  <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
+  <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="armorBtn" aria-pressed="true" title="Armor worn: its meter rises above the left wing">Armor</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
   <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
 </div>
 <div class="compare">
-  <div class="scene" style="grid-column:1/-1"><span class="label after">Compact console (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
+  <div class="scene" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
 </div>
 <script src="material.js"></script>
 <script src="sprites.js"></script>
@@ -45,6 +48,7 @@ tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; });
 tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); });
 tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
+tap('armorBtn', () => { st.armor = st.armor ? 0 : 14; document.getElementById('armorBtn').setAttribute('aria-pressed', String(!!st.armor)); });
 tap('roll', () => { st.rolls = st.rolls <= 0 ? 2 : Math.round((st.rolls - 0.5) * 10) / 10; });
 tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
 /** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air. */

@@ -1,16 +1,19 @@
-// Compact HUD concept (preview only, not packed): one iron console instead of the floating bits. Shipping it needs
+// Compact HUD concept (preview only, not packed): one iron action bar instead of the floating bits. Shipping it needs
 // Create Dark Inventory to cancel the vanilla and mod HUD layers and draw this layout itself (RenderGuiLayerEvent).
-// Logical units, x centred on the screen (0), the console's bottom at y 50. Every meter is the same size, with the
-// HUD's own sprite as its icon (heart, drumstick, shield, porthole bubble). Uses sprites.js, meters.js (LIQUID),
+// Logical units, x centred on the screen (0), the action bar's bottom at y 50. Every meter is the same size, with the
+// HUD's own sprite as its icon (heart, drumstick, shield, porthole bubble). The always-on meters sit in the wings
+// (health and food left, the two manas right); armor and breath, which the game shows only when they apply (armor
+// worn; under water), rise as "ears" above their wing only then. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
 const CX = 172, BOTTOM = 50;
 const CC = {
   plate: { x0: -172, x1: 172, wing: 26, mid: 21, step: 8, r: 2.5 },
   slot: i => [-90 + 20 * i, 29],          // socket top left (item at +1)
   offhand: [-168, 29],
-  rows: [27.8, 35, 42.2], meterH: 6, meterW: 38, icon: 6,
-  left: { icon: -147, x: -138 },          // vitals: health, food, armor
-  right: { icon: 140, x: 100 },           // magic: Iron's mana, Ars mana, then air
+  rows: [30.5, 39.5], meterH: 6, meterW: 38, icon: 6,
+  left: { icon: -147, x: -138 },          // vitals: health, food (armor in the left ear)
+  right: { icon: 140, x: 100 },           // magic: Iron's mana, Ars mana (breath in the right ear)
+  ear: { top: 17, row: 18.5, l: [-150, -98], r: [98, 150] },   // raised over a wing only while its meter applies
   roll: [148, 29],
   hit: {},                                // meter boxes by id, for the page's hover
   xp: { y: 22.6, h: 3.2, x0: -90, x1: 90 },   // the level window, then the pipe
@@ -99,27 +102,38 @@ function ccNumber(g, s, x, y, col, shadow, k = 1) {
   }
 }
 
-/** The console plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
+/** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
-function ccPlate(g) {
-  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM, k = step / 2;
+function ccPlate(g, ears = {}) {
+  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM, E = CC.ear;
+  // The top edge as level runs [x from, x to, y], joined by S curves; ears add raised runs over the wings.
+  const runs = ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], E.l[1], E.top]] : [[x0, -92 - step, wing]];
+  runs.push([-92, 92, mid]);
+  runs.push(...(ears.right ? [[E.r[0], E.r[1], E.top], [E.r[1] + step, x1, wing]] : [[92 + step, x1, wing]]));
+  const top = Math.min(...runs.map(q => q[2]));
   const path = () => {
-    g.beginPath(); g.moveTo(x0, b - r); g.lineTo(x0, wing + r); g.quadraticCurveTo(x0, wing, x0 + r, wing);
-    g.lineTo(-92 - step, wing); g.bezierCurveTo(-92 - k, wing, -92 - k, mid, -92, mid);
-    g.lineTo(92, mid); g.bezierCurveTo(92 + k, mid, 92 + k, wing, 92 + step, wing);
-    g.lineTo(x1 - r, wing); g.quadraticCurveTo(x1, wing, x1, wing + r); g.lineTo(x1, b - r);
+    const [, , y0] = runs[0], yl = runs[runs.length - 1][2];
+    g.beginPath(); g.moveTo(x0, b - r); g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0);
+    runs.forEach(([, xe, y], i) => {
+      if (i === runs.length - 1) return;
+      const [xs, , ny] = runs[i + 1], k = (xs - xe) / 2;
+      g.lineTo(xe, y); g.bezierCurveTo(xe + k, y, xs - k, ny, xs, ny);
+    });
+    g.lineTo(x1 - r, yl); g.quadraticCurveTo(x1, yl, x1, yl + r); g.lineTo(x1, b - r);
     g.quadraticCurveTo(x1, b, x1 - r, b); g.lineTo(x0 + r, b); g.quadraticCurveTo(x0, b, x0, b - r); g.closePath();
   };
   g.save(); g.translate(0, -0.6); path(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
-  path(); g.fillStyle = iron(g, mid, b); g.fill(); ironSurface(g, path);
-  rim(g, path, mid, b, P.brassHi, 0.35);
+  path(); g.fillStyle = iron(g, top, b); g.fill(); ironSurface(g, path);
+  rim(g, path, top, b, P.brassHi, 0.35);
 }
 
-/** The whole console for a state; a canvas of logical 344 x 50. */
+/** The whole action bar for a state; a canvas of logical 344 x 50. */
 function compactHud(s, font) {
   const [c, g] = hires(344, 50);
   g.translate(CX, 0);
-  ccPlate(g);
+  CC.hit = {};
+  const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = s.armor > 0, showBreath = s.air < 1 || tank > 0;
+  ccPlate(g, { left: showArmor, right: showBreath });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   const [ox, oy] = CC.offhand;
@@ -138,10 +152,10 @@ function compactHud(s, font) {
   const { rows, meterH: mh, meterW: mw, icon: is } = CC, L = CC.left, Rt = CC.right;
   // Icons: each sprite trimmed to its drawing, one height (is), centred on its meter's middle.
   // Numbers: value / max in the small digits at 0.6 size, centred in the glass; the value bright, "/max" dim. Shown for
-  // the meter under the pointer (s.hover = 'L0'..'R2'), or all with s.numbers.
+  // the meter under the pointer (s.hover = 'L0', 'L1', 'Lear', 'R0', 'R1', 'Rear'), or all with s.numbers.
   const NK = 0.6;
   const row = (side, k, img, frac, liq, segs, value, max) => {
-    const y = rows[k], id = (side === L ? 'L' : 'R') + k;
+    const y = k === 'ear' ? CC.ear.row : rows[k], id = (side === L ? 'L' : 'R') + k;
     ccIcon(g, img, side.icon + is / 2, y + mh / 2, is);
     ccMeter(g, side.x, y, mw, mh, frac, liq, segs);
     CC.hit[id] = [side.x, y, mw, mh];
@@ -156,18 +170,21 @@ function compactHud(s, font) {
   row(L, 0, heart(false), s.health / 20, LIQUID.blood, 10, s.health, 20);
   if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
   row(L, 1, ccDrumstick(), s.food / 20, LIQUID.broth, 10, s.food, 20);
-  row(L, 2, armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
+  if (showArmor) row(L, 'ear', armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
   // Breath: the bubbles (full above water, draining under it). A Create backtank adds its air on top, like absorption
   // on health: a copper layer from the left over tank / capacity, drained first (the vanilla air stays full meanwhile),
   // then the bubbles drain. The tank's time left (m:ss, as Create shows it) is always on the meter while it has air.
-  const tank = s.diving ? Math.max(0, s.tank) : 0, mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-  const tankTime = mmss(Math.ceil(tank)), hovered = s.numbers || s.hover === 'R2';
-  row(Rt, 2, tank > 0 ? ccBacktank() : air(s.air < 0.15), s.air, LIQUID.air, 10, tank > 0 ? tankTime : Math.ceil(s.air * 10), tank > 0 ? null : 10);
-  if (tank > 0 && !hovered) {
-    ccMeter(g, Rt.x, rows[2], mw * tank / s.tankMax, mh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
-    ccNumber(g, tankTime, Rt.x + mw / 2 - ccNumberWidth(tankTime, NK) / 2, rows[2] + mh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
+  // Shown (the right ear) only under water, as the game's air row.
+  const mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+  const tankTime = mmss(Math.ceil(tank)), hovered = s.numbers || s.hover === 'Rear', ey = CC.ear.row;
+  if (showBreath) {
+    row(Rt, 'ear', tank > 0 ? ccBacktank() : air(s.air < 0.15), s.air, LIQUID.air, 10, tank > 0 ? tankTime : Math.ceil(s.air * 10), tank > 0 ? null : 10);
+    if (tank > 0 && !hovered) {
+      ccMeter(g, Rt.x, ey, mw * tank / s.tankMax, mh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
+      ccNumber(g, tankTime, Rt.x + mw / 2 - ccNumberWidth(tankTime, NK) / 2, ey + mh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
+    }
   }
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
