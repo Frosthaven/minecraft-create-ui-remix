@@ -269,7 +269,7 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
  *  recharging). ready: charges ready (fractional), n: the charge count. */
 function ccDashDial(g, cx, cy, ready, n) {
   const r = 6.2, B = 1.1, R1 = r + B, tier = rollTier(ready), col = tier === 'grey' ? '#5a5e64' : ROLL_TIERS[tier];
-  circle(g, cx, cy, R1 + 0.9); g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.8; g.stroke();   // the recess
+  circle(g, cx, cy, R1 + 0.25); g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.4; g.stroke();   // the recess, thin
   circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#55575b'], [0.35, '#36383c'], [1, '#1b1c1f']]); g.fill();
   rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
@@ -288,7 +288,7 @@ function ccDashDial(g, cx, cy, ready, n) {
     const lit = ready - k;
     if (lit <= 0) break;
     const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
-    const a2 = a0 + (a1 - a0) * Math.min(1, lit), p0 = r - 0.25, p1 = R1 + 0.35;
+    const a2 = a0 + (a1 - a0) * Math.min(1, lit), p0 = r, p1 = R1;   // within the rim: no thicker than the orbs'
     const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
     g.save(); g.shadowColor = col; g.shadowBlur = 1.6; seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, mixHex(col, '#ffffff', 0.4)], [1, mixHex(col, '#000000', 0.3)]]); g.fill(); g.restore();
     seg(); g.strokeStyle = 'rgba(0,0,0,0.8)'; g.lineWidth = 0.25; g.stroke();
