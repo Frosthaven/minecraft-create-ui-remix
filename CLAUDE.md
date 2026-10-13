@@ -132,8 +132,8 @@ it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws 
 - Statuses (`hud-compact-status.js`): heart effects recolour health (poison, wither, frozen), hardcore crimson trim,
   shake at 4 health or less, damage flash, regeneration sweep; Hunger effect spoils the broth; AppleSkin's food
   preview (what held food restores) pulses past the fill; riding swaps food for the mount's health (horse icon) and a
-  charging jump turns the XP pipe into the jump gauge (vanilla swaps both); Iron's cast progress is a thin pipe over
-  the sockets; attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
+  charging jump turns the XP pipe into the jump gauge (vanilla swaps both); Iron's cast progress is its own small plate
+  above the bar (only while casting); attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
   while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
   screen is open.

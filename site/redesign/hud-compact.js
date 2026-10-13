@@ -230,9 +230,9 @@ function compactHud(s, font) {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) mcText(g, font, t, tx + dx, ty + dy, 1, '#000000');
     mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
   }
-  ccCastPipe(g, s);
   const [sx, sy] = CC.slot(s.slot);
   ccAttackShade(g, s, [sx, sy]);
   g.drawImage(selection(), sx - 3, sy - 3, 24, 23);
+  ccCastWidget(g, s);
   return c;
 }
