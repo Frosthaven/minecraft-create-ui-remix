@@ -140,7 +140,8 @@ tap('comfort', () => { st.comfort = !st.comfort; press('comfort', st.comfort); i
 flag('mekasuit', 'mekasuit', v => v ? 0 : 0.65); flag('steampunk', 'steampunk');
 tap('aircraft', () => { st.aircraft = !st.aircraft; press('aircraft', st.aircraft); st.engine = st.aircraft ? 0.7 : null; }); flag('train', 'train', v => v != null ? null : 0.55);
 flag('flamingo', 'flamingo', v => v != null ? null : 0.8);
-flag('toolbox', 'toolboxSlots', v => v.length ? [] : [4, 7]); flag('schematic', 'schematicSlot', v => v != null ? null : 6);
+// Toolbox slots: marks slots 5 and 8 and selects 5, to show a selected toolbox slot too.
+tap('toolbox', () => { const on = !st.toolboxSlots.length; st.toolboxSlots = on ? [4, 7] : []; press('toolbox', on); if (on) st.slot = 4; }); flag('schematic', 'schematicSlot', v => v != null ? null : 6);
 tap('artifactCd', () => {
   st.artifactCooldowns = [{ color: '#7ad0ff', left: 1 }, { color: '#ffb347', left: 0.6 }];
   const t0 = performance.now(), step = () => { const k = (performance.now() - t0) / 3000;
