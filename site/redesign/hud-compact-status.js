@@ -6,9 +6,9 @@
 //     past the food), in light cream against the orange broth; the Hunger effect turns the broth spoiled olive; holding food shows
 //     what it would restore (AppleSkin), a pale pulsing band past the fill.
 //   The heart icon follows the effect (poisoned, withered, frozen), as vanilla's hearts do.
-//   Riding: the mount's health replaces food (vanilla hides food then); charging a jump turns the XP pipe into the
-//     jump gauge (vanilla swaps the XP bar for the jump bar).
-//   Casting (Iron's): a small plate above the bar with a mana pipe while a spell charges. Attack cooldown (hotbar mode): a shade
+//   Riding: the mount's health replaces food (vanilla hides food then). The XP pipe is shared: a charging jump, a
+//     camel's dash cooldown and a charging spell (Iron's) take it over, the level window showing their icon.
+//   Attack cooldown (hotbar mode): a shade
 //   over the selected socket that lifts as the swing recharges. Creative: health, food, armor and air hide.
 
 const CC_JUMP = ['#fff2a8', '#e0a020', '#5a3808'];
@@ -80,18 +80,6 @@ function ccHorse() {
   g.beginPath(); g.moveTo(3.2, 8.4); g.lineTo(3.3, 4.3); g.quadraticCurveTo(3.5, 2, 5.4, 1.4); g.strokeStyle = '#2a160a'; g.lineWidth = 0.9; g.stroke();
   circle(g, 6.6, 3.2, 0.4); g.fillStyle = '#0a0604'; g.fill();
   return c;
-}
-/** Iron's cast progress: its own small plate floating above the raised band while a spell charges (the plate's
- *  style: iron, lit rim, the bar's corner radius), the flask icon and a mana pipe like the band's. */
-function ccCastWidget(g, s) {
-  if (s.cast == null) return;
-  const w = 64, h = 7, x = -w / 2, y = CC.plate.mid - h - 2.5, r = CC.plate.r;
-  const plate = () => rrect(g, x, y, w, h, r);
-  g.save(); g.translate(0, 0.6); plate(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill(); g.restore();
-  plate(); g.fillStyle = iron(g, y, y + h); g.fill(); ironSurface(g, plate);
-  rim(g, plate, y, y + h, P.brassHi, 0.35);
-  ccIcon(g, ccFlask(MANA.irons), x + 5, y + h / 2, 4.4);
-  ccMeter(g, x + 9, y + (h - 3.2) / 2, w - 12, 3.2, s.cast, MANA.irons, 10);
 }
 /** Attack cooldown (hotbar mode): a shade over the selected socket's well, lifting as the swing recharges. */
 function ccAttackShade(g, s, [sx, sy]) {

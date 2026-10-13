@@ -170,14 +170,18 @@ function compactHud(s, font) {
   // its left end: the meters' small digits, a rounded rectangle like the plate (not a pill), inside the section's edge.
   const X = CC.xp, LK = 0.6, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 3, 8);
   const wh = 5, wy = X.y + X.h / 2 - wh / 2;
-  // Riding and charging a jump: the pipe is the jump gauge (vanilla swaps the XP bar for the jump bar).
-  // A camel's dash cooldown uses the same bar (vanilla): a dim gauge refilling until it can dash again.
-  const jumping = s.riding && s.jump != null, cooling = s.riding === 'camel' && s.dash != null;
-  const [xf, xl] = cooling ? [s.dash, CC_COOLDOWN] : jumping ? [s.jump, CC_JUMP] : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
+  // The pipe is shared: casting a spell (Iron's), a camel's dash cooldown and a mount's jump charge take it over (vanilla
+  // already swaps the XP bar for the jump bar), and the level window shows that action's icon instead of the number.
+  const mounted = s.riding === 'camel' ? ccCamel : ccHorse;
+  const take = s.cast != null ? [s.cast, MANA.irons, () => ccFlask(MANA.irons)]
+    : s.riding === 'camel' && s.dash != null ? [s.dash, CC_COOLDOWN, ccCamel]
+    : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted] : null;
+  const [xf, xl] = take ? take : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
   ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, xf, xl, 18);
   rrect(g, X.x0, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
   rrect(g, X.x0 + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
-  ccNumber(g, txt, X.x0 + ww / 2 - tw / 2, wy + wh / 2 - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', null, LK);
+  if (take) ccIcon(g, take[2](), X.x0 + ww / 2, wy + wh / 2, wh - 1.2);
+  else ccNumber(g, txt, X.x0 + ww / 2 - tw / 2, wy + wh / 2 - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', null, LK);
   // Meters: every one the same size, with the HUD's own sprite as its icon.
   const { rows, meterH: mh, meterW: mw, icon: is } = CC, L = CC.left, Rt = CC.right;
   // Icons: each sprite trimmed to its drawing, one height (is), centred on its meter's middle.
@@ -244,6 +248,5 @@ function compactHud(s, font) {
   const [sx, sy] = CC.slot(s.slot);
   ccAttackShade(g, s, [sx, sy]);
   g.drawImage(selection(), sx - 3, sy - 3, 24, 23);
-  ccCastWidget(g, s);
   return c;
 }
