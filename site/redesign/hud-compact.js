@@ -11,16 +11,16 @@ const CX = 172, BOTTOM = 50, TOPM = 66;   // TOPM: room above the bar for the ga
 // socket / the dodge roll (18), 4, the plate's edge.
 const GAP = 4;
 const CC = {
-  plate: { x0: -165, x1: 165, wing: 28, mid: 21.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
+  plate: { x0: -165, x1: 165, wing: 28, mid: 23.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
   slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
   offhand: [-161, 30],
   rows: [33.5, 40.5], meterH: 4, meterW: 32, icon: 5.6,   // centred on the sockets' middle (y 39)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 99 },           // magic: Iron's mana, Ars mana (breath extends the band above)
-  ext: { l: [-140, -96], r: [96, 140], y: 23, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
+  ext: { l: [-140, -96], r: [96, 140], y: 25, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 23, h: 3.2, x0: -88.5, x1: 88.5 },   // the level window, then the pipe: nearly the centre plate's full width (±91)
+  xp: { y: 25, h: 3.2, x0: -88.5, x1: 88.5 },   // the level window, then the pipe: nearly the centre plate's full width (±91)
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
@@ -100,6 +100,8 @@ CC_DIGITS['+'] = '000010111010000';
 CC_DIGITS.s = '000000011010110'; CC_DIGITS.h = '100100110101101'; CC_DIGITS.m = '0000000000111101010110101';
 const CC_GLYPH_W = { m: 5 };
 const ccGlyphW = ch => CC_GLYPH_W[ch] || 3;
+/** Text colours by hue: bright, leaning toward a hue (the value), and a dimmer shade of it (the max). */
+const ccTint = hue => mixHex(hue, '#ffffff', 0.6), ccTintDim = hue => mixHex(mixHex(hue, '#ffffff', 0.35), '#5a5e66', 0.45);
 const ccNumberWidth = (s, k = 1) => ([...s].reduce((a, ch) => a + ccGlyphW(ch) + 1, 0) - 1) * k;
 /** s in the small font at (x, y) (glyphs 5 tall, 3 wide but m 5, 1 apart), each pixel k units; col a colour or a
  *  function of the character index (to colour parts); shadow: a dark copy one font pixel down-right, first. */
@@ -254,7 +256,7 @@ function compactHud(s, font) {
       // Dim the liquid behind the digits; not on the slim extension pipes (thinner than the digits: the shadow does).
       if (h >= 4) { rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill(); }
       const v = typeof value === 'string' ? value : String(Math.round(value)), t = max == null ? v : `${v}/${max}`;
-      ccNumber(g, t, x + w / 2 - ccNumberWidth(t, NK) / 2, y + h / 2 - 2.5 * NK, i => i < v.length ? '#ffffff' : '#9aa3ad',
+      ccNumber(g, t, x + w / 2 - ccNumberWidth(t, NK) / 2, y + h / 2 - 2.5 * NK, i => i < v.length ? ccTint(liq[1]) : ccTintDim(liq[1]),
         'rgba(0,0,0,0.85)', NK);
     }
   };
@@ -306,7 +308,7 @@ function compactHud(s, font) {
     ccIcon(g, ccBacktank(), Rt.iconC, ey + eh / 2, E.icon);
     ccMeter(g, ex, ey, ew, eh, tank / s.tankMax, ['#c98a5a', '#7a3e1c', '#2e1206'], 10);
     CC.hit.Rear = [ex, ey, ew, eh];
-    ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
+    ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, ccTint('#d9874a'), 'rgba(0,0,0,0.9)', NK);
   } else if (showBreath) row(Rt, 'ear', air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
   else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
   else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);

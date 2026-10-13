@@ -183,7 +183,7 @@ function ccOrbNumbers(g, cx, cy, lines) {
   const k = 0.6;
   lines.forEach(([v, max, col], i) => {
     const t = `${v}/${max}`, y = cy - (lines.length * 4) / 2 + i * 4.2;
-    ccNumber(g, t, cx - ccNumberWidth(t, k) / 2, y, j => j < String(v).length ? col : '#c4c9cf', 'rgba(0,0,0,0.9)', k);
+    ccNumber(g, t, cx - ccNumberWidth(t, k) / 2, y, j => j < String(v).length ? ccTint(col) : ccTintDim(col), 'rgba(0,0,0,0.9)', k);
   });
 }
 
@@ -201,7 +201,7 @@ function ccOrbs(g, s) {
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
       shake: ccShake(s)[1] });
     CC.hit.orbL = [ORB.lx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
-    if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, '#ffffff'], riding ? [s.mount, s.mountMax, '#f0c890'] : [s.food, 20, '#ffd08a']]);
+    if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, liq[1]], riding ? [s.mount, s.mountMax, CC_MOUNT[1]] : [s.food, 20, LIQUID.broth[1]]]);
   } else ccHousingCog(g, ORB.lx, ORB.y);   // creative: a cog pressed into the housing's face
   // Right: the mana pools (primary the liquid, the other the crescent), breath as the ring under water.
   const pools = [['irons', s.irons, MANA.irons, 200], ['ars', s.ars, MANA.ars, 150]].filter(p => p[1] != null);
@@ -214,7 +214,7 @@ function ccOrbs(g, s) {
   if (pools.length) {
     ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring });
     CC.hit.orbR = [ORB.rx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
-    if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], '#ffffff']));
+    if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], p[2][1]]));
   } else if (ring) ccOrb(g, ORB.rx, ORB.y, { ring });   // no mana mod: an empty orb still carries the ring
   else ccHousingCog(g, ORB.rx, ORB.y);                 // no mana mod: a cog pressed into the housing's face
   // MekaSuit energy: a slim upright gauge between the offhand slot and the health orb, filling from the bottom.
@@ -228,6 +228,6 @@ function ccOrbs(g, s) {
   // The backtank's time, always on (players rely on it), under the right orb's ring.
   if (breath && tank > 0) {
     const t = `${Math.floor(Math.ceil(tank) / 60)}:${String(Math.ceil(tank) % 60).padStart(2, '0')}`;
-    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y + ORB.r + ORB.bezel - 3.5, '#ffffff', 'rgba(0,0,0,0.95)', 0.6);
+    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y + ORB.r + ORB.bezel - 3.5, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6);
   }
 }

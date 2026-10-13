@@ -71,7 +71,7 @@ function ccInstruments(g, s) {
     const cx = cur + cell / 2 - 0.5, cy = y + h / 2; cur += cellW(it);
     if (it === 'ghost') {   // a pale ghost (web map viewers) and how many
       ccInstruments.ghost(g, cx, cy);
-      return ccNumber(g, String(s.followers), cx + 4, cy - 1.6, '#dcebff', 'rgba(0,0,0,0.8)', 0.625);
+      return ccNumber(g, String(s.followers), cx + 4, cy - 1.6, ccTint('#9ac8ff'), 'rgba(0,0,0,0.8)', 0.625);
     }
     if (it === 'clock') return ccDial(g, cx, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
     if (it === 'compass') return ccDial(g, cx, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
