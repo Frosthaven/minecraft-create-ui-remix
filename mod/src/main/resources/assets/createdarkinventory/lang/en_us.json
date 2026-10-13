@@ -1,4 +1,17 @@
 {
   "key.categories.createdarkinventory": "Create UI Remix",
-  "key.createdarkinventory.hud_numbers": "Show HUD numbers (hold)"
+  "key.createdarkinventory.hud_numbers": "Show HUD numbers (hold)",
+  "createdarkinventory.configuration.title": "Create UI Remix",
+  "createdarkinventory.configuration.section.createdarkinventory.client.toml": "Create UI Remix",
+  "createdarkinventory.configuration.section.createdarkinventory.client.toml.title": "Create UI Remix",
+  "createdarkinventory.configuration.hud": "Action bar",
+  "createdarkinventory.configuration.mobBars": "Mob health bars",
+  "createdarkinventory.config.meter_display": "Meter display",
+  "createdarkinventory.config.primary_mana": "Primary mana pool",
+  "createdarkinventory.config.hud_scale": "Action bar size",
+  "createdarkinventory.config.mob_bars": "Show mob health bars",
+  "createdarkinventory.config.mob_bar_range": "Range (blocks)",
+  "createdarkinventory.config.mob_bars_hostile": "Hostile mobs",
+  "createdarkinventory.config.mob_bars_not_hostile": "Other mobs",
+  "createdarkinventory.config.mob_bars_players": "Players"
 }

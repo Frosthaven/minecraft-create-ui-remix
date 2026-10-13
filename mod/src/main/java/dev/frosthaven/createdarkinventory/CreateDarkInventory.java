@@ -7,6 +7,10 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.InterModComms;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.InterModEnqueueEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
@@ -43,7 +47,9 @@ public final class CreateDarkInventory {
     private static final int DME_DEFAULT_BOTTOM = 21; // DME: y = height - 19 - Y, default Y 2
     private static final int RAISE = 32; // above the 28 px tall icon buttons, with a gap
 
-    public CreateDarkInventory(IEventBus modBus) {
+    public CreateDarkInventory(IEventBus modBus, ModContainer container) {
+        container.registerConfig(ModConfig.Type.CLIENT, UiConfig.SPEC);
+        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         modBus.addListener(InterModEnqueueEvent.class, event ->
                 InterModComms.sendTo(DME, "dme-shaderblacklist", () -> "StockKeeperRequestScreen:drawItemCount"));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, CreateDarkInventory::moveDarkModeButton);
