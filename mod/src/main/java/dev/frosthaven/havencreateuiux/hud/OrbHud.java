@@ -88,13 +88,9 @@ final class OrbHud {
     // ---- Right: the mana pools, the ring ----
     private static void right(GuiGraphics g, HudFrame f) {
         double cx = tx(RX), cy = ty(OY);
-        String ring = f.showBreath ? (f.tank != null && f.tankShown > 0 ? "tank" : "air") : f.flamingo != null ? "flamingo" : f.hull != null ? "hull" : null;
-        double ringFrac = ring == null ? 0 : switch (ring) {
-            case "tank" -> f.tankShown / Math.max(1, f.tank[1]);
-            case "air" -> f.airShown;
-            case "flamingo" -> f.flamingo;
-            default -> f.hull;
-        };
+        // The ring is breathing only (the Helium Flamingo and an aircraft's hull are gear statuses in the buffs line).
+        String ring = f.showBreath ? (f.tank != null && f.tankShown > 0 ? "tank" : "air") : null;
+        double ringFrac = ring == null ? 0 : ring.equals("tank") ? f.tankShown / Math.max(1, f.tank[1]) : f.airShown;
         var pools = f.pools();
         if (pools.isEmpty() && ring == null) { orbCell(g, "cog", cx, cy); return; }
         orbCell(g, "bezelR", cx, cy);

@@ -360,8 +360,6 @@ function compactHud(s, font) {
     row(Rt, 0, ccBacktank(), tank / s.tankMax, CC_TANK, 10, null, null);
     ccNumber(g, tankTime, Rt.x + mw / 2 - ccNumberWidth(tankTime, NK) / 2, rows[0] + mh / 2 - 2.5 * NK, ccTint('#d9874a'), 'rgba(0,0,0,0.9)', NK);
   } else if (showBreath) row(Rt, 0, air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
-  else if (s.flamingo != null) row(Rt, 0, ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
-  else if (s.aircraft) row(Rt, 0, ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   else ccGroove(g, Rt.x, rows[0], mw, mh);
   });
   }
@@ -381,7 +379,7 @@ function compactHud(s, font) {
   ccAttackShade(g, s, [sx, sy]);   // over the item (the game: after the items)
   ccInstruments(g, s);
   side(offSide, () => ccHardcore(g, s));
-  if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit)) ccEffectsRail(g, s, s.effectIcons || {});
+  if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit) || Object.keys(s.gear || {}).length) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }
 

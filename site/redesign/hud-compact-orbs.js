@@ -87,7 +87,7 @@ function ccOrbRing(g, cx, cy, ring) {
     }
   }
 }
-/** A smooth ring meter's track (breath, backtank, Helium Flamingo, hull): the stone bezel under the ring darkened all
+/** A smooth ring meter's track (breath, the backtank or other breathing gear): the stone bezel under the ring darkened all
  *  the way round while the meter shows, so the bright stone does not wash out the fill or read as a full ring. Same
  *  band as the smooth ring (r - 0.35 .. r + bezel + 0.45). Armor needs none: its plates stand proud of the bezel, with a
  *  shadow and bolts. */
@@ -455,10 +455,9 @@ function ccOrbs(g, s) {
   const pools = [['irons', s.irons, MANA.irons, 200], ['ars', s.ars, MANA.ars, 150]].filter(p => p[1] != null);
   if (s.manaPrimary === 'ars') pools.reverse();
   const tank = ccTankLeft(s), breath = ccBreathShown(s);
-  // The right ring shows one thing: breath (or the backtank), else the Helium Flamingo's charge, else an aircraft's health.
-  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: CC_TANK_RING, smooth: true } : { frac: s.air, on: LIQUID.air, smooth: true })
-    : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO, smooth: true }
-    : s.aircraft ? { frac: s.hull, on: CC_HULL, smooth: true } : null;
+  // The right ring is breathing only: breath, or the backtank / other breathing gear (the Helium Flamingo and an
+  // aircraft's hull are gear statuses in the buffs line).
+  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: CC_TANK_RING, smooth: true } : { frac: s.air, on: LIQUID.air, smooth: true }) : null;
   if (pools.length) {
     ccOrbScaled(g, ORB.rx, () => ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring }));
     const hr = ORB.r * ORB.S;

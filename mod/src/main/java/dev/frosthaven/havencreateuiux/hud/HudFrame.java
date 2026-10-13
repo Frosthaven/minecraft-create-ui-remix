@@ -85,9 +85,9 @@ final class HudFrame {
         irons = HudStats.irons(p);
         ars = HudStats.ars(p);
         roll = HudStats.roll(p);
-        gear = hurtable ? GearStatus.read(p) : List.of();
         flamingo = hurtable ? HudExtras.flamingo(p) : null;
         hull = HudExtras.aircraftHealth(p);
+        gear = hurtable ? GearStatus.read(p, flamingo, hull) : List.of();   // the Flamingo and the hull are gear statuses
         ends = new Ends(orbs, lefty);
     }
 

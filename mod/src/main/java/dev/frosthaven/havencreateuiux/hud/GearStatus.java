@@ -31,8 +31,9 @@ final class GearStatus {
 
     private GearStatus() {}
 
-    /** The worn gear's statuses, the MekaSuit's energy first. */
-    static List<Gear> read(Player p) {
+    /** The worn gear's statuses, the MekaSuit's energy first; flamingo / hull: the Helium Flamingo's charge and an
+     *  aircraft's hull (HudExtras), or null. */
+    static List<Gear> read(Player p, Float flamingo, Float hull) {
         List<Gear> out = new ArrayList<>();
         HudExtras.Suit suit = HudExtras.mekaSuit(p);
         if (suit != null) out.add(new Gear("mekasuit", suit.frac(), Component.literal("MekaSuit energy"), suit.text(), suit.icon()));
@@ -51,6 +52,10 @@ final class GearStatus {
         } catch (RuntimeException | LinkageError | ReflectiveOperationException e) {
             HudLog.error("gear-adastra", "reading Ad Astra suits failed (their statuses left out)", e);
         }
+        if (flamingo != null) out.add(new Gear("flamingo", flamingo, Component.literal("Helium Flamingo charge"),
+                Component.literal(Math.round(flamingo * 100) + "%"), item("artifacts:helium_flamingo")));
+        if (hull != null && p.getVehicle() != null) out.add(new Gear("aircraft_hull", hull, Component.literal("Aircraft hull"),
+                Component.literal(Math.round(hull * 100) + "%"), p.getVehicle().getPickResult() != null ? p.getVehicle().getPickResult() : ItemStack.EMPTY));
         return out;
     }
 
@@ -115,6 +120,12 @@ final class GearStatus {
     private static Object context(ItemStack s) throws ReflectiveOperationException {
         if (modifyOnly == null) modifyOnly = Class.forName("earth.terrarium.common_storage_lib.context.impl.ModifyOnlyContext").getConstructor(ItemStack.class);
         return modifyOnly.newInstance(s);
+    }
+
+    private static ItemStack item(String id) {
+        var key = net.minecraft.resources.ResourceLocation.tryParse(id);
+        var it = key == null ? null : net.minecraft.core.registries.BuiltInRegistries.ITEM.get(key);
+        return it == null ? ItemStack.EMPTY : new ItemStack(it);
     }
 
     private static Component amount(long amount, long max, String unit) {

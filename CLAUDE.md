@@ -170,7 +170,8 @@ mods that reuse vanilla hearts look vanilla.
   Worn gear is a cyan socket each in the buffs line after the always-on buffs, all the same kind (cyan border and
   number), told apart by the worn item's icon: MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen,
   Ad Astra Jet Suit energy, a Create Jetpack in flight (the backtank air it drains out of water, and 3 s after; under
-  water the tank is breathing, on the ring) (`CC_GEAR`; page buttons per piece). Breathing gear is not a status: it takes the right
+  water the tank is breathing, on the ring), the Helium Flamingo's charge and an aircraft's hull (the ring is
+  breathing only; the aircraft's engine stays on the XP pipe) (`CC_GEAR`; page buttons per piece). Breathing gear is not a status: it takes the right
   orb's ring (bar mode: row 1) in the backtank's copper with its time left while in use, as the Create backtank does:
   Creating Space O2 backtanks (1 O2 a second), the Mekanism scuba tank (1 mB a tick under water), the Ad Astra space
   suit (1 mB per 12 ticks without air, again in water); page buttons Scuba tank / Space suit / O2 backtank (`AIR_GEAR`). The border drains with what is left, the percent under it (no sign); hover: the

@@ -21,13 +21,16 @@ const CC_EFFECT = {
  *  told apart by the worn item's icon (the game draws the item) and the tooltip's name. Units as each mod shows them. */
 const CC_GEAR = {
   mekJetpack: { name: 'Jetpack hydrogen', unit: 'mB', max: 24000, icon: 'jetpack' },
-  createJetpack: { name: 'Jetpack air', unit: 's', max: 900, icon: 'jetpack' },   // a Create Jetpack draining the backtank in flight
+  createJetpack: { name: 'Jetpack air', unit: 's', max: 900, icon: 'jetpack' },
+  flamingo: { name: 'Helium Flamingo charge', unit: '%', max: 100, icon: 'flamingo' },   // Artifacts (off the ring)
+  aircraftHull: { name: 'Aircraft hull', unit: '%', max: 100, icon: 'plane' },          // Immersive Aircraft (off the ring)   // a Create Jetpack draining the backtank in flight
   jetSuitEnergy: { name: 'Jet Suit energy', unit: 'E', max: 1000000, icon: 'jetsuit' },
 };
 /** The preview's gear icons (the game draws the worn item): 16x16 pixel drawings. */
 const CC_GEAR_ICONS = {};
 function ccGearIcon(name) {
   if (CC_GEAR_ICONS[name]) return CC_GEAR_ICONS[name];
+  if (name === 'flamingo' || name === 'plane') return (CC_GEAR_ICONS[name] = ccModIcon(name));   // the mods' own icons
   const c = document.createElement('canvas'); c.width = c.height = 16;
   const g = c.getContext('2d'), px = (col, ...r) => { g.fillStyle = col; for (const [x, y, w, h] of r) g.fillRect(x, y, w, h); };
   if (name === 'jetpack' || name === 'jetsuit') {   // two tanks on a harness, nozzles below

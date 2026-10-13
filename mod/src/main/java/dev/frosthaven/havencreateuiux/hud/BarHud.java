@@ -110,12 +110,6 @@ final class BarHud {
         } else if (f.showBreath) {
             meter(g, f, RIGHT_X, y0, "air", f.airShown);
             if (f.nums) numbers(g, RIGHT_X, y0, (int) Math.ceil(f.airShown * 10) + "/10", "air");
-        } else if (f.flamingo != null) {
-            meter(g, f, RIGHT_X, y0, "flamingo", f.flamingo);
-            if (f.nums) numbers(g, RIGHT_X, y0, Math.round(f.flamingo * 10) + "/10", "flamingo");
-        } else if (f.hull != null) {
-            meter(g, f, RIGHT_X, y0, "hull", f.hull);
-            if (f.nums) numbers(g, RIGHT_X, y0, Math.round(f.hull * 20) + "/20", "hull");
         } else groove(g, RIGHT_X, y0);
         var pools = f.pools();
         if (pools.isEmpty()) { gears(g, RIGHT_X + MW / 2, (ROWS[1] + ROWS[2] + MH) / 2); return; }

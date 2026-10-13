@@ -139,7 +139,9 @@ not a spectator.
   jetpack / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through `Capabilities.CHEMICAL.item()`
   (hydrogen); Ad Astra Jet Suit energy `getEnergy(stack, ModifyOnlyContext)` (full set; no separate fuel); a Create
   Jetpack in flight (`HudStats.jetpackFlight`: the tanks' air falling out of water, and 3 s after; the first tank as
-  the icon). The ring is breathing only (`HudStats.backtank`: under water or in lava).
+  the icon); the Helium Flamingo's charge (its item as the icon) and an aircraft's hull (the vehicle's pick item), from
+  `HudExtras.flamingo` / `aircraftHealth`. The ring and bar row 1 are breathing only (`HudStats.backtank`: under water
+  or in lava, plus AirGear's sources).
 - Attack cooldown: `CompactHud.attackVeil`, after the items (z 250), a cool grey veil over the selected item hanging
   from the slot's top, shrinking as the swing recharges, a light and an amber line at its bottom.
   `AirGear` puts breathing gear on the ring (the frame's `tank`, seconds {left, capacity}), shown while in use (under

@@ -31,12 +31,12 @@
   <p>Mods in this pack that draw at the hotbar or change its rows (read from their code; third row of buttons):
      Farmer's Delight Nourishment gilds the food broth and Comfort runs a slow sheen along health; worn gear is a cyan
      status after the always-on buffs (the worn item as its icon, the border draining with what is left, the percent):
-     MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen, Ad Astra Jet Suit energy, and a Create Jetpack
-     in flight (the backtank's air it drains, out of water, and 3 s after); breathing gear takes the right orb's ring
-     (bar mode: its row 1) in the backtank's copper with its time left, while in use (under water, without breathable
-     air, or while its air falls, and 3 s after): the Create backtank, Creating Space O2 backtanks, the Mekanism scuba
-     tank, the Ad Astra space suit; an aircraft's health takes the right extension and its engine the XP
-     pipe; a Create train's speed takes the XP pipe; the Helium Flamingo's charge takes the right extension; the
+     MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen, Ad Astra Jet Suit energy, a Create Jetpack
+     in flight (the backtank's air it drains, out of water, and 3 s after), the Helium Flamingo's charge and an
+     aircraft's hull; the right orb's ring (bar mode: its row 1) is breathing only, in the backtank's copper with its
+     time left while in use (under water, without breathable air, or while its air falls, and 3 s after): the Create
+     backtank, Creating Space O2 backtanks, the Mekanism scuba tank, the Ad Astra space suit; an aircraft's engine and
+     a Create train's speed take the XP pipe; the
      steampunk armor's clock and compass and Artifacts cooldowns move to a small instrument plate above the bar (as
      vanilla places them they would cover the wings); Create's toolbox and schematic slot marks sit on the sockets,
      which keep vanilla's exact item positions.</p>
@@ -69,9 +69,9 @@
   <button id="gear_jetSuitEnergy" aria-pressed="false" title="Ad Astra Jet Suit: energy, a cyan status">Jet Suit</button>
   <button id="air_o2Tank" aria-pressed="false" title="Creating Space oxygen backtank in use: its O2 on the ring, time left (1 O2 a second)">O2 backtank</button>
   <button id="jetpackFly" aria-pressed="false" title="Create Jetpack in flight: the backtank's air it drains, a cyan status (not the breathing ring)">Jetpack flight</button>
-  <button id="aircraft" aria-pressed="false" title="Immersive Aircraft: hull health and engine">Aircraft</button>
+  <button id="aircraft" aria-pressed="false" title="Immersive Aircraft: hull health (a cyan status) and engine (the XP pipe)">Aircraft</button>
   <button id="train" aria-pressed="false" title="Create train controls: speed">Train</button>
-  <button id="flamingo" aria-pressed="false" title="Artifacts Helium Flamingo charge">Helium Flamingo</button>
+  <button id="flamingo" aria-pressed="false" title="Artifacts Helium Flamingo charge: a cyan status">Helium Flamingo</button>
   <button id="steampunk" aria-pressed="false" title="Immersive Armors steampunk chestplate: clock and compass">Steampunk armor</button>
   <button id="artifactCd" title="Artifacts item cooldowns">Artifact cooldown</button>
   <button id="toolbox" aria-pressed="false" title="Create toolbox-linked hotbar slots">Toolbox slots</button>
@@ -234,8 +234,9 @@ tap('jetpackFly', () => {
     jetOff = setTimeout(() => { delete st.gear.createJetpack; render(); }, 3000);
   }
 });
-tap('aircraft', () => { st.aircraft = !st.aircraft; press('aircraft', st.aircraft); st.engine = st.aircraft ? 0.7 : null; }); flag('train', 'train', v => v != null ? null : 0.55);
-flag('flamingo', 'flamingo', v => v != null ? null : 0.8);
+tap('aircraft', () => { st.aircraft = !st.aircraft; press('aircraft', st.aircraft); st.engine = st.aircraft ? 0.7 : null;   // engine: the XP pipe
+  if (st.aircraft) st.gear.aircraftHull = st.hull; else delete st.gear.aircraftHull; });   // hull: a gear status flag('train', 'train', v => v != null ? null : 0.55);
+tap('flamingo', () => { const on = !('flamingo' in st.gear); if (on) st.gear.flamingo = 0.8; else delete st.gear.flamingo; press('flamingo', on); });   // a gear status
 // Toolbox slots: marks slots 5 and 8 and selects 5, to show a selected toolbox slot too.
 tap('toolbox', () => { const on = !st.toolboxSlots.length; st.toolboxSlots = on ? [4, 7] : []; press('toolbox', on); if (on) st.slot = 4; }); flag('schematic', 'schematicSlot', v => v != null ? null : 6);
 tap('artifactCd', () => {
