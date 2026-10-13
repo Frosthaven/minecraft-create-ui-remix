@@ -39,7 +39,9 @@ final class HudFrame {
     final Float flamingo, hull;
     final List<GearStatus.Gear> gear;   // worn gear's statuses (cyan, in the effects rail): MekaSuit energy, fuel, oxygen
     final boolean primaryArs;
-    final double side;   // the side bars' size (config)
+    final double side;   // the side bars' size: the config's times WING_BASE
+    /** The wings' base size: their designed size times this is Side bars size 1.0 (the page's CC_WING_BASE). */
+    static final double WING_BASE = 0.85;
     final Ends ends;
 
     HudFrame(Minecraft mc, LocalPlayer p, float partial, boolean numbersKey) {
@@ -48,12 +50,12 @@ final class HudFrame {
         now = Util.getMillis();
         orbs = UiConfig.METER_DISPLAY.get() == UiConfig.MeterDisplay.ORBS;
         primaryArs = UiConfig.PRIMARY_MANA.get() == UiConfig.PrimaryMana.ARS;
-        side = UiConfig.SIDE_SCALE.get();
+        side = UiConfig.SIDE_SCALE.get() * WING_BASE;
         hurtable = mc.gameMode != null && mc.gameMode.canHurtPlayer();
         lefty = p.getMainArm() == HumanoidArm.LEFT;
         nums = numbersKey || mc.screen != null;
         underwater = p.isEyeInFluid(FluidTags.WATER);
-        tank = HudStats.backtank(p, underwater);
+        tank = AirGear.read(p, underwater);   // the Create backtank or other breathing gear in use: seconds {left, capacity}
         int air = p.getAirSupply(), maxAir = p.getMaxAirSupply();
         armor = p.getArmorValue();
         showArmor = hurtable && armor > 0;

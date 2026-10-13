@@ -1,7 +1,6 @@
 package dev.frosthaven.havencreateuiux.hud;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,12 +17,10 @@ import net.neoforged.neoforge.capabilities.ItemCapability;
  * <ul>
  *   <li>Mekanism jetpack: hydrogen, its chemical tank 0 (Capabilities.CHEMICAL's item capability; its HUD's rule).</li>
  *   <li>MekaSuit chestplate with the jetpack unit enabled: hydrogen, tank 0 (ModuleJetpackUnit's HUD element).</li>
- *   <li>Mekanism scuba tank: oxygen, tank 0. (The MekaSuit's breathing unit makes oxygen from energy: no tank.)</li>
- *   <li>Ad Astra space suits with the full set worn: oxygen (SpaceSuitItem.getOxygenAmount over the chestplate's tank,
- *       its overlay's rule); the Jet Suit also its energy (JetSuitItem.getEnergy). The Jet Suit has no separate fuel.</li>
- *   <li>Creating Space oxygen backtanks (copper, netherite) as the chestplate: O2 (OxygenBacktankUtil, its
- *       remaining_oxygen layer's rule).</li>
+ *   <li>Ad Astra Jet Suit (full set): its energy (JetSuitItem.getEnergy). The Jet Suit has no separate fuel.</li>
  * </ul>
+ * Breathing gear (the Mekanism scuba tank, Ad Astra space suit oxygen, Creating Space O2 backtanks) is not a status: it
+ * takes the right orb's ring like the Create backtank ({@link AirGear}).
  * Every reader returns nothing when its mod is absent (logged once).
  */
 final class GearStatus {
@@ -48,25 +45,19 @@ final class GearStatus {
         } catch (RuntimeException | LinkageError | ReflectiveOperationException e) {
             HudLog.error("gear-adastra", "reading Ad Astra suits failed (their statuses left out)", e);
         }
-        try {
-            creatingSpace(p, out);
-        } catch (RuntimeException | LinkageError | ReflectiveOperationException e) {
-            HudLog.error("gear-creatingspace", "reading Creating Space oxygen backtanks failed (its status left out)", e);
-        }
         return out;
     }
 
     // --- Mekanism -------------------------------------------------------------------------------------------------
 
     private static void mekanism(Player p, List<Gear> out) {
-        Class<?> jetpack = Reflect.cls("mekanism.common.item.gear.ItemJetpack"), scuba = Reflect.cls("mekanism.common.item.gear.ItemScubaTank"),
+        Class<?> jetpack = Reflect.cls("mekanism.common.item.gear.ItemJetpack"),
                 suit = Reflect.cls("mekanism.common.item.gear.ItemMekaSuitArmor");
         if (jetpack == null) return;
         for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.HEAD}) {
             ItemStack s = p.getItemBySlot(slot);
             Object item = s.getItem();
             if (jetpack.isInstance(item)) tank(s, "mek_jetpack", "Jetpack hydrogen", out);
-            else if (scuba.isInstance(item)) tank(s, "mek_scuba", "Scuba tank oxygen", out);
             else if (suit.isInstance(item) && slot == EquipmentSlot.CHEST && jetpackUnit(item, s))
                 tank(s, "meka_jetpack", "MekaSuit jetpack hydrogen", out);
         }
@@ -80,15 +71,19 @@ final class GearStatus {
 
     /** A Mekanism item's chemical tank 0 (amount / capacity), as its HUD reads it. */
     private static void tank(ItemStack s, String id, String name, List<Gear> out) {
+        long[] c = chemical(s);
+        if (c != null) out.add(new Gear(id, (float) c[0] / c[1], Component.literal(name), amount(c[0], c[1], "mB"), s));
+    }
+    /** A Mekanism item's chemical tank 0: {amount, capacity} (mB), or null. */
+    static long[] chemical(ItemStack s) {
         Object multi = Reflect.getStatic("mekanism.common.capabilities.Capabilities", "CHEMICAL");
-        if (!(Reflect.call(multi, "item") instanceof ItemCapability<?, ?> cap)) return;
+        if (!(Reflect.call(multi, "item") instanceof ItemCapability<?, ?> cap)) return null;
         @SuppressWarnings("unchecked") Object handler = s.getCapability((ItemCapability<Object, Void>) cap);
-        if (handler == null || ((Number) Reflect.call(handler, "getChemicalTanks")).intValue() <= 0) return;
+        if (handler == null || ((Number) Reflect.call(handler, "getChemicalTanks")).intValue() <= 0) return null;
         long max = ((Number) Reflect.call(handler, "getChemicalTankCapacity", 0)).longValue();
         Object stack = Reflect.call(handler, "getChemicalInTank", 0);
         long amount = stack == null ? 0 : ((Number) Reflect.call(stack, "getAmount")).longValue();
-        if (max <= 0) return;
-        out.add(new Gear(id, (float) amount / max, Component.literal(name), amount(amount, max, "mB"), s));
+        return max > 0 ? new long[] {amount, max} : null;
     }
 
     // --- Ad Astra -------------------------------------------------------------------------------------------------
@@ -99,12 +94,6 @@ final class GearStatus {
         ItemStack chest = p.getItemBySlot(EquipmentSlot.CHEST);
         Object item = chest.getItem();
         if (!suit.isInstance(item) || !Reflect.bool(Reflect.callStatic(suit.getName(), "hasFullSet", p))) return;
-        // Oxygen: the chestplate's tank (its overlay: getOxygenAmount over the limit of FluidAmounts.toPlatformAmount(tankSize)).
-        long amount = ((Number) Reflect.callStatic(suit.getName(), "getOxygenAmount", p)).longValue();
-        long size = ((Number) Reflect.get(item, "tankSize")).longValue();
-        long max = ((Number) Reflect.callStatic("earth.terrarium.common_storage_lib.resources.fluid.util.FluidAmounts", "toPlatformAmount", size)).longValue();
-        if (max > 0) out.add(new Gear("adastra_oxygen", (float) amount / max,
-                Component.literal("Space suit oxygen"), amount(amount, max, "mB"), chest));
         // The Jet Suit's energy (getEnergy(stack, new ModifyOnlyContext(stack)): a ValueStorage).
         Class<?> jet = Reflect.cls("earth.terrarium.adastra.common.items.armor.JetSuitItem");
         if (jet == null || !jet.isInstance(item)) return;
@@ -120,24 +109,6 @@ final class GearStatus {
     private static Object context(ItemStack s) throws ReflectiveOperationException {
         if (modifyOnly == null) modifyOnly = Class.forName("earth.terrarium.common_storage_lib.context.impl.ModifyOnlyContext").getConstructor(ItemStack.class);
         return modifyOnly.newInstance(s);
-    }
-
-    // --- Creating Space -------------------------------------------------------------------------------------------
-
-    private static Method maxOxygen, getOxygen;
-
-    private static void creatingSpace(Player p, List<Gear> out) throws ReflectiveOperationException {
-        Class<?> tank = Reflect.cls("com.rae.creatingspace.content.life_support.spacesuit.OxygenBacktankItem");
-        ItemStack chest = p.getItemBySlot(EquipmentSlot.CHEST);
-        if (tank == null || !tank.isInstance(chest.getItem())) return;
-        if (maxOxygen == null) {   // typed: maxOxygen has an (int) overload too
-            Class<?> util = Class.forName("com.rae.creatingspace.content.life_support.spacesuit.OxygenBacktankUtil");
-            maxOxygen = util.getMethod("maxOxygen", ItemStack.class);
-            getOxygen = util.getMethod("getOxygen", ItemStack.class);
-        }
-        int max = (int) maxOxygen.invoke(null, chest), o2 = (int) getOxygen.invoke(null, chest);
-        if (max > 0) out.add(new Gear("cs_oxygen", (float) o2 / max,
-                Component.literal("O2 backtank"), amount(o2, max, "O2"), chest));
     }
 
     private static Component amount(long amount, long max, String unit) {

@@ -7,6 +7,12 @@
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
 const CX = 222, BOTTOM = 50, TOPM = 90;
+/** The liquids a step brighter, to sit with Minecraft's lighter look: the mid tone toward white, the dark tone toward
+ *  the mid (hue and the light-to-dark depth kept). The mana pools more, up to the cast bar's overall value. */
+const ccLift = (liq, mid = 0.1, dark = 0.3) => [liq[0], mixHex(liq[1], '#ffffff', mid), mixHex(liq[2], liq[1], dark)];
+for (const k of Object.keys(LIQUID)) LIQUID[k] = ccLift(LIQUID[k]);
+MANA.irons = ccLift(MANA.irons, 0.16, 0.5); MANA.ars = ccLift(MANA.ars, 0.16, 0.5);
+const CC_XP = ccLift(['#d8ff9a', '#5fd02a', '#1d5a08']), CC_TANK_RING = ccLift(['#ffd9b0', '#c98a5a', '#5a2814']);
 const CC_TANK = ['#c98a5a', '#7a3e1c', '#2e1206'];   // Create's backtank: copper   // TOPM: room above the bar for the game's text (item name, action bar)
 // Three floating plates: the centre (hotbar and XP band, -91..91) and a wing plate each side (±96..±165), 5 px apart. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
 // socket / the dodge roll (18), 4, the plate's edge.
@@ -17,6 +23,9 @@ const GAP = 4;
 const CC_WING = { S: 2, anchor: 97, by: 49, top: 9.6, mid: 29.8, outer: 167 };
 /** Where the side bars attach (± from the centre), between the centre plate (±91) and the wings. */
 const CC_SIDE = 93.5;
+/** The wings' base size: their designed size times this is Side bars size 1.0 (the config multiplies it). */
+const CC_WING_BASE = 0.85;
+const ccSideK = s => (s.side || 1) * CC_WING_BASE;
 /** Draws f with a side bar's size k, scaled around (sign CC_SIDE, the bar's bottom). */
 function ccSide(g, sign, k, f) { if (k === 1) return f(); ccScaled(g, sign * CC_SIDE, BOTTOM, k, f); }
 /** A point of a side bar after its scaling: x, y. */
@@ -225,48 +234,6 @@ function ccLevelWindow(g, x, y, w, h) {
   rrect(g, x, y, w, h, 1.2); g.fillStyle = steel(g, y, y + h); g.fill();
   rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, 0.8); g.fillStyle = '#060708'; g.fill();
 }
-/** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
- *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
-function ccPlate(g, ears = {}) {
-  const x0 = ears.x0 ?? CC.plate.x0, x1 = ears.x1 ?? CC.plate.x1;   // the wings' outer ends (ccEnds)
-  const { wing, mid, step, r, sec } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
-  const inner = ears.inner || CC.plate.inner;   // the wings' inner ends (with orbs: just past the orb housings)
-  // One plate: a top edge of level runs [x from, x to, y] joined by S curves, rounded corners, its shadow, iron, a
-  // lit brass rim. Returns its path.
-  const plate = (runs, gradTop) => {
-    const xa = runs[0][0], xb = runs[runs.length - 1][1], top = gradTop ?? Math.min(...runs.map(q => q[2]));
-    const path = () => {
-      const y0 = runs[0][2], yl = runs[runs.length - 1][2];
-      g.beginPath(); g.moveTo(xa, b - r); g.lineTo(xa, y0 + r); g.quadraticCurveTo(xa, y0, xa + r, y0);
-      runs.forEach(([, xe, y], i) => {
-        if (i === runs.length - 1) return;
-        const [xs, , ny] = runs[i + 1], kk = (xs - xe) / 2;
-        g.lineTo(xe, y); g.bezierCurveTo(xe + kk, y, xs - kk, ny, xs, ny);
-      });
-      g.lineTo(xb - r, yl); g.quadraticCurveTo(xb, yl, xb, yl + r); g.lineTo(xb, b - r);
-      g.quadraticCurveTo(xb, b, xb - r, b); g.lineTo(xa + r, b); g.quadraticCurveTo(xa, b, xa, b - r); g.closePath();
-    };
-    g.save(); g.translate(0, -0.6); path(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
-    path(); g.fillStyle = iron(g, top, b); g.fill(); ironSurface(g, path);
-    return [path, top];
-  };
-  // A wing's raised tab (armor, breath) in a darker tone: from its outer S to the plate's inner edge.
-  const tab = (path, o0, edge, dir) => {
-    g.save(); path(); g.clip();
-    const oW = o0 + dir * step;
-    g.beginPath(); g.moveTo(oW, wing); g.bezierCurveTo(oW - dir * k, wing, o0 + dir * k, mid, o0, mid);
-    g.lineTo(edge, mid); g.lineTo(edge, wing); g.closePath(); g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
-    g.restore();
-  };
-  const R = ears.raise;   // bar mode: each wing one plate at this height, out to its edge
-  const left = plate(R != null ? [[x0, -inner, R]] : ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], -inner, mid]] : [[x0, -inner, wing]], ears.gradTop);
-  if (ears.left) tab(left[0], E.l[0], -inner, -1);
-  const right = plate(R != null ? [[inner, x1, R]] : ears.right ? [[inner, E.r[1], mid], [E.r[1] + step, x1, wing]] : [[inner, x1, wing]], ears.gradTop);
-  if (ears.right) tab(right[0], E.r[1], inner, 1);
-  const centre = plate([[-sec, sec, mid]]);
-  for (const [path, top] of [left, right, centre]) rim(g, path, top, b, P.brassHi, 0.35);
-}
-
 /** The whole action bar for a state; a canvas of logical 2 CX x (BOTTOM + TOPM). */
 function compactHud(s, font) {
   const [c, g] = hires(2 * CX, BOTTOM + TOPM);
@@ -280,15 +247,18 @@ function compactHud(s, font) {
   // is still full for a moment, and the segment must not blink out.
   const tank = ccTankLeft(s), showArmor = !s.creative && s.armor > 0, showBreath = ccBreathShown(s);
   const ends = CC.lay = ccEnds(s);
-  // The side bars at their own size (s.side, the config's "side bars size"): scaled around (±CC_SIDE, the bottom), so
+  // The side bars at their own size (CC_WING_BASE x the config's "side bars size", s.side): scaled around (±CC_SIDE, the bottom), so
   // they stay attached to the centre plate. The plate is drawn per part, each clipped to its side of the anchor.
-  const offSide = s.leftHanded ? 1 : -1, side = (sign, f) => ccSide(g, sign, s.side || 1, f);
-  const plateAll = () => ccPlate(g, { left: false, right: false,   // no raised tabs: bar mode puts armor and breath in a third row
-    inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB_H() : undefined,
-    raise: s.orbs ? null : CC_WING.top });
-  ccClipX(g, -CC_SIDE, CC_SIDE, plateAll);
-  side(-1, () => ccClipX(g, -1e3, -CC_SIDE, plateAll));
-  side(1, () => ccClipX(g, CC_SIDE, 1e3, plateAll));
+  const offSide = s.leftHanded ? 1 : -1, side = (sign, f) => ccSide(g, sign, ccSideK(s), f);
+  const plateAll = only => () => {
+    ccPlate(g, { x0: ends.x0, x1: ends.x1, gradTop: ccPlateGradTop(s), raise: s.orbs ? null : CC_WING.top, only });
+    if (only === 'wings' && s.orbs) { ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1); }   // as the plate texture has them; the joint fillets their inner sides
+  };
+  // The centre up to the joints, each wing from the anchor at its size, then the joints closing them into one casting.
+  ccClipX(g, -CC_SIDE, CC_SIDE, plateAll('centre'));
+  side(-1, () => ccClipX(g, -1e3, -CC_SIDE, plateAll('wings')));
+  side(1, () => ccClipX(g, CC_SIDE, 1e3, plateAll('wings')));
+  for (const sign of [-1, 1]) ccJoint(g, s, sign, ccSideK(s), ccPlateGradTop(s));
   // Orbs: the dash dial in its own housing at the wing's end, the plate's gradient (bars: inside the tall wing plate).
   if (s.orbs) side(-offSide, () => ccHousing(g, ends.dash, CC_DIAL.y, 0, ccDialR(), ORB.y - ORB_H(), (CC_DASH.r + CC_DASH.B) * CC_DIAL.S, CC_DIAL.S));
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
@@ -310,7 +280,7 @@ function compactHud(s, font) {
     : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted]
     : s.train != null ? [s.train, CC_TRAIN, () => ccModIcon('train')]      // Create's train HUD speed
     : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
-  const [xf, xl] = take ? take : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
+  const [xf, xl] = take ? take : [s.xp, CC_XP];
   ccMeter(g, X.x0, X.y, X.x1 - X.x0, X.h, xf, xl, 18, 'left', !take ? 'cloud' : s.cast != null ? 'mana' : undefined);   // XP: health's billows; a cast is mana: the galaxy
   // The window, centred on the pipe (which runs on behind it): small for the level's digits, larger while an icon
   // shows (so the icon reads).

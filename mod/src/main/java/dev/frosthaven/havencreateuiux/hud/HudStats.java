@@ -101,6 +101,9 @@ final class HudStats {
         return draining ? new float[] {total, Math.max(cap, total)} : null;
     }
 
+    /** The backtanks' air fell within TANK_DRAIN_SHOW (AirGear prefers a source whose air is falling). */
+    static boolean backtankFalling(long now) { return now - tankDrainAt < TANK_DRAIN_SHOW; }
+
     private static final java.util.Map<String, Method> METHODS = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Method NONE;
     static {

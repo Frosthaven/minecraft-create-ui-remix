@@ -8,9 +8,9 @@ version="${mod_version}"
 displayName="${mod_name}"
 description='''
 Haven's Create UI: the compact action bar (orbs or bars) with buffs and debuffs, cyan status icons for worn gear
-(MekaSuit energy, Mekanism jetpack hydrogen, scuba tank oxygen, Ad Astra suit oxygen and Jet Suit energy, Creating Space
-O2 backtanks), the Create backtank's air and time while diving or flying a Create Jetpack, and Dark Mode Everywhere
-fixes for Create and the haven-create-hud screens. Client only.
+(MekaSuit energy, Mekanism jetpack hydrogen, Ad Astra Jet Suit energy), breathing gear's air and time left on the
+ring while in use (Create backtank, also in Create Jetpack flight; Creating Space O2 backtanks; Mekanism scuba tank;
+Ad Astra space suit), and Dark Mode Everywhere fixes for Create and the haven-create-hud screens. Client only.
 '''
 
 [[mixins]]

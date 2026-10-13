@@ -98,6 +98,7 @@ final class OrbHud {
         if (pools.isEmpty() && ring == null) { orbCell(g, "cog", cx, cy); return; }
         orbCell(g, "bezelR", cx, cy);
         if (ring != null) {
+            orbCell(g, "ringTrack", cx, cy);   // the bezel darkened all round under the meter, so the stone does not wash it out
             double[] c = CompactAtlas.ring(ring);
             sector(g, ORBS, ORBS_W, ORBS_H, c[0], c[1], cx, cy, RING_HALF, TOP, TOP + TAU * clamp(ringFrac));
         }

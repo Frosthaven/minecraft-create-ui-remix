@@ -74,6 +74,14 @@ No player config edits needed; the instance config stays at DME's defaults.
 The HUD designed on the redesign page `hud-compact.html`, drawn by the mod while the pack's textures
 (`createhud:textures/gui/compact/{parts,plate_*}.png`, exported by `hud-compact-export.js`) are present and the player is
 not a spectator.
+- Paint order: ImmediatelyFast batches HUD blits and fills per render layer (one per texture, one for fills) and draws
+  the batches out of call order, which put the dash dial's chevrons (orbs atlas) under its housing (parts). Every
+  draw names its kind (`HudDraw.use`); a change of kind draws the batch first (`drawBatched`: `g.flush()` and IF's
+  `BatchingBuffers.tryForceDrawHudBuffers` while it batches). Immediate meshes (`sector`, `HudJoint`) flush first.
+- `HudJoint`: the plate joints (see the root CLAUDE.md), one immediate mesh per pass; the profile is cached per (mode,
+  side scale) and logged once. `CompactAtlas.checkPieces` logs any atlas piece that is blank or outside its texture.
+- `AirGear`: breathing gear on the ring (see the GearStatus note below). Side bars size: the config times
+  `HudFrame.WING_BASE` (0.85).
 - `CompactHud`: the layer `haven_create_ui_ux:compact_hud` (above vanilla's HOTBAR). Hides what it replaces in
   `RenderGuiLayerEvent.Pre`: vanilla hotbar, health, armor, food, vehicle health, air, XP bar and level, jump meter;
   `irons_spellbooks:mana_overlay`, `ars_nouveau:mana_hud`, `create:remaining_air`, AppleSkin's four layers. Draws at 1/8
@@ -123,11 +131,15 @@ not a spectator.
   hover tooltip while a screen is open; worn gear as cyan sockets in the buffs line (`GearStatus.Gear`: fraction, name,
   the mod's amount text, the worn item rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in
   `BUFF` / `DEBUFF`). `GearStatus` reads (bytecode of the pack's jars): MekaSuit energy (`HudExtras.mekaSuit`); Mekanism
-  jetpack / scuba tank / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through
-  `Capabilities.CHEMICAL.item()` (hydrogen / oxygen; the breathing unit stores none); Ad Astra: full suit set
-  (`SpaceSuitItem.hasFullSet`), oxygen `getOxygenAmount` over `FluidAmounts.toPlatformAmount(tankSize)`, Jet Suit energy
-  `getEnergy(stack, ModifyOnlyContext)` (the Jet Suit has no separate fuel); Creating Space `OxygenBacktankItem` as
-  chestplate: `OxygenBacktankUtil.getOxygen` / `maxOxygen(ItemStack)`. Hidden: Creating Space's
+  jetpack / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through `Capabilities.CHEMICAL.item()`
+  (hydrogen); Ad Astra Jet Suit energy `getEnergy(stack, ModifyOnlyContext)` (full set; no separate fuel).
+  `AirGear` puts breathing gear on the ring (the frame's `tank`, seconds {left, capacity}), shown while in use (under
+  water, without breathable air, or its amount fell in the last 3 s), the one falling now first, else Create backtank >
+  Creating Space > Mekanism scuba > Ad Astra (logged as "breathing ring: ..."): Create (`HudStats.backtank`); Creating
+  Space `OxygenBacktankItem` chest, `OxygenBacktankUtil.getOxygen` / `maxOxygen(ItemStack)`, 1 O2 a second
+  (CSEventHandler every 20 ticks); Mekanism `ItemScubaTank` chest with `CommonPlayerTickHandler.isScubaMaskOn`, tank 0,
+  1 mB a tick under water; Ad Astra space suit full set, `getOxygenAmount` over `FluidAmounts.toPlatformAmount(tankSize)`,
+  1 mB per 12 ticks without air (`OxygenApi.API.hasOxygen`) and per 12 with the eyes in water (`inventoryTick`). Hidden: Creating Space's
   `creatingspace:remaining_oxygen` layer (its O2 dial alone). Kept: Mekanism's top-left `MekanismHUD` (one layer for all
   its gear's lines, not separable) and Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
 

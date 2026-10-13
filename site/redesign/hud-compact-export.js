@@ -1,7 +1,7 @@
 // Compact HUD textures for the game (createhud:textures/gui/compact/*), drawn by the same functions as the page so
 // the game shows exactly the preview. haven-create-ui-ux's hud/ classes draw from them in 1/8 GUI px (one texel), so
 // every position here is a whole multiple of 1/8. KEEP IN STEP with CompactAtlas.java.
-//   plate_{bars,orbs}: 424 x 66 at (-212, -15) of the bar (bottom at 50). Orbs: with the housings
+//   plate_{bars,orbs}: 428 x 66 at (-214, -15) of the bar (bottom at 50; the wings' sloped ends reach ±212.2). Orbs: with the housings
 //     (the orbs are drawn at ORB.S x, so their domes rise to y -14); bars: the wings one plate each at CC_WING.top.
 //     The dash dial's housing (orbs) is a separate piece in parts, so the plate does not depend on which hand.
 //   parts (256 x 256):
@@ -37,7 +37,7 @@ const CCX_LIQ = {
   broth: LIQUID.broth, hunger: LIQUID.hunger, saturation: ['#fff4e2', '#e9c79c', '#6e4e30'],
   irons: MANA.irons, ars: MANA.ars, mount: CC_MOUNT, armor: ['#eef1f4', '#9aa0a6', '#3a3d41'], air: LIQUID.air,
   tank: CC_TANK, flamingo: CC_FLAMINGO, hull: CC_HULL,
-  xp: ['#d8ff9a', '#5fd02a', '#1d5a08'], jump: CC_JUMP, cooldown: CC_COOLDOWN, cast: MANA.irons, train: CC_TRAIN, engine: CC_ENGINE,
+  xp: CC_XP, jump: CC_JUMP, cooldown: CC_COOLDOWN, cast: MANA.irons, train: CC_TRAIN, engine: CC_ENGINE,
 };
 /** The liquid style a meter uses (bar mode, the XP pipe): health and the mount billow, food is broth, mana a galaxy. */
 const CCX_STYLE = { blood: 'cloud', poison: 'cloud', wither: 'cloud', frozen: 'cloud', absorb: 'cloud', mount: 'cloud',
@@ -49,7 +49,7 @@ const ORB_CELLS = ['blood', 'poison', 'wither', 'frozen', 'broth', 'hunger', 'br
   'glassL', 'glassR', 'front', 'divider', 'bezelL', 'bezelR', 'cog', 'exhaust',
   'glow_blood', 'glow_poison', 'glow_wither', 'glow_frozen', 'glow_broth', 'glow_hunger', 'glow_mount', 'glow_irons', 'glow_ars',
   ...CCX.dashTiers.map(t => 'dash_' + t),
-  ...CCX.dashTiers.flatMap(t => Array.from({ length: CCX.dashMaxN }, (_, i) => `ring_${t}_${i + 1}`))];
+  ...CCX.dashTiers.flatMap(t => Array.from({ length: CCX.dashMaxN }, (_, i) => `ring_${t}_${i + 1}`)), 'ringTrack'];
 const RING_CELLS = ['armor', 'armorHalf', 'tank', 'air', 'flamingo', 'hull'];
 const ccxCell = n => [28 + 32 * (n % 11), 34.5 + 32 * Math.floor(n / 11)];
 const ccxRing = m => [28 + 64 * m, 290.5];
@@ -86,6 +86,7 @@ function ccxOrbs() {
       else if (name === 'divider') disc(ox, () => ccOrbDivider(g, ox, oy));
       else if (name === 'bezelL' || name === 'bezelR') ccOrbBezel(g, ox, oy);
       else if (name === 'cog') ccHousingCog(g, ox, oy);
+      else if (name === 'ringTrack') ccOrbRingTrack(g, ox, oy);   // under a smooth ring meter, all the way round
       else if (name === 'exhaust') {   // on black: the game screen-blends it, clipped to the food half's glass
         g.fillStyle = '#000'; g.fillRect(ox - 16, oy - 16, 32, 32);
         g.save(); g.beginPath(); g.rect(ox, oy - ORB.r, ORB.r, 2 * ORB.r); g.clip(); circle(g, ox, oy, ORB.r); g.clip(); ccOrbExhaustPiece(g, ox, oy); g.restore();
@@ -102,7 +103,7 @@ function ccxOrbs() {
     at(ccxRing(m), 24, ox, ox => {
       if (name === 'armor') ccOrbRing(g, ox, oy, { frac: 1, on: CCX_LIQ.armor });
       else if (name === 'armorHalf') ccOrbRing(g, ox, oy, { frac: 1, on: CCX_LIQ.armor, half: true });
-      else ccOrbRing(g, ox, oy, { frac: 1, on: name === 'tank' ? ['#ffd9b0', '#c98a5a', '#5a2814'] : CCX_LIQ[name], smooth: true });
+      else ccOrbRing(g, ox, oy, { frac: 1, on: name === 'tank' ? CC_TANK_RING : CCX_LIQ[name], smooth: true });
     });
   });
   return c;
@@ -112,10 +113,10 @@ function ccxOrbs() {
 function compactExports() {
   const files = [];
   for (const [name, orbs] of [['bars', false], ['orbs', true]]) {
-    const [c, g] = hires(424, 66);
-    g.translate(212, 15);
+    const [c, g] = hires(428, 66);
+    g.translate(214, 15);
     const ends = ccEnds({ orbs });
-    ccPlate(g, { inner: orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: orbs ? ORB.y - ORB_H() : undefined, raise: orbs ? null : CC_WING.top });
+    ccPlate(g, { x0: ends.x0, x1: ends.x1, gradTop: ccPlateGradTop({ orbs }), raise: orbs ? null : CC_WING.top });
     if (orbs) { ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1); }
     files.push(['createhud: compact/plate_' + name, c]);
   }
@@ -132,6 +133,12 @@ function compactExports() {
   g.save(); g.beginPath(); g.rect(182, 92, 42, 38); g.clip(); g.translate(182 + 21, 92 - 12.5);
   ccHousing(g, 0, CC_DIAL.y, 0, ccDialR(), ORB.y - ORB_H(), (CC_DASH.r + CC_DASH.B) * CC_DIAL.S, CC_DIAL.S);
   g.restore();
+  // The joints' plate iron (HudJoint draws the fillet bands from it): world y -40..50 at atlas y 0..90, the whole
+  // bar's gradient for orbs (228, 0) and bars (242, 0), 12 wide each.
+  for (const [u, orbs] of [[228, true], [242, false]]) {
+    const area = () => { g.beginPath(); g.rect(u, 0, 12, 90); };
+    area(); g.fillStyle = plateIron(g, ccPlateGradTop({ orbs }) + 40, 90); g.fill(); ironSurface(g, area);
+  }
   const MW = CC.meterW;
   ccMeter(g, 0, 236, MW, 4, 0, CCX_LIQ.blood, 10);
   ccMeter(g, 0, 26, CC.xp.x1 - CC.xp.x0, CC.xp.h, 0, CCX_LIQ.xp, 18);

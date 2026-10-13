@@ -1,6 +1,7 @@
 package dev.frosthaven.havencreateuiux.hud;
 
 import static dev.frosthaven.havencreateuiux.hud.CompactAtlas.*;
+import static dev.frosthaven.havencreateuiux.hud.HudDraw.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,11 +81,13 @@ final class HudEffects {
         var pose = g.pose();
         pose.pushPose();
         pose.translate(x, y, 0);
+        use(g, PARTS);
         g.blit(PARTS, 0, 0, EFFECT_SUIT_U, EFFECT_V, SIZE, SIZE, PARTS_SIZE, PARTS_SIZE);
         if (su.icon() != null) {   // the item, 16 px, in the effect icon's 47-texel box at (17, 17)
             pose.pushPose();
             pose.translate(17, 17, 0);
             pose.scale(47 / 16f, 47 / 16f, 1);
+            use(g, ITEM);
             g.renderItem(su.icon(), 0, 0);
             pose.popPose();
         }
@@ -116,9 +119,11 @@ final class HudEffects {
         pose.translate(x, y, 0);
         pose.scale((float) m, (float) m, 1);
         boolean bad = e.getEffect().value().getCategory() == MobEffectCategory.HARMFUL, ambient = e.isAmbient();
+        use(g, PARTS);
         g.blit(PARTS, 0, 0, ambient ? EFFECT_AMBIENT_U : bad ? EFFECT_DEBUFF_U : EFFECT_BUFF_U, EFFECT_V, SIZE, SIZE, PARTS_SIZE, PARTS_SIZE);
+        use(g, EFFECT);
         g.blit(17, 17, 0, 47, 47, Minecraft.getInstance().getMobEffectTextures().get(e.getEffect()));
-        if (ambient) g.fill(0, 0, SIZE, SIZE, 0x59101216);
+        if (ambient) { use(g, FILL); g.fill(0, 0, SIZE, SIZE, 0x59101216); }
         else {
             int dur = e.isInfiniteDuration() ? -1 : e.getDuration();
             int start = dur < 0 ? 1 : START.merge(e.getEffect(), dur, Math::max);
@@ -146,6 +151,7 @@ final class HudEffects {
                 double d = Math.min(len, left);
                 if (d <= 0) break;
                 int x0 = s[0], y0 = s[1], x1 = (int) (s[0] + Math.signum(s[2] - s[0]) * d), y1 = (int) (s[1] + Math.signum(s[3] - s[1]) * d);
+                use(g, FILL);
                 g.fill(Math.min(x0, x1) - t / 2, Math.min(y0, y1) - t / 2, Math.max(x0, x1) + t / 2 + 1, Math.max(y0, y1) + t / 2 + 1, pass == 0 ? track : glow);
                 left -= d;
             }

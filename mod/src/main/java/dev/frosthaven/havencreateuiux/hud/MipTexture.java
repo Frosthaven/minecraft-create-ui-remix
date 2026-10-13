@@ -36,6 +36,7 @@ final class MipTexture extends AbstractTexture {
     public void load(ResourceManager rm) throws IOException {
         NativeImage base;
         try (InputStream in = rm.getResourceOrThrow(location).open()) { base = NativeImage.read(in); }
+        CompactAtlas.checkPieces(location, base);
         NativeImage[] levels = new NativeImage[LEVELS + 1];
         levels[0] = base;
         for (int i = 1; i <= LEVELS; i++) levels[i] = half(levels[i - 1]);

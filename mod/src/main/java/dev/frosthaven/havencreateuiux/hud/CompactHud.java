@@ -118,6 +118,7 @@ public final class CompactHud {
         if (w == 0) return;
         w += 3 * K;
         int x0 = -w / 2, y0 = y(MID - 9 - 2.5), cap = 4 * K;
+        use(g, PARTS);
         g.blit(PARTS, x0, y0, cap, IPLATE_H, IPLATE_U, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
         g.blit(PARTS, x0 + cap, y0, w - 2 * cap, IPLATE_H, IPLATE_U + cap, OVER_V, IPLATE_W - 2 * cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
         g.blit(PARTS, x0 + w - cap, y0, cap, IPLATE_H, IPLATE_U + IPLATE_W - cap, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
@@ -143,12 +144,15 @@ public final class CompactHud {
         }
         for (Object[] cd : cooldowns) {
             var pose = g.pose();
+            use(g, FILL);
             g.fill(cur + 6, y0 + 6, cur + 9 * K - 6, y0 + 9 * K - 6, 0xFF060708);
             pose.pushPose();
             pose.translate(cur + K, y0 + K, 0);
             pose.scale(K * 7f / 16, K * 7f / 16, 1);
+            use(g, ITEM);
             g.renderItem((ItemStack) cd[0], 0, 0);
             pose.popPose();
+            use(g, FILL);
             g.fill(cur + K, y0 + K, cur + 8 * K, y0 + K + (int) (7 * K * (float) cd[1]), 0x99000000);
             cur += 9 * K;
         }
@@ -161,6 +165,7 @@ public final class CompactHud {
         pose.pushPose();
         pose.translate(x + DIAL / 2f, y + DIAL / 2f, 0);
         pose.mulPose(Axis.ZP.rotation(a));
+        use(g, FILL);
         g.fill(-2, -DIAL / 2 + 10, 3, 0, argb);
         pose.popPose();
     }
@@ -172,6 +177,7 @@ public final class CompactHud {
     private static void render(GuiGraphics g, DeltaTracker delta) {
         if (!active()) return;
         MipTexture.install(TEXTURES);
+        beginOrder();
         var pose = g.pose();
         pose.pushPose();
         try {
@@ -193,8 +199,8 @@ public final class CompactHud {
         LocalPlayer p = mc.player;
         int cx = g.guiWidth() / 2, bottom = g.guiHeight();
         HudFrame f = new HudFrame(mc, p, delta, NUMBERS.isDown());
-        HudLog.changed("config", f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side, "config: meter display {}, primary mana {}, size {}, side bars size {}",
-                f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, f.side);
+        HudLog.changed("config", f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side, "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {})",
+                f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side);
         HudLog.changed("mode", (f.hurtable ? "survival" : "creative") + (f.lefty ? ", left-handed" : "") + (f.hardcore ? ", hardcore" : ""),
                 "mode: {}{}{}", f.hurtable ? "survival" : "creative (vitals hidden)", f.lefty ? ", left-handed (offhand on the right)" : "", f.hardcore ? ", hardcore (skull)" : "");
         // Mod extras, each read as the mod's own HUD reads it (HudExtras); null / -1 when absent or not showing.
@@ -218,9 +224,11 @@ public final class CompactHud {
         // The plate in three parts: the centre, and each wing at the side bars' size (attached at WING_ANCHOR).
         ResourceLocation plate = plate(f.orbs);
         int cut = x(-WING_ANCHOR) - PLATE_X, mid = PLATE_W - 2 * cut;   // each wing part: the plate's edge to the anchor
+        use(g, plate);
         g.blit(plate, x(-WING_ANCHOR), PLATE_Y, cut, 0, mid, PLATE_H, PLATE_W, PLATE_H);
         side(g, -1, f.side, () -> g.blit(plate, PLATE_X, PLATE_Y, 0, 0, cut, PLATE_H, PLATE_W, PLATE_H));
         side(g, 1, f.side, () -> g.blit(plate, x(WING_ANCHOR), PLATE_Y, cut + mid, 0, cut, PLATE_H, PLATE_W, PLATE_H));
+        HudJoint.draw(g, f.orbs, f.side);   // the fillets joining the centre to each wing at its size
         double offSide = f.lefty ? 1 : -1;   // the offhand's wing; the dash takes the other
 
         // Hotbar sockets, the offhand socket (its shield ghost while empty), the selection frame.
@@ -237,6 +245,7 @@ public final class CompactHud {
         if (schematic >= 0) part(g, SCHEMATIC_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * schematic), y(30));
         if (attack != null) {
             int sx = x(-88 + 20 * sel), sy = y(31), h = (int) (16 * K * (1 - attack));
+            use(g, FILL);
             g.fill(sx, sy, sx + 16 * K, sy + h, 0x8C000000);
             g.fill(sx, sy + h - 3, sx + 16 * K, sy + h, 0xCCFFBE5A);
         }
@@ -303,6 +312,7 @@ public final class CompactHud {
             double tw = textWidth(lvl, LEVEL_K) / K, ww = Math.max(tw + 3.6, 8.5);
             int wx = x(-ww / 2), wy = y(mid - LEVEL_H / 2), w = x(ww / 2) - wx, h = (int) Math.round(LEVEL_H * K);
             // The window in three slices (caps and a stretched middle), as wide as the number needs.
+            use(g, PARTS);
             g.blit(PARTS, wx, wy, WINDOW_CAP, h, WINDOW_U, 0, WINDOW_CAP, h, PARTS_SIZE, PARTS_SIZE);
             g.blit(PARTS, wx + WINDOW_CAP, wy, w - 2 * WINDOW_CAP, h, WINDOW_U + WINDOW_CAP, 0, WINDOW_W - 2 * WINDOW_CAP, h, PARTS_SIZE, PARTS_SIZE);
             g.blit(PARTS, wx + w - WINDOW_CAP, wy, WINDOW_CAP, h, WINDOW_U + WINDOW_W - WINDOW_CAP, 0, WINDOW_CAP, h, PARTS_SIZE, PARTS_SIZE);
@@ -346,6 +356,7 @@ public final class CompactHud {
 
     private static void slotItem(GuiGraphics g, Minecraft mc, LocalPlayer p, ItemStack stack, int x, int y, int seed) {
         if (stack.isEmpty()) return;
+        use(g, ITEM);
         g.renderItem(p, stack, x, y, seed);
         g.renderItemDecorations(mc.font, stack, x, y);
     }

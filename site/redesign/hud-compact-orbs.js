@@ -8,8 +8,8 @@
 const ORB = { tex: 0.67, housing: 15.5,   // housing: the housing's radius (r + bezel + 1.4: a dome hugging the orb)
     // tex: the orbs' texture strength (a third less than first drawn)
   S: 2,   // the orbs are drawn at S x their own units (r, housing, bezel...) around (lx|rx, y): twice the hotbar's scale
-  r: 13, y: 17, lx: -127.5, rx: 127.5, innerEnd: 97.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
-  // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
+  r: 13, y: 17, lx: -127.5, rx: 127.5, pull: 8,   // the wing plates join the centre at ±CC_SIDE (ccPlate); the
+  // housings' inner fillets land on the joined plate; pull: how far the wings moved in from their meter-bar layout
   bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)
 /** The housing's radius on the bar (scaled). */
 const ORB_H = () => ORB.housing * ORB.S;
@@ -23,6 +23,7 @@ function ccOrbScaled(g, cx, f) { g.save(); g.translate(cx, ORB.y); g.scale(ORB.S
 function ccOrb(g, cx, cy, { fill, over, crescent, ring }) {
   const r = ORB.r, split = crescent != null;
   ccOrbBezel(g, cx, cy);
+  if (ring && ring.smooth) ccOrbRingTrack(g, cx, cy);
   if (ring) ccOrbRing(g, cx, cy, ring);
   ccOrbGlassBack(g, cx, cy);
   g.save(); circle(g, cx, cy, r); g.clip();
@@ -86,6 +87,16 @@ function ccOrbRing(g, cx, cy, ring) {
     }
   }
 }
+/** A smooth ring meter's track (breath, backtank, Helium Flamingo, hull): the stone bezel under the ring darkened all
+ *  the way round while the meter shows, so the bright stone does not wash out the fill or read as a full ring. Same
+ *  band as the smooth ring (r - 0.35 .. r + bezel + 0.45). Armor needs none: its plates stand proud of the bezel, with a
+ *  shadow and bolts. */
+const CC_RING_TRACK = 'rgba(8,9,12,0.55)';
+function ccOrbRingTrack(g, cx, cy) {
+  const p0 = ORB.r - 0.35, p1 = ORB.r + ORB.bezel + 0.45;
+  g.beginPath(); g.arc(cx, cy, p1, 0, Math.PI * 2); g.arc(cx, cy, p0, 0, Math.PI * 2, true);
+  g.fillStyle = CC_RING_TRACK; g.fill('evenodd');
+}
 /** The empty glass: smoky dark. */
 function ccOrbGlassBack(g, cx, cy) {
   const r = ORB.r;
@@ -112,13 +123,13 @@ function ccOrbLiquid(g, cx, cy, liq, style) {
   g.save(); area(); g.clip();
   g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
   if (style === 'mana') {
-    g.globalCompositeOperation = 'multiply';
+    g.globalCompositeOperation = 'multiply'; g.globalAlpha = 0.55;   // a lighter mask: the orb's mana up to the cast bar's value
     const pat = g.createPattern(ccNebula(), 'repeat');
     for (const k of [0.07, 0.16]) {
       pat.setTransform(new DOMMatrix().translateSelf(cx * 3, cy * 5).rotateSelf(k * 900).scaleSelf(k, k));
       g.fillStyle = pat; area(); g.fill();
     }
-    g.globalCompositeOperation = 'screen';
+    g.globalCompositeOperation = 'screen'; g.globalAlpha = 1;
     for (let i = 0; i < 26; i++) {   // stars: fixed points (seeded by the orb's position), a few brighter
       const h = Math.sin((cx + i * 12.9898) * 78.233) * 43758.5453, u = h - Math.floor(h), v = (h * 7.13) - Math.floor(h * 7.13);
       const x = cx - r + u * 2 * r, y = cy - r + v * 2 * r, big = i % 7 === 0;
@@ -297,7 +308,7 @@ function ccNebula() {
   c.width = t.width; c.height = t.height;
   const g = c.getContext('2d');
   g.drawImage(t, 0, 0);
-  const d = g.getImageData(0, 0, c.width, c.height), px = d.data, deep = [78, 72, 118];   // deep space, not quite black
+  const d = g.getImageData(0, 0, c.width, c.height), px = d.data, deep = [128, 122, 166];   // deep space: a lifted violet-grey (the galaxy read far too dark in game)
   for (let i = 0; i < px.length; i += 4) {
     const v = Math.min(1, Math.max(0, (px[i] / 255 - 0.3) / 0.45));   // 0 deep space .. 1 cloud
     for (let k = 0; k < 3; k++) px[i + k] = deep[k] + (222 - deep[k]) * v;   // the brightest clouds a little see-through
@@ -313,29 +324,34 @@ function ccNebula() {
 function ccHousing(g, cx, cy, inner, R = ORB_H(), gradTop = cy - R, seatR = (ORB.r + ORB.bezel) * ORB.S, S = ORB.S) {
   // inner: +1 when the hotbar is to the right, -1 to the left, 0: fillets both sides (the dash dial's, mid-plate).
   const wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
-  // The boss's outline above the plate: the plate's top edge, a concave fillet into the circle, over the top, a fillet
-  // back down to the edge, so the outline flows from the straight edge into the curve without a corner.
-  const fy = wing - f, dy = fy - cy, dx = Math.sqrt((R + f) ** 2 - dy ** 2);
-  const tL = Math.atan2(dy, -dx), tR = Math.atan2(dy, dx);              // where the fillets touch the circle
-  // Toward the hotbar there is no fillet: the plate ends at the housing's edge (ORB.innerEnd), so the curve runs down
-  // to the circle's side and the plate's straight end continues below it. Drawn for inner = +1, mirrored for -1.
+  // The boss's outline above the plate: the plate's top edge, a concave fillet, over the dome, a fillet back down. When
+  // the dome's equator is above the fillets (the orbs: the plate's top is below the orb's centre), a fillet touching
+  // the circle would meet it under its widest point and leave a pocket under the overhang (the dark notch beside the
+  // orbs); then the dome stands on vertical sides from its equator down and the fillets join those (a skirt).
+  const fy = wing - f, skirt = fy > cy;
+  const dx = skirt ? R + f : Math.sqrt((R + f) ** 2 - (fy - cy) ** 2);   // the fillet centres' distance from cx
+  const tL = Math.atan2(fy - cy, -dx), tR = Math.atan2(fy - cy, dx);       // where the fillets touch the circle
+  // inner = +1 / -1 (hotbar to the right / left): no fillet on that side, a straight edge down from the circle's side
+  // (the orbs: the plate's joint, ccJoint, fillets the centre's top into it). The dial uses 0 (fillets both sides).
   const outline = (close) => {
     g.save(); g.translate(cx, 0); g.scale(inner || 1, 1); g.translate(-cx, 0);
     g.beginPath(); g.moveTo(cx - dx - 0.01, wing);
-    g.arc(cx - dx, fy, f, Math.PI / 2, Math.atan2(cy - fy, dx), true);
+    if (skirt) { g.arc(cx - dx, fy, f, Math.PI / 2, 0, true); g.lineTo(cx - R, cy); }
+    else g.arc(cx - dx, fy, f, Math.PI / 2, Math.atan2(cy - fy, dx), true);
     if (inner) {
-      g.arc(cx, cy, R, tL, 0, false);
+      g.arc(cx, cy, R, skirt ? Math.PI : tL, 0, false);
       g.lineTo(cx + R, close ? b : cy);
       if (close) { g.lineTo(cx - dx, b); g.closePath(); }
     } else {
-      g.arc(cx, cy, R, tL, tR, false);
-      g.arc(cx + dx, fy, f, Math.atan2(cy - fy, -dx), Math.PI / 2, true);
+      g.arc(cx, cy, R, skirt ? Math.PI : tL, skirt ? 0 : tR, false);
+      if (skirt) { g.lineTo(cx + R, fy); g.arc(cx + dx, fy, f, Math.PI, Math.PI / 2, true); }
+      else g.arc(cx + dx, fy, f, Math.atan2(cy - fy, -dx), Math.PI / 2, true);
       if (close) { g.lineTo(cx + dx + 0.01, b); g.lineTo(cx - dx - 0.01, b); g.closePath(); }
     }
     g.restore();
   };
   // The plate's own gradient (shared, from the plate's top), plus a soft light on the dome's crown so it reads round.
-  outline(true); g.fillStyle = iron(g, gradTop, b); g.fill(); ironSurface(g, () => outline(true));
+  outline(true); g.fillStyle = plateIron(g, gradTop, b); g.fill(); ironSurface(g, () => outline(true));
   g.save(); outline(true); g.clip();
   circle(g, cx, cy - R * 0.55, R * 0.75); g.fillStyle = radial(g, cx, cy - R * 0.7, R * 0.75, [[0, 'rgba(255,240,220,0.10)'], [1, 'rgba(255,240,220,0)']]); g.fill();
   g.restore();
@@ -347,7 +363,7 @@ function ccHousing(g, cx, cy, inner, R = ORB_H(), gradTop = cy - R, seatR = (ORB
   g.save(); g.translate(0, 0.45 * S); circle(g, cx, cy, seatR + 0.8 * S); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3 * S; g.stroke(); g.restore();
 }
 /** How far a housing's outline reaches each side at the plate's top edge (its fillets' ends). */
-const ccDomeHalf = (R, cy) => Math.sqrt((R + 3) ** 2 - (CC.plate.wing - 3 - cy) ** 2);
+const ccDomeHalf = (R, cy) => CC.plate.wing - 3 > cy ? R + 3 : Math.sqrt((R + 3) ** 2 - (CC.plate.wing - 3 - cy) ** 2);   // skirt or fillet form (ccHousing)
 /** The dash dial, scaled with the orbs (S x its own size), in its own housing on the wing's end. */
 const CC_DIAL = { S: 2, y: 30.6 };
 const ccDialR = () => (CC_DASH.r + CC_DASH.B + 1.4) * CC_DIAL.S;   // its housing's radius
@@ -416,7 +432,7 @@ function ccOrbNumbers(g, cx, cy, lines) {
 /** Both orbs for a state (in place of the wing meters and the armor / breath tabs). */
 function ccOrbs(g, s) {
   const showNums = s.numbers || s.hover === 'orbL' || s.hover === 'orbR';
-  ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1);
+  // The housings are part of the wing plate (compactHud, the export's plate texture), under the joints.
   // Left: health, food (or the mount), armor.
   if (!s.creative) {
     const max = s.maxHealth || 20, hp = s.health / max, liq = ccHealthLiquid(s);
@@ -440,7 +456,7 @@ function ccOrbs(g, s) {
   if (s.manaPrimary === 'ars') pools.reverse();
   const tank = ccTankLeft(s), breath = ccBreathShown(s);
   // The right ring shows one thing: breath (or the backtank), else the Helium Flamingo's charge, else an aircraft's health.
-  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: ['#ffd9b0', '#c98a5a', '#5a2814'], smooth: true } : { frac: s.air, on: LIQUID.air, smooth: true })
+  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: CC_TANK_RING, smooth: true } : { frac: s.air, on: LIQUID.air, smooth: true })
     : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO, smooth: true }
     : s.aircraft ? { frac: s.hull, on: CC_HULL, smooth: true } : null;
   if (pools.length) {

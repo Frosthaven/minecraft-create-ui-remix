@@ -42,11 +42,36 @@ final class HudDraw {
     static int y(double l) { return (int) Math.round((l - 50) * K); }
     static double clamp(double f) { return Math.max(0, Math.min(1, f)); }
 
+    // ---- Paint order under ImmediatelyFast ----
+    // ImmediatelyFast's HUD batching collects GuiGraphics blits and fills per render layer (one per texture, one for fills)
+    // and draws them layer by layer when something forces it, not in call order. So a piece of one texture drawn over
+    // another texture's (the dash dial's chevrons over its housing, from the orbs atlas over parts) came out under it.
+    // Every draw names its kind; a change of kind draws what is batched so far, so the screen keeps the call order.
+    static final Object FILL = "fill", ITEM = "item", EFFECT = "mob effect";
+    private static Object lastKind;
+    private static final String IF_BATCHING = "net.raphimc.immediatelyfast.feature.batching.BatchingBuffers";
+
+    /** Call at the start of a frame. */
+    static void beginOrder() { lastKind = null; }
+    /** After an immediate draw: nothing is batched, the next draw of any kind needs no flush. */
+    static void reset() { lastKind = null; }
+    /** Before a draw of the given kind (a texture, FILL, ITEM, EFFECT): draws the batch first when the kind changes. */
+    static void use(GuiGraphics g, Object kind) {
+        if (lastKind != null && !lastKind.equals(kind)) drawBatched(g);
+        lastKind = kind;
+    }
+    /** Draws everything batched so far (vanilla's buffer source and ImmediatelyFast's HUD batch, when it batches). */
+    static void drawBatched(GuiGraphics g) {
+        g.flush();
+        if (Reflect.cls(IF_BATCHING) != null && Reflect.bool(Reflect.callStatic(IF_BATCHING, "isHudBatching")))
+            Reflect.callStatic(IF_BATCHING, "tryForceDrawHudBuffers");
+    }
+
     static void part(GuiGraphics g, int u, int v, int w, int h, int x, int y) {
-        if (w > 0 && h > 0) g.blit(PARTS, x, y, u, v, w, h, PARTS_SIZE, PARTS_SIZE);
+        if (w > 0 && h > 0) { use(g, PARTS); g.blit(PARTS, x, y, u, v, w, h, PARTS_SIZE, PARTS_SIZE); }
     }
     static void orbPart(GuiGraphics g, int u, int v, int w, int h, int x, int y) {
-        if (w > 0 && h > 0) g.blit(ORBS, x, y, u, v, w, h, ORBS_W, ORBS_H);
+        if (w > 0 && h > 0) { use(g, ORBS); g.blit(ORBS, x, y, u, v, w, h, ORBS_W, ORBS_H); }
     }
     /** A rect (x0..x1, y0..y1, texels relative to the piece's centre) of an orb-atlas piece centred on (cx, cy). */
     static void orbPiece(GuiGraphics g, double[] cell, double cx, double cy, double x0, double y0, double x1, double y1) {
@@ -68,6 +93,8 @@ final class HudDraw {
      *  (radians, clockwise from +x, as the page's canvas arcs), so a ring reveals by angle. */
     static void sector(GuiGraphics g, ResourceLocation tex, int texW, int texH, double u, double v, double cx, double cy, double r, double a0, double a1) {
         if (a1 <= a0) return;
+        use(g, "sector");   // an immediate draw: what is batched must be on screen first
+        drawBatched(g);
         int steps = Math.max(1, (int) Math.ceil((a1 - a0) / (Math.PI / 48)));
         double rr = r / Math.cos((a1 - a0) / steps / 2);   // the polygon's edges outside the circle
         RenderSystem.setShaderTexture(0, tex);
@@ -82,6 +109,7 @@ final class HudDraw {
             vertex(b, m, texW, texH, u, v, cx, cy, Math.cos(t0) * rr, Math.sin(t0) * rr);
         }
         BufferUploader.drawWithShader(b.buildOrThrow());
+        lastKind = null;
     }
     private static void vertex(BufferBuilder b, Matrix4f m, int texW, int texH, double u, double v, double cx, double cy, double dx, double dy) {
         b.addVertex(m, (float) (cx + dx), (float) (cy + dy), 0).setUv((float) ((u + dx) / texW), (float) ((v + dy) / texH));
@@ -97,6 +125,7 @@ final class HudDraw {
     /** As discFill, a vertical gradient from colour top at y ga to bottom at gb. */
     static void discGradient(GuiGraphics g, double cx, double cy, double r, double x0, double x1, double y0, double y1,
                              double ga, int top, double gb, int bottom) {
+        use(g, FILL);
         for (double x = Math.floor(x0); x < x1; x += 2) {
             double xa = Math.max(x, x0), xb = Math.min(x + 2, x1), xm = (xa + xb) / 2 - cx;
             if (Math.abs(xm) >= r) continue;
@@ -110,6 +139,7 @@ final class HudDraw {
     }
     /** The part of the rect inside a pill (a meter's glass: x, y, w, h with round ends), in columns of 2 texels. */
     static void pillFill(GuiGraphics g, double px, double py, double pw, double ph, double x0, double x1, double y0, double y1, int argb) {
+        use(g, FILL);
         double r = ph / 2, cy = py + r;
         for (double x = Math.floor(Math.max(x0, px)); x < Math.min(x1, px + pw); x += 2) {
             double xa = Math.max(x, x0), xb = Math.min(Math.min(x + 2, x1), px + pw), xm = (xa + xb) / 2;
@@ -122,6 +152,7 @@ final class HudDraw {
     }
     /** A small round dot (motes, sparkles), in 1-texel columns. */
     static void dot(GuiGraphics g, double cx, double cy, double r, int argb) {
+        use(g, FILL);
         for (double x = Math.floor(cx - r); x < cx + r; x++) {
             double xm = x + 0.5 - cx;
             if (Math.abs(xm) >= r) continue;
@@ -132,6 +163,7 @@ final class HudDraw {
     }
     /** A thin circle outline (bubbles): points around it. */
     static void ring(GuiGraphics g, double cx, double cy, double r, int argb) {
+        use(g, FILL);
         int n = Math.max(8, (int) (r * 3));
         for (int i = 0; i < n; i++) {
             double a = i * 2 * Math.PI / n;

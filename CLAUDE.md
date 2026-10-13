@@ -169,10 +169,24 @@ mods that reuse vanilla hearts look vanilla.
   buff, red debuff) and its time left under it (45, 3m, 1h; none when infinite) in the kind's tint, never by time left.
   Worn gear is a cyan socket each in the buffs line after the always-on buffs, all the same kind (cyan border and
   number), told apart by the worn item's icon: MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen,
-  Mekanism scuba tank oxygen, Ad Astra space suit oxygen (full set) and Jet Suit energy, Creating Space O2 backtanks
-  (`CC_GEAR`; page buttons per piece). The border drains with what is left, the percent under it (no sign); hover: the
+  Ad Astra Jet Suit energy (`CC_GEAR`; page buttons per piece). Breathing gear is not a status: it takes the right
+  orb's ring (bar mode: row 1) in the backtank's copper with its time left while in use, as the Create backtank does:
+  Creating Space O2 backtanks (1 O2 a second), the Mekanism scuba tank (1 mB a tick under water), the Ad Astra space
+  suit (1 mB per 12 ticks without air, again in water); page buttons Scuba tank / Space suit / O2 backtank (`AIR_GEAR`). The border drains with what is left, the percent under it (no sign); hover: the
   resource's name and the mod's amount ("1.2 MJ/16 MJ", "12,000/24,000 mB"). It replaced the upright gauge, so the wings keep
   one layout.
+- One plate: the centre runs flat to ±CC_SIDE (93.5); each wing starts there (rounded inner top corner), drawn at
+  CC_WING_BASE (0.85) x the config's side size around (±93.5, bottom), with tapered outer ends (CC_TAPER 8, export 428
+  wide). `ccJoint` / `ccJointProfile` (game: `HudJoint`) fill the joints: the outline's top is closed with a disk
+  (radius 6: one concave fillet into the rising wing or orb dome), after an S ramp onto a lower wing when no dome is
+  near; only added material is drawn (band to the old top + 1.2 feather, shadow, rim), plus a full-height tone
+  crossover either side of the anchor (the wing's gradient scales with it). One plate gradient for everything
+  (`plateIron`, lighter than the generic iron; `ccPlateGradTop`); the joint iron is a parts strip per mode (228 / 242,
+  world y -40..50). Orb housings: a vertical skirt on the inner side (the joint's fillet runs into it) and a skirt +
+  fillet outside (a fillet meeting the dome under its widest point left a pocket).
+- Liquids are lifted a step (`ccLift`: mid toward white 10 %, dark toward mid 30 %); mana more (16 % / 50 %, nebula
+  deep tone (128, 122, 166), the orb's mask at 0.55) to the cast bar's value. A smooth ring meter darkens the bezel
+  under it all round (`ccOrbRingTrack`, atlas cell `ringTrack`).
 - Client config (`UiConfig`, Mods > Config in game): meter display Orbs | Bars (default Orbs), primary mana pool
   Iron's | Ars, action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game

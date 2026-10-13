@@ -81,6 +81,7 @@ final class BarHud {
                 for (int i = 0; i < 6; i++) {
                     double hh = Math.sin((i + 3) * 47.3) * 43758.5453, u = hh - Math.floor(hh);
                     double sx = ix + u * (ffill - 0.4), sy = y1 + MH * (0.25 + 0.5 * ((i * 0.37) % 1));
+                    use(g, FILL);
                     g.fill(x(sx), (int) Math.round((sy - 50) * K), x(sx + 0.4), (int) Math.round((sy + 0.4 - 50) * K), argb(0.45 + 0.45 * Math.sin(t / 260.0 + i * 1.7), 0xFFF0A0));
                 }
                 inner(g, LEFT_X, y1, ix + ffill - 0.25, ix + ffill + 0.25, argb(0.95, 0xFFDC6E));
@@ -89,6 +90,7 @@ final class BarHud {
                 inner(g, LEFT_X, y1, ix + ffill, ix + iw * Math.min(20, f.food + f.apple[0]) / 20.0, argb(0.35 + 0.25 * Math.sin(t / 160.0), 0xFFE6B4));
             // Exhaustion: a slim solid strip under the food meter (the page's CC_EXH_STRIP), full at 0, draining from the right.
             double sy = y1 + MH + EXH_GAP, frac = 1 - clamp(f.exhaustShown);
+            use(g, FILL);
             g.fill(x(LEFT_X), y(sy), x(LEFT_X + MW), y(sy + EXH_H_L), EXH_TRACK);
             if (frac > 0.001) g.fill(x(LEFT_X), y(sy), x(LEFT_X + MW * frac), y(sy + EXH_H_L), EXH_FILL);
             if (f.nums) numbers(g, LEFT_X, y1, f.food + "/20", liq);

@@ -31,9 +31,10 @@
   <p>Mods in this pack that draw at the hotbar or change its rows (read from their code; third row of buttons):
      Farmer's Delight Nourishment gilds the food broth and Comfort runs a slow sheen along health; worn gear is a cyan
      status after the always-on buffs (the worn item as its icon, the border draining with what is left, the percent):
-     MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen, Mekanism scuba tank oxygen, Ad Astra space
-     suit oxygen and Jet Suit energy, Creating Space O2 backtanks; the Create backtank shows with its time left while
-     diving and while a Create Jetpack drains it in flight (and 3 s after); an aircraft's health takes the right extension and its engine the XP
+     MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen, Ad Astra Jet Suit energy; breathing gear
+     takes the right orb's ring (bar mode: its row 1) in the backtank's copper with its time left, while in use (under
+     water, without breathable air, or while its air falls, and 3 s after): the Create backtank (also drained by a
+     Create Jetpack in flight), Creating Space O2 backtanks, the Mekanism scuba tank, the Ad Astra space suit; an aircraft's health takes the right extension and its engine the XP
      pipe; a Create train's speed takes the XP pipe; the Helium Flamingo's charge takes the right extension; the
      steampunk armor's clock and compass and Artifacts cooldowns move to a small instrument plate above the bar (as
      vanilla places them they would cover the wings); Create's toolbox and schematic slot marks sit on the sockets,
@@ -62,10 +63,10 @@
   <button id="comfort" aria-pressed="false" title="Farmer's Delight Comfort (shows when hurt with no saturation)">Comfort</button>
   <button id="mekasuit" aria-pressed="false" title="Mekanism MekaSuit energy: a cyan status in the effects rail">MekaSuit</button>
   <button id="gear_mekJetpack" aria-pressed="false" title="Mekanism jetpack (or the MekaSuit jetpack unit): hydrogen, a cyan status">Mek jetpack</button>
-  <button id="gear_mekScuba" aria-pressed="false" title="Mekanism scuba tank: oxygen, a cyan status">Scuba tank</button>
-  <button id="gear_suitOxygen" aria-pressed="false" title="Ad Astra space suit (full set): oxygen, a cyan status">Space suit</button>
-  <button id="gear_jetSuitEnergy" aria-pressed="false" title="Ad Astra Jet Suit: energy, a cyan status (its oxygen shows as Space suit)">Jet Suit</button>
-  <button id="gear_o2Tank" aria-pressed="false" title="Creating Space copper or netherite oxygen backtank: O2, a cyan status">O2 backtank</button>
+  <button id="air_mekScuba" aria-pressed="false" title="Mekanism scuba tank in use: its oxygen on the ring, time left (24000 mB at 1 mB a tick under water)">Scuba tank</button>
+  <button id="air_suitOxygen" aria-pressed="false" title="Ad Astra space suit in use (no breathable air): its oxygen on the ring, time left (1 mB every 12 ticks)">Space suit</button>
+  <button id="gear_jetSuitEnergy" aria-pressed="false" title="Ad Astra Jet Suit: energy, a cyan status">Jet Suit</button>
+  <button id="air_o2Tank" aria-pressed="false" title="Creating Space oxygen backtank in use: its O2 on the ring, time left (1 O2 a second)">O2 backtank</button>
   <button id="jetpackFly" aria-pressed="false" title="Create Jetpack in flight: it drains the backtank, so the tank shows with its time out of water too">Jetpack flight</button>
   <button id="aircraft" aria-pressed="false" title="Immersive Aircraft: hull health and engine">Aircraft</button>
   <button id="train" aria-pressed="false" title="Create train controls: speed">Train</button>
@@ -93,6 +94,7 @@
 <script src="mcfont.js"></script>
 <script src="screen-page.js"></script>
 <script src="hud-compact.js"></script>
+<script src="hud-compact-plate.js"></script>
 <script src="hud-compact-status.js"></script>
 <script src="hud-compact-mods.js"></script>
 <script src="hud-compact-orbs.js"></script>
@@ -202,12 +204,22 @@ flag('nourished', 'nourished');
 tap('comfort', () => { st.comfort = !st.comfort; press('comfort', st.comfort); if (st.comfort) { st.saturation = 0; st.health = Math.min(st.health, 14); st.regen = false; press('regen', false); } });
 flag('mekasuit', 'mekasuit', v => v ? 0 : 0.65); flag('steampunk', 'steampunk');
 // Fuelled gear: each button wears one piece (a status in the effects rail); its amount drains slowly while shown.
-const GEAR_START = { mekJetpack: 0.8, mekScuba: 0.6, suitOxygen: 0.45, jetSuitEnergy: 0.7, o2Tank: 0.9 };
+const GEAR_START = { mekJetpack: 0.8, jetSuitEnergy: 0.7 };
 for (const id of Object.keys(GEAR_START)) tap('gear_' + id, () => {
   if (id in st.gear) delete st.gear[id]; else st.gear[id] = GEAR_START[id];
   press('gear_' + id, id in st.gear);
 });
 setInterval(() => { let any = false; for (const id in st.gear) { st.gear[id] = st.gear[id] <= 0.02 ? GEAR_START[id] : st.gear[id] - 0.002; any = true; } if (any) render(); }, 100);
+// Breathing gear in use: it takes the ring like the backtank (its air in seconds: the mod's drain rate), draining.
+const AIR_GEAR = { mekScuba: 1200 * 0.6, suitOxygen: 600 * 0.45, o2Tank: 1800 * 0.9 };   // seconds left at the start
+const AIR_CAP = { mekScuba: 1200, suitOxygen: 600, o2Tank: 1800 };
+let airTimer = null, airId = null;
+for (const id of Object.keys(AIR_GEAR)) tap('air_' + id, () => {
+  const on = airId !== id; clearInterval(airTimer); airTimer = null;
+  for (const k of Object.keys(AIR_GEAR)) press('air_' + k, on && k === id);
+  airId = on ? id : null; st.jetpack = on; st.tankMax = on ? AIR_CAP[id] : 900; st.tank = on ? AIR_GEAR[id] : st.tankMax;
+  if (on) airTimer = setInterval(() => { st.tank = Math.max(0, st.tank - 1); render(); }, 50);
+});
 // Create Jetpack flight: the backtank drains out of the water; the tank shows while it drains and 3 s after (the game's rule).
 let jetTimer = null, jetOff = null;
 tap('jetpackFly', () => {

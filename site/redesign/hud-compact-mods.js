@@ -16,8 +16,8 @@
 //     you on the web map" / "... stopped following ..."); the client counts them: a ghost and the count on the plate.
 
 const CC_HULL = ['#e8eef4', '#8a9aa8', '#2a323a'];        // aircraft hull
-const CC_ENGINE = ['#ffd2a0', '#e0782a', '#5a2408'];      // engine power
-const CC_TRAIN = ['#cfe8ff', '#4a8ad0', '#12305a'];       // train speed
+const CC_ENGINE = ccLift(['#ffd2a0', '#e0782a', '#5a2408']);      // engine power
+const CC_TRAIN = ccLift(['#cfe8ff', '#4a8ad0', '#12305a']);       // train speed
 const CC_FLAMINGO = ['#ffd6e6', '#f06aa0', '#6a1a3a'];    // Helium Flamingo
 const CC_GILDED = ['#fff2b0', '#e0b040', '#6a4a08'];      // Nourishment
 

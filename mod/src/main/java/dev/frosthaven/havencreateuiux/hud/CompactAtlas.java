@@ -13,7 +13,7 @@ final class CompactAtlas {
     static final int K = 8;   // texels per GUI pixel
     static final ResourceLocation PARTS = tex("parts"), ORBS = tex("orbs");
     static final int PARTS_SIZE = 256 * K, ORBS_W = 384 * K, ORBS_H = 320 * K;
-    static final int PLATE_W = 424 * K, PLATE_H = 66 * K, PLATE_X = -212 * K, PLATE_Y = (-15 - 50) * K;
+    static final int PLATE_W = 428 * K, PLATE_H = 66 * K, PLATE_X = -214 * K, PLATE_Y = (-15 - 50) * K;
 
     static final List<String> WIN_ICONS = List.of("flask", "horse", "camel", "train", "engine");
     static final List<String> WING_LIQUIDS = List.of("blood", "poison", "wither", "frozen", "absorb", "broth", "hunger", "saturation",
@@ -56,7 +56,7 @@ final class CompactAtlas {
             {"effect frames", 140, 190, 46, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
             {"toolbox selection", 40, 210, 24, 23}, {"schematic frame", 66, 210, 18, 18}, {"instrument plate", 86, 210, 24, 9},
             {"clock", 112, 210, 9, 9}, {"compass", 122, 210, 9, 9}, {"wing casing", 0, 236, 32, 4},
-            {"dial housing", 182, 92, 42, 38}};
+            {"dial housing", 182, 92, 42, 38}, {"joint iron (orbs)", 228, 0, 12, 90}, {"joint iron (bars)", 242, 0, 12, 90}};
 
     static void checkLayout() {
         for (int i = 0; i < PARTS_PIECES.length; i++) {
@@ -68,6 +68,27 @@ final class CompactAtlas {
                 }
             }
         }
+    }
+
+    /** Logs (once each) every piece of a loaded atlas that has no visible texel: a blank or misplaced piece draws
+     *  nothing in game (the export and this layout out of step), which is otherwise invisible in the log. */
+    static void checkPieces(ResourceLocation loc, com.mojang.blaze3d.platform.NativeImage img) {
+        if (loc.equals(PARTS)) {
+            for (Object[] p : PARTS_PIECES) blank(loc, img, (String) p[0], (int) p[1] * K, (int) p[2] * K, (int) p[3] * K, (int) p[4] * K);
+        } else if (loc.equals(ORBS)) {
+            for (String n : ORB_CELLS) { double[] c = cell(n); blank(loc, img, n, (int) c[0] - CELL_HALF, (int) c[1] - CELL_HALF, 2 * CELL_HALF, 2 * CELL_HALF); }
+            for (String n : RING_CELLS) { double[] c = ring(n); blank(loc, img, "ring " + n, (int) c[0] - RING_HALF, (int) c[1] - RING_HALF, 2 * RING_HALF, 2 * RING_HALF); }
+        }
+    }
+    private static void blank(ResourceLocation loc, com.mojang.blaze3d.platform.NativeImage img, String name, int x, int y, int w, int h) {
+        if (x < 0 || y < 0 || x + w > img.getWidth() || y + h > img.getHeight()) {
+            HudLog.once("piece-out:" + loc + name, "atlas piece {} of {} lies outside the texture ({}x{} at {},{} in {}x{}): the export and CompactAtlas are out of step",
+                    name, loc, w, h, x, y, img.getWidth(), img.getHeight());
+            return;
+        }
+        for (int yy = y; yy < y + h; yy += 2) for (int xx = x; xx < x + w; xx += 2) if (img.getPixelRGBA(xx, yy) >>> 24 != 0) return;
+        HudLog.once("piece-blank:" + loc + name, "atlas piece {} of {} is blank ({}x{} at {},{}): it draws nothing; the export and CompactAtlas are out of step",
+                name, loc, w, h, x, y);
     }
 
     static ResourceLocation tex(String name) {
@@ -114,6 +135,7 @@ final class CompactAtlas {
                 "glow_ars"));
         for (String t : DASH_TIERS) l.add("dash_" + t);
         for (String t : DASH_TIERS) for (int n = 1; n <= DASH_MAX_N; n++) l.add("ring_" + t + "_" + n);
+        l.add("ringTrack");   // the darkened bezel under a smooth ring meter
         return List.copyOf(l);
     }
 

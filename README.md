@@ -25,9 +25,9 @@ Mods:
 - **haven-create-ui-ux** (built here): the compact action bar (orbs or bars) in place of the vanilla and mod HUD rows,
   buffs and debuffs above it, the dark mode split for the inventory and backpack screens, Dark Mode Everywhere fixes
   for Create's screens, and a config screen. Needs Create. Worn gear gets a cyan status icon by the buffs: MekaSuit
-  energy, Mekanism jetpack (and MekaSuit jetpack unit) hydrogen, Mekanism scuba tank oxygen, Ad Astra space suit
-  oxygen and Jet Suit energy, Creating Space O2 backtanks; the Create backtank shows on the bar with its time left,
-  while diving and while a Create Jetpack drains it.
+  energy, Mekanism jetpack (and MekaSuit jetpack unit) hydrogen, Ad Astra Jet Suit energy. Breathing gear takes the
+  right orb's ring (bars: its top row) in copper with its time left while in use: the Create backtank (diving, or
+  drained by a Create Jetpack), Creating Space O2 backtanks, the Mekanism scuba tank, the Ad Astra space suit.
 - **haven-mob-health-bars** (built here): floating health bars over mobs and players within 10 blocks, and on the one
   you look at up to 64 blocks away when nothing blocks the view, with its own config.
   Works on its own.
