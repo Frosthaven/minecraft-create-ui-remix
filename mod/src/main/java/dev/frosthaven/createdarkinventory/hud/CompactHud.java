@@ -118,6 +118,9 @@ public final class CompactHud {
 
     private static void icon(GuiGraphics g, int u, int v, int cx, int cy) { part(g, u, v, ICON, ICON, cx - ICON / 2, cy - ICON / 2); }
 
+    /** The pressed-in gear row, centred on (x, y). */
+    private static void gears(GuiGraphics g, int x, int y) { part(g, GEARS_U, GEARS_V, GEARS_W, GEARS_H, x - GEARS_W / 2, y - GEARS_H / 2); }
+
     private static String fmt(double v) { return String.valueOf((int) Math.round(v)); }
 
     private static void render(GuiGraphics g, DeltaTracker delta) {
@@ -169,6 +172,7 @@ public final class CompactHud {
 
         // Left wing: health (effects, absorption, damage flash, shake at 4 or less), then food or the mount's health.
         int lx = x(-131), rx = x(93), row0 = y(33.5), row1 = y(40.5);
+        if (!hurtable) gears(g, x(-116), y(39));   // creative: the vitals wing's pressed-in gears
         if (hurtable) {
             float max = p.getMaxHealth(), hp = p.getHealth(), abs = p.getAbsorptionAmount();
             String eff = p.hasEffect(MobEffects.POISON) ? "poison" : p.hasEffect(MobEffects.WITHER) ? "wither" : p.isFullyFrozen() ? "frozen" : null;
@@ -198,16 +202,18 @@ public final class CompactHud {
 
         // Right wing: Iron's mana, Ars mana.
         float[] irons = HudStats.irons(p), ars = HudStats.ars(p);
+        // No mana mod: gears pressed into the wing; one: the other row is an empty groove.
+        if (irons == null && ars == null) gears(g, x(116), y(39));
         if (irons != null) {
             icon(g, wingIconU("flask"), WING_ICON_V, x(136), y(35.5));
             meter(g, rx, row0, false, "irons", irons[0] / Math.max(1, irons[1]));
             if (nums) numbers(g, rx, row0, false, fmt(irons[0]), fmt(irons[1]));
-        }
+        } else if (ars != null) part(g, GROOVE_U, GROOVE_V, WING_W, WING_H, rx, row0);
         if (ars != null) {
             icon(g, wingIconU("gem"), WING_ICON_V, x(136), y(42.5));
             meter(g, rx, row1, false, "ars", ars[0] / Math.max(1, ars[1]));
             if (nums) numbers(g, rx, row1, false, fmt(ars[0]), fmt(ars[1]));
-        }
+        } else if (irons != null) part(g, GROOVE_U, GROOVE_V, WING_W, WING_H, rx, row1);
 
         // Band extensions: armor (left), breath (right): Create's backtank alone while it holds air, else the bubbles.
         int ey = y(23), eiy = y(24.625);
@@ -240,6 +246,8 @@ public final class CompactHud {
             float ready = roll[0], n = roll[1];
             tier = ready - 1 >= (n - 1) * 0.75f ? 0 : ready - 1 >= (n - 1) * 0.5f ? 1 : ready - 1 >= (n - 1) * 0.25f ? 2 : ready >= 1 ? 3 : 4;
             part(g, dashU(tier), 0, 18 * K, 18 * K, x(rollX), y(30));
+        } else {   // no dodge roll: a cog pressed into the plate in the dash's place
+            part(g, DASH_COG_U, DASH_COG_V, DASH_COG, DASH_COG, x(lefty ? -152 : 152) - DASH_COG / 2, y(39) - DASH_COG / 2);
         }
 
         // Web map followers (Haven Link): the ghost plate above the bar.

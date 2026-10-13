@@ -64,10 +64,12 @@
   <button id="artifactCd" title="Artifacts item cooldowns">Artifact cooldown</button>
   <button id="toolbox" aria-pressed="false" title="Create toolbox-linked hotbar slots">Toolbox slots</button>
   <button id="schematic" aria-pressed="false" title="Create schematic tool's slot">Schematic</button>
+  <button id="noMagic" aria-pressed="false" title="A pack without Iron's Spellbooks or Ars Nouveau">No mana mods</button>
+  <button id="noRoll" aria-pressed="false" title="A pack without the dodge roll">No dodge roll</button>
   <button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
 </div>
 <div class="compare">
-  <div class="scene" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
+  <div class="scene galaxy" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
 </div>
 <h2>Files (for the game)</h2>
 <div id="sheet"></div>
@@ -99,7 +101,7 @@ function render() {
 const tap = (id, f) => document.getElementById(id).addEventListener('click', () => { f(); render(); });
 tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; st.hurtAt = performance.now(); });
 tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.saturation = Math.min(st.food, st.saturation + 3); });
-tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
+tap('cast', () => { if (st.irons != null) st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; if (st.ars != null) st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
 tap('armorBtn', () => { st.armor = st.armor ? 0 : 14; document.getElementById('armorBtn').setAttribute('aria-pressed', String(!!st.armor)); });
 tap('roll', () => { st.rolls = st.rolls <= 0 ? 2 : Math.round((st.rolls - 0.5) * 10) / 10; });
@@ -149,6 +151,8 @@ tap('artifactCd', () => {
     render(); if (k < 1) setTimeout(step, 33); }; step();
 });
 tap('followers', () => { st.followers = (st.followers + 1) % 4; document.getElementById('followers').textContent = 'Web followers: ' + st.followers; });
+tap('noMagic', () => { const on = st.irons != null; st.irons = on ? null : 0.7; st.ars = on ? null : 0.55; press('noMagic', on); });
+tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
 tap('dashBtn', () => { st.riding = 'camel'; document.getElementById('riding').textContent = 'Riding: camel'; ramp('dash', 2750, null); });
 /** Runs a 0..1 ramp on st[key] over ms, then sets it to end. */
 function ramp(key, ms, end, then) {
@@ -157,7 +161,7 @@ function ramp(key, ms, end, then) {
   step();
 }
 tap('jump', () => { if (!st.riding) { st.riding = 'horse'; document.getElementById('riding').textContent = 'Riding: horse'; } ramp('jump', 1000, null); });
-tap('castBtn', () => ramp('cast', 1500, null, () => { st.irons = Math.max(0, st.irons - 0.15); }));
+tap('castBtn', () => ramp('cast', 1500, null, () => { if (st.irons != null) st.irons = Math.max(0, st.irons - 0.15); }));
 tap('attack', () => ramp('attack', 625, null));
 // Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
 setInterval(() => {

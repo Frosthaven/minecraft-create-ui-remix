@@ -51,4 +51,8 @@ final class CompactAtlas {
     static int digitV(int row) { return (170 + 4 * row) * K; }
     static final int DIGIT_W = 15, DIGIT_H = 25, DIGIT_ADV = 20;
     static final int GHOST_PLATE_V = 190 * K, GHOST_PLATE_W = 24 * K, GHOST_PLATE_H = 9 * K;
+    // Pressed-in fillers: the gear row (centre (46, 196), drawn as a 32x12 cell), an empty groove, the dash's cog.
+    static final int GEARS_U = 30 * K, GEARS_V = 190 * K, GEARS_W = 32 * K, GEARS_H = 12 * K;
+    static final int GROOVE_U = 80 * K, GROOVE_V = 190 * K;
+    static final int DASH_COG_U = 120 * K, DASH_COG_V = 190 * K, DASH_COG = 18 * K;
 }

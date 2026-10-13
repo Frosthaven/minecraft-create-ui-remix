@@ -123,6 +123,32 @@ function ccSelection(g, x, y, toolbox = false) {
   rrect(g, x + 7.2, y - 0.1, 3.6, 1.2, 0.4); g.fillStyle = steel(g, y - 0.1, y + 1.1); g.fill();
   glow(g, x + 9, y + 0.5, 1.8, lamp, core);
 }
+/** Pressed into the plate: a dark line with a faint lit lip under it (the inventory's engraved style). */
+function ccEngrave(g, path, lw = 0.5) {
+  g.save(); g.translate(0, 0.4); path(); g.strokeStyle = 'rgba(220,225,230,0.1)'; g.lineWidth = lw; g.stroke(); g.restore();
+  path(); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = lw; g.stroke();
+}
+/** A wing with nothing to show (vitals in creative, magic without mana mods): three meshing cogs pressed into the
+ *  plate, centred on (cx, cy). */
+function ccGearRow(g, cx, cy) {
+  for (const [dx, r, t] of [[-11.2, 3.6, 8], [0, 5, 10], [11.2, 3.6, 8]]) {
+    const x = cx + dx, a = dx ? Math.PI / t : 0;
+    g.save(); g.translate(x, cy); g.rotate(a); g.translate(-x, -cy);
+    ccEngrave(g, () => cogPath(g, x, cy, r, r * 0.76, t));
+    g.restore();
+    ccEngrave(g, () => circle(g, x, cy, r * 0.32));
+  }
+}
+/** An empty meter-shaped groove pressed into the plate (a row with no meter). */
+function ccGroove(g, x, y, w, h) {
+  rrect(g, x, y, w, h, h / 2); g.fillStyle = 'rgba(0,0,0,0.22)'; g.fill();
+  ccEngrave(g, () => rrect(g, x, y, w, h, h / 2), 0.4);
+}
+/** No dodge roll in the pack: one cog with a hex hub pressed into the plate where the dash would be. */
+function ccDashFiller(g, cx, cy) {
+  ccEngrave(g, () => cogPath(g, cx, cy, 6.2, 4.8, 10));
+  ccEngrave(g, () => { g.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; g.lineTo(cx + 2 * Math.cos(a), cy + 2 * Math.sin(a)); } g.closePath(); });
+}
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
@@ -233,6 +259,7 @@ function compactHud(s, font) {
     meterAt(id, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max, opt);
   };
   // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
+  if (s.creative) ccGearRow(g, (CC.left.iconC - 3 + CC.left.x + CC.meterW) / 2, 39);   // the empty vitals wing
   if (!s.creative) {
   // Health against the real maximum (Health Boost and gear raise it; each segment is a tenth of it); absorption in
   // gold continues past the health, AppleSkin's regeneration preview (held food) pulses past that.
@@ -252,8 +279,14 @@ function compactHud(s, font) {
     ccMeter(g, ex, ey + hh + 0.4, ew, hh, s.mekasuit, CC_MEKA, 10);
     CC.hit.Lear = [ex, ey, ew, eh];
   } else if (showArmor) row(L, 'ear', armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
-  row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
-  row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
+  // Magic: a mana row per mod present (null: the mod is not in the pack). None: engraved gears fill the wing; one: the
+  // other row is an empty groove, so the wing still reads as complete.
+  const hasIrons = s.irons != null, hasArs = s.ars != null;
+  if (!hasIrons && !hasArs) ccGearRow(g, (Rt.x + Rt.iconC + 3) / 2, 39);   // centred on the wing's meter + icon span
+  else {
+    if (hasIrons) row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200); else ccGroove(g, Rt.x, rows[0], mw, mh);
+    if (hasArs) row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150); else ccGroove(g, Rt.x, rows[1], mw, mh);
+  }
   // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
   // with its time left (m:ss, as Create's counter) always on it; the vanilla air stays full meanwhile. When the tank
   // is empty, the bubbles take over (draining under water, refilling after).
@@ -268,12 +301,15 @@ function compactHud(s, font) {
   else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
   else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
+  if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -152 : 152, 39);   // no dodge roll mod: a pressed-in cog
+  else {
   const [rx, ry] = s.leftHanded ? [-164.5, CC.roll[1]] : CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
   if (font) {
     const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) mcText(g, font, t, tx + dx, ty + dy, 1, '#000000');
     mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
+  }
   }
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);

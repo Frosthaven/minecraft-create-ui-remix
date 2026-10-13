@@ -30,6 +30,21 @@ h2 { font-size: 16px; margin: 22px 24px 10px; }
 .sprite a { color: var(--accent); }
 .scene.screen { background: radial-gradient(#3a3f4a, #1b1d22); }
 .scene.screen canvas { margin: 34px auto 18px; }
+/* A dark galaxy behind a preview: deep space, violet and teal nebulae, a faint rose glow low, scattered stars. */
+.scene.galaxy {
+  background:
+    radial-gradient(1px 1px at 8% 22%, #fff 60%, transparent 100%), radial-gradient(1px 1px at 17% 71%, #cfe0ff 60%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 29% 38%, #fff 60%, transparent 100%), radial-gradient(1px 1px at 41% 12%, #ffe9d0 60%, transparent 100%),
+    radial-gradient(1px 1px at 52% 64%, #fff 60%, transparent 100%), radial-gradient(1.5px 1.5px at 63% 27%, #d8e8ff 60%, transparent 100%),
+    radial-gradient(1px 1px at 72% 82%, #fff 60%, transparent 100%), radial-gradient(1px 1px at 84% 18%, #fff 60%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 91% 55%, #ffe0f0 60%, transparent 100%), radial-gradient(1px 1px at 4% 88%, #fff 60%, transparent 100%),
+    radial-gradient(1px 1px at 36% 90%, #cfe0ff 60%, transparent 100%), radial-gradient(1px 1px at 58% 6%, #fff 60%, transparent 100%),
+    radial-gradient(ellipse 45% 70% at 24% 35%, rgba(110, 50, 170, 0.38), transparent 70%),
+    radial-gradient(ellipse 40% 60% at 74% 45%, rgba(30, 110, 150, 0.30), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 52% 105%, rgba(160, 50, 100, 0.22), transparent 70%),
+    radial-gradient(ellipse 30% 25% at 62% 20%, rgba(200, 160, 255, 0.10), transparent 70%),
+    linear-gradient(160deg, #07060f, #0b0a1a 45%, #050710);
+}
 nav { display: flex; gap: 14px; padding: 12px 24px 0; font-size: 13px; }
 nav a { color: var(--muted); text-decoration: none; }
 nav a[aria-current="page"] { color: var(--accent); }
