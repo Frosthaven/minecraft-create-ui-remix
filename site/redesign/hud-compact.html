@@ -69,6 +69,7 @@
   <button id="noRoll" aria-pressed="false" title="A pack without the dodge roll">No dodge roll</button>
   <button id="effectsBtn" aria-pressed="false" title="Buffs and debuffs above the bar, with their time left">Buffs and debuffs</button>
   <button id="manyEffects" aria-pressed="false" title="A long list: 13 buffs and 5 debuffs">Many effects</button>
+  <button id="rollCount" title="Roll charges the player has (server config default 2; gear can change it)">Roll charges: 2</button>
   <button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
 </div>
 <div class="compare">
@@ -109,7 +110,7 @@ tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.s
 tap('cast', () => { if (st.irons != null) st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; if (st.ars != null) st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
 tap('armorBtn', () => { st.armor = st.armor ? 0 : 14; document.getElementById('armorBtn').setAttribute('aria-pressed', String(!!st.armor)); });
-tap('roll', () => { st.rolls = st.rolls <= 0 ? 2 : Math.round((st.rolls - 0.5) * 10) / 10; });
+tap('roll', () => { st.rolls = st.rolls <= 0 ? (st.rollCount || 2) : Math.round((st.rolls - 0.5) * 10) / 10; });
 tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
 /** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air. */
 function swim(on, diving) {
@@ -177,6 +178,7 @@ tap('manaMods', () => { manaSet = (manaSet + 1) % MANA_SETS.length; const [name,
 tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
 flag('orbsBtn', 'orbs');
 tap('primary', () => { st.manaPrimary = st.manaPrimary === 'irons' ? 'ars' : 'irons'; document.getElementById('primary').textContent = 'Primary mana: ' + (st.manaPrimary === 'irons' ? "Iron's" : 'Ars'); });
+tap('rollCount', () => { st.rollCount = (st.rollCount || 2) % 5 + 1; st.rolls = st.rollCount; document.getElementById('rollCount').textContent = 'Roll charges: ' + st.rollCount; });
 tap('dashBtn', () => { st.riding = 'camel'; document.getElementById('riding').textContent = 'Riding: camel'; ramp('dash', 2750, null); });
 /** Runs a 0..1 ramp on st[key] over ms, then sets it to end. */
 function ramp(key, ms, end, then) {
