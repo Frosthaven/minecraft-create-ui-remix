@@ -40,3 +40,5 @@ No player config edits needed; the instance config stays at DME's defaults.
 - Title screen: no dark mode (the pack's FancyMenu layout). `DarkModeClientProxyMixin`
   (`createdarkinventory.dme.mixins.json`, optional) answers DME's `isElementNameBlacklisted`
   with true while `TitleScreen` is open; the mod removes DME's title button there.
+- DME's button kept focus after a click, and a focused widget stops Create's "hold W to ponder";
+  the mod clears that focus on mouse release.

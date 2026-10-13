@@ -21,7 +21,9 @@ import java.util.List;
  *    Create's light panel);
  *  - DME's inventory button moves up above the bottom-left icon buttons it overlapped, only
  *    while it sits at DME's default spot (a player's own X and Y win);
- *  - no DME button on the title screen, where dark mode is off ({@code DarkModeClientProxyMixin}).
+ *  - no DME button on the title screen, where dark mode is off ({@code DarkModeClientProxyMixin});
+ *  - DME's button lets go of focus after a click: a focused widget keeps Create's "hold W to
+ *    ponder" from working on that screen.
  */
 @Mod(value = CreateDarkInventory.ID, dist = Dist.CLIENT)
 public final class CreateDarkInventory {
@@ -35,6 +37,9 @@ public final class CreateDarkInventory {
         modBus.addListener(InterModEnqueueEvent.class, event ->
                 InterModComms.sendTo(DME, "dme-shaderblacklist", () -> "StockKeeperRequestScreen:drawItemCount"));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, CreateDarkInventory::moveDarkModeButton);
+        NeoForge.EVENT_BUS.addListener(ScreenEvent.MouseButtonReleased.Post.class, event -> {
+            if (isDarkModeButton(event.getScreen().getFocused())) event.getScreen().setFocused(null);
+        });
     }
 
     private static void moveDarkModeButton(ScreenEvent.Init.Post event) {
