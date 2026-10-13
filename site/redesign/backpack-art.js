@@ -137,8 +137,10 @@ function guiControls(orig) {
   // (71,216,26,26), shared with the inventory.
   clear(69, 18, 16, 12); steelButton(g, 69, 18, 16, 12, false, 1.2);
   clear(63, 30, 16, 12); steelButton(g, 63, 30, 16, 12, true, 1.2);
-  clear(97, 216, 15, 8); craftArrow(g, 97, 216, 15, 8, 'rgba(30,18,8,0.85)', 'down');   // the original points down to the result
-  clear(71, 216, 26, 26); resultFrame(g, 71, 216, 26, 2.6);
+  // Both are blitted unblended inside the open tab: no glow (it spilled into the arrow's box as a line and showed
+  // as orange caps on the frame's corners), an opaque arrow, and binary alpha (below).
+  clear(97, 216, 15, 8); craftArrow(g, 97, 216, 15, 8, '#2a1a0c', 'down');   // the original points down to the result
+  clear(71, 216, 26, 26); resultFrame(g, 71, 216, 26, 2.6, false);
   // Gauges: tank and battery bar pieces (29,30 / 29,48 / 29,66, 18 x 18), glass overlays (47,30 / 47,56, 16 x 18).
   clear(29, 30, 18, 54);
   gaugeFrame(g, 29, 30, 18, 18, 'top'); gaugeFrame(g, 29, 48, 18, 18, 'middle'); gaugeFrame(g, 29, 66, 18, 18, 'bottom');
@@ -150,6 +152,7 @@ function guiControls(orig) {
   // The tabs and the upgrade pouch are blitted unblended too: no soft edges there. Not the whole sheet: the gauge glass
   // (47, 30) and other overlays are drawn blended over fluid and need their translucency.
   solidAlpha(c, [128, 0, 128, 256]); solidAlpha(c, [0, 0, 27, 204]); solidAlpha(c, [0, 204, 7, 18]);
+  solidAlpha(c, [71, 216, 26, 26]); solidAlpha(c, [97, 216, 15, 8]);   // the crafting tab's result frame and arrow
   return c;
 }
 

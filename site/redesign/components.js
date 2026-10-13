@@ -32,9 +32,11 @@ function craftArrow(g, x, y, w, h, color = 'rgba(40,22,8,0.8)', dir = 'right') {
   g.fillStyle = color; g.fill();
 }
 /** Crafting: the result slot, an iron frame with chamfered corners and a faint ember glow around a cell.
- *  (x, y, s) is the frame's box; the cell (s - 4.6, centred) holds the item. */
-function resultFrame(g, x, y, s, c = 2.2) {
-  g.save(); g.shadowColor = 'rgba(255,140,30,0.55)'; g.shadowBlur = 1.6;
+ *  (x, y, s) is the frame's box; the cell (s - 4.6, centred) holds the item. glow: false on a sprite sheet the mod
+ *  blits unblended (the glow spills past the box and its soft pixels show at full colour). */
+function resultFrame(g, x, y, s, c = 2.2, glow = true) {
+  g.save();
+  if (glow) { g.shadowColor = 'rgba(255,140,30,0.55)'; g.shadowBlur = 1.6; }
   chamfer(g, x, y, s, s, c); g.fillStyle = '#2b2d30'; g.fill();
   g.restore();
   const inner = s - 4.6;
