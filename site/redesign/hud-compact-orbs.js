@@ -1,7 +1,7 @@
 // Orbs (after Path of Exile, in our style) in place of the wing meters: a glass orb in a brass bezel on each wing.
 // Left orb: health rises as the liquid (absorption in gold above it; the effects recolour it); food is the orb's
-// secondary layer, a crescent sweeping in from the right as PoE's energy shield does (saturation the lighter part of
-// it; riding: the mount's health instead); armor takes over the brass bezel in ten segments, only while worn.
+// secondary layer, a crescent sweeping in from the right as PoE's energy shield does (riding: the mount's health
+// instead; saturation is not shown); armor takes over the brass bezel in ten segments, only while worn.
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
@@ -95,8 +95,7 @@ function ccOrbs(g, s) {
     const max = s.maxHealth || 20, hp = s.health / max, liq = ccHealthLiquid(s);
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT }
-      : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth,
-          light: { frac: Math.min(s.saturation, s.food) / 20, liq: ['#ffd9a8', '#e09a52'] } };
+      : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth };
     ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
       shake: ccShake(s)[1] });
