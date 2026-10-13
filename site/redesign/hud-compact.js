@@ -318,5 +318,6 @@ function compactHud(s, font) {
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
   ccInstruments(g, s);
+  if (s.effects && s.effects.length) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }

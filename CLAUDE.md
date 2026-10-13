@@ -144,6 +144,10 @@ not packed), so other mods that reuse vanilla hearts look vanilla.
   Armors steampunk clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the
   bar. Followers come from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped
   following"): followers already watching at login are missed until Haven Link sends the current list on join.
+- Buffs and debuffs (`hud-compact-effects.js`): two small iron plates above the bar, buffs above the left wing and
+  debuffs above the right (from the centre outward), each effect a 14 x 14 socket (brass bezel buff, rust debuff,
+  dimmer ambient) with a border draining clockwise from the top, and its time left under it in the bar's digits
+  (seconds, m:ss from a minute, red under 10 s, none when infinite). Not in game yet (it would replace MOB_EFFECTS).
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
   while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
   screen is open.
