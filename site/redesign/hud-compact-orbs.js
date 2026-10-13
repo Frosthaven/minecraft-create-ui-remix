@@ -5,7 +5,7 @@
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, bezel: 2.4, band: 0.36 };   // band: a full crescent's share of the width   // band: a full crescent's share of the width
+const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, bezel: 1.6, band: 0.36 };   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
 /** One orb at (cx, cy): fill {frac, liq}, over {from, to, liq} (absorption, above the fill), crescent {frac, liq,
  *  light: {frac, liq}} (the secondary layer), ring {frac, on, off} (segments around the bezel). */
@@ -17,11 +17,15 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   const B = ORB.bezel, R1 = r + B;
   circle(g, cx, cy + 0.6, R1); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill();
   circle(g, cx, cy, R1); g.fillStyle = brass(g, cy - R1, cy + R1); g.fill();
-  brassSurface(g, () => circle(g, cx, cy, R1));   // hammered brass
-  // Rivets around the bezel, between the ring's segments.
-  for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5; circle(g, cx + Math.cos(a) * (r + B / 2), cy + Math.sin(a) * (r + B / 2), 0.32); g.fillStyle = 'rgba(40,24,8,0.7)'; g.fill(); }
+  surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08);   // a light brushed finish
   if (ring) {
-    const n = 10, gap = 0.06, r0 = r + 0.25, r1 = R1 - 0.25;
+    // Every segment shows while the ring does: empty ones as dark recessed slots, full ones as bright plates.
+    const n = 10, gap = 0.07, r0 = r + 0.2, r1 = R1 - 0.2;
+    for (let k = 0; k < n; k++) {
+      const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
+      g.beginPath(); g.arc(cx, cy, r1, a0, a1); g.arc(cx, cy, r0, a1, a0, true); g.closePath();
+      g.fillStyle = '#0c0d0f'; g.fill();
+    }
     for (let k = 0; k < n; k++) {
       const lit = ring.frac * n - k;   // >= 1 full, 0..1 partial
       if (lit <= 0) break;
@@ -30,7 +34,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       g.beginPath(); g.arc(cx, cy, r1, a0, a2); g.arc(cx, cy, r0, a2, a0, true); g.closePath();
       g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill();
       const seg = () => { g.beginPath(); g.arc(cx, cy, r1, a0, a2); g.arc(cx, cy, r0, a2, a0, true); g.closePath(); };
-      surface(g, seg, TEX.brushed, 0.3); surface(g, seg, TEX.grain, 0.15);   // worked metal plates
+      surface(g, seg, TEX.brushed, 0.2);   // worked metal plates
       g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 0.25; g.stroke();
     }
   }
