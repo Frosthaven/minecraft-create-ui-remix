@@ -4,10 +4,18 @@ Fixes for Dark Mode Everywhere (DME, `darkmodeeverywhere-neoforge-1.21.1-1.4.0`)
 "Create Ultimate Selection 2" Prism instance (NeoForge 21.1.243, Create 6.0.10). Client only.
 `./install.sh [instance/minecraft]` builds and copies both parts into the instance.
 
-## resourcepack/ (installed as `resourcepacks/DarkModeEverywhere-Veil-Fix`)
+## resourcepacks/ (each folder copied into the instance's `resourcepacks/`)
+
+### DarkModeEverywhere-Veil-Fix
 
 DME's two core shaders without bodiless function declarations, so Veil's shader processor can
 parse them. Must stay at the top of the pack order.
+
+### Create-HUD
+
+Dark steampunk HUD sprites (hotbar, hearts, food, armor, air, XP) at 8x. `food_empty.png` is the
+`food_full.png` silhouette in dark tones: the empty sprite draws behind each full one, and a
+different shape showed at the edges.
 
 ## mod/ (Create Dark Inventory, `createdarkinventory`)
 
@@ -45,3 +53,8 @@ No player config edits needed; the instance config stays at DME's defaults.
 - Main HUD with a Create HUD pack: while a selected pack id contains "create-hud" (`file/Create-HUD`),
   `HudLayers` flags NeoForge's hotbar, health, armor, food, air, experience bar/level, action bar
   layers and Create's `remaining_air`; `DarkModeClientProxyMixin` skips DME while one draws.
+  ImmediatelyFast `hud_batching` (on in this pack) draws the whole HUD later in
+  `BatchingBuffers.endHudBatching`, where DME sees ImmediatelyFast as the caller (so DME's own
+  `net.minecraft.client.gui.Gui` blacklist never matched either). `BatchingBuffersMixin`
+  (`createdarkinventory.immediatelyfast.mixins.json`, optional) flags that flush; with the pack
+  on, DME skips the whole batched HUD.

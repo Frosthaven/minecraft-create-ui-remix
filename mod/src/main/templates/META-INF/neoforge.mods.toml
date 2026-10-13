@@ -18,6 +18,10 @@ config="${mod_id}.mixins.json"
 [[mixins]]
 config="${mod_id}.dme.mixins.json"
 
+# Targets ImmediatelyFast, so optional.
+[[mixins]]
+config="${mod_id}.immediatelyfast.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"

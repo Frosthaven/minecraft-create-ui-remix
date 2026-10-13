@@ -12,6 +12,9 @@ import java.util.Set;
  * The main HUD (hotbar, hearts, armor, food, air, experience, action bar) keeps its own look
  * while a Create HUD resource pack is on: its sprites are already dark. Set while those layers
  * draw; {@code DarkModeClientProxyMixin} then skips DME's shader and text recolor.
+ * With ImmediatelyFast's HUD batching the layers only queue their draws and the whole HUD is
+ * drawn at once ({@code BatchingBuffersMixin}); the bars cannot be told apart there, so the
+ * whole HUD keeps its look while the pack is on.
  */
 public final class HudLayers {
     private static final Set<ResourceLocation> MAIN = Set.of(
@@ -25,12 +28,18 @@ public final class HudLayers {
             VanillaGuiLayers.OVERLAY_MESSAGE,
             ResourceLocation.fromNamespaceAndPath("create", "remaining_air"));
     private static boolean drawing;
+    private static boolean flushing;
 
     private HudLayers() {}
 
     /** True while a main HUD layer draws and a Create HUD pack is selected. */
     public static boolean skipDarkMode() {
-        return drawing;
+        return drawing || (flushing && createHudPack());
+    }
+
+    /** ImmediatelyFast is drawing the batched HUD. */
+    public static void flushing(boolean value) {
+        flushing = value;
     }
 
     public static void pre(RenderGuiLayerEvent.Pre event) {
