@@ -28,6 +28,7 @@
   <button id="results" aria-pressed="false">Several results</button>
   <button id="small" aria-pressed="false">Small screen (scroll)</button>
   <button id="sockets" aria-pressed="false">Show slots</button>
+  <button id="darkMode" title="Dark Mode Everywhere: the pocket and slot greys follow it (the _grey layers), leather, canvas, blueprints and steel do not">Dark mode</button>
   <span style="color:var(--muted);align-self:center">GUI scale</span>
   <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4">4</button>
   <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
@@ -50,8 +51,12 @@
 const state = { tier: pageQuery.get('tier') ?? 'iron', set: pageQuery.get('set') ?? 'items', open: pageQuery.get('open') ?? '', results: pageQuery.has('results'), small: pageQuery.has('small'), showSlots: false };
 let before = null, after = null;
 
+// The pocket and slot greys follow DME (screen-page.js, greyLayer); greys holds each split texture's grey layer.
+let darkMode = darkModeButton('darkMode', m => { darkMode = m; }), greys = { bg: {} };
+const darkAfter = () => ({ ...after, slots: darkView(after.slots, greys.slots, darkMode), controls: darkView(after.controls, greys.controls, darkMode),
+  bg: Object.fromEntries(Object.entries(after.bg).map(([k, c]) => [k, darkView(c, greys.bg[k], darkMode)])) });
 screenPage((T, scale) => bpCompose(T, bpLayout(state.tier, state.set, state.small ? 5 : Infinity), scale, state),
-  () => (before ? { before, after } : {}));
+  () => (before ? { before, after: darkAfter() } : {}));
 pageToggle('small', on => { state.small = on; }, state.small);
 pageToggle('results', on => { state.results = on; }, state.results);
 pageToggle('sockets', on => { state.showSlots = on; });
@@ -78,10 +83,17 @@ choice('tier', 'tier'); choice('set', 'set'); choice('open', 'open');
   after = { bg: {}, slots: slotsBackground(), controls: guiControls(origControls), iconSheet: bpIcons(iconSheet, SCREEN.font), icons, searchGlyph: searchGlyph(),
     tabSlots: upgradeSlotsBackground() };
   for (const k of keys) after.bg[k] = storageBackground(+k.slice(0, 2).replace('_', ''), k.endsWith('wider'));
+  for (const k of keys) greys.bg[k] = greyLayer(after.bg[k]);
+  greys.slots = greyLayer(after.slots);
+  // The upgrade pouch's slot wells and the steel push buttons (their icons are outlined to read on a light face); not
+  // the switches, gauges and result frame, which sit on leather.
+  greys.controls = greyLayer(after.controls, [[0, 0, 27, 204], [29, 0, 36, 30], [53, 18, 16, 12], [69, 18, 16, 12], [63, 30, 16, 12]]);
   SCREEN.render();
   fileList([...keys.map(k => ['sophisticatedcore: storage_background_' + k, after.bg[k]]),
     ['sophisticatedcore: slots_background', after.slots], ['sophisticatedcore: upgrade_slots_background', after.tabSlots], ['sophisticatedcore: gui_controls', after.controls],
-    ['sophisticatedcore: icons', after.iconSheet], ['createhud: font/search', after.searchGlyph]]);
+    ['sophisticatedcore: icons', after.iconSheet], ['createhud: font/search', after.searchGlyph],
+    ...keys.map(k => ['sophisticatedcore: storage_background_' + k + '_grey', greys.bg[k]]),
+    ['sophisticatedcore: slots_background_grey', greys.slots], ['sophisticatedcore: gui_controls_grey', greys.controls]]);
 })();
 </script>
 <script src="../live.js"></script>

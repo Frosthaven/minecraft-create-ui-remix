@@ -25,6 +25,8 @@ import java.util.List;
 import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
 /**
@@ -38,7 +40,8 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  *  - DME's button lets go of focus after a click: a focused widget keeps Create's "hold W to
  *    ponder" from working on that screen;
  *  - with a Create HUD pack on, no dark mode on the main HUD ({@link HudLayers}), Sophisticated
- *    Backpacks screens and the inventory ({@link PackScreens});
+ *    Backpacks screens and the inventory ({@link PackScreens}), except their plain greys, which the
+ *    pack ships as grey layers that follow DME ({@link SplitBlit});
  *  - the compact action bar ({@link CompactHud}) in place of the vanilla and mod HUD rows.
  */
 @Mod(value = CreateDarkInventory.ID, dist = Dist.CLIENT)
@@ -55,6 +58,9 @@ public final class CreateDarkInventory {
         modBus.addListener(InterModEnqueueEvent.class, event ->
                 InterModComms.sendTo(DME, "dme-shaderblacklist", () -> "StockKeeperRequestScreen:drawItemCount"));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, CreateDarkInventory::moveDarkModeButton);
+        // The dark mode split (SplitBlit): grey layers are looked up again after a resource reload.
+        modBus.addListener(RegisterClientReloadListenersEvent.class, event ->
+                event.registerReloadListener((ResourceManagerReloadListener) manager -> SplitBlit.reload()));
         // The compact action bar (hud/CompactHud): its layer, the Left Alt numbers key, the layers it replaces.
         modBus.addListener(RegisterGuiLayersEvent.class, CompactHud::register);
         modBus.addListener(RegisterKeyMappingsEvent.class, CompactHud::registerKeys);

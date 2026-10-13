@@ -3,6 +3,14 @@
   "minVersion": "0.8",
   "package": "dev.frosthaven.createdarkinventory.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["AllGuiTexturesMixin", "ClipboardScreenMixin", "PackagePortScreenMixin"],
-  "injectors": { "defaultRequire": 1 }
+  "client": [
+    "AllGuiTexturesMixin",
+    "ClipboardScreenMixin",
+    "PackagePortScreenMixin",
+    "GuiGraphicsInvoker",
+    "GuiGraphicsSplitMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

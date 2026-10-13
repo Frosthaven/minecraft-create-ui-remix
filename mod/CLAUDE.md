@@ -53,6 +53,14 @@ No player config edits needed; the instance config stays at DME's defaults.
   on those screens and on their own screens: the caller class is mapped to its mod jar's ids.
   The same rule skips their HUD parts (Ars Nouveau mana bar, Iron's Spellbooks bars) while a
   GUI layer draws or no screen is open.
+- Dark mode split (`SplitBlit`, `GuiGraphicsSplitMixin`, `GuiGraphicsInvoker`): the skipped screens still follow DME in
+  their plain greys (panel body, slot wells, steel push buttons). The pack ships those greys as `<texture>_grey.png`
+  (same size, neutral, lightened for DME to darken back; made by the pages' `greyLayer`, see the root CLAUDE.md) and
+  GUI sprites as `<sprite>_grey` (the recipe book button). After every `GuiGraphics.innerBlit` of a texture, and every
+  `blitSprite(sprite, x, y, z, w, h)`, that has one, `SplitBlit` draws the layer at the same place; DME's caller is then
+  `SplitBlit:draw` / `drawSprite`, which is not skipped, so the layer gets DME's shader. DME off: light grey
+  (vanilla-like); perfect dark: about the art's greys. No DME installed: no layer. Layers are looked up once per texture
+  or sprite (cleared on resource reload) and logged once (`[dark split]`); a failing layer logs once and is dropped.
 - Sophisticated upgrade tabs: Sophisticated Core draws the storage grid and tab slots from one
   texture (`slots_background.png`). `TabSlots` (`createdarkinventory.sophisticated.mixins.json`,
   optional) draws tab slots from `sophisticatedcore:textures/gui/upgrade_slots_background.png`

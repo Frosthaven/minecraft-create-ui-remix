@@ -260,6 +260,8 @@ function bpIcons(orig, font) {
     const ky = up ? 128.6 : 133.4;
     rrect(g, x + 0.4, ky, 3.2, 4, 0.8); g.fillStyle = col; g.fill();
   }
+  // A thin dark outline on every icon: the buttons under them follow dark mode, so a face can be light grey.
+  outlineCanvas(c, 0.4, [[0, 144, 48, 24], [48, 144, 16, 12], [32, 48, 32, 16], [0, 112, 64, 16], [144, 0, 96, 16], [16, 96, 16, 16]]);
   return c;
 }
 

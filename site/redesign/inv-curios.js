@@ -144,12 +144,14 @@ function curiosSheet() {
 function curiosCosmeticButton(on, hover) {
   const [c, g] = hires(20, 17);
   steelButton(g, 0, 0, 20, 17, hover, 2.4);
-  g.fillStyle = on ? '#ffb347' : hover ? '#ffd9a0' : '#c9ccd0';
-  const cx = 10, cy = 8;
-  for (const s of [1, -1]) {
-    g.beginPath(); g.ellipse(cx + s * 3, cy - 1.6, 2.8, 2.2, s * -0.5, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.ellipse(cx + s * 2.3, cy + 2.4, 1.9, 1.6, s * 0.5, 0, Math.PI * 2); g.fill();
-  }
-  g.fillRect(cx - 0.4, cy - 3.6, 0.8, 7.6);
+  g.drawImage(glyphLayer(20, 17, gg => {   // outlined: it reads on the light face dark mode gives the button too
+    gg.fillStyle = on ? '#ffb347' : hover ? '#ffd9a0' : '#c9ccd0';
+    const cx = 10, cy = 8;
+    for (const s of [1, -1]) {
+      gg.beginPath(); gg.ellipse(cx + s * 3, cy - 1.6, 2.8, 2.2, s * -0.5, 0, Math.PI * 2); gg.fill();
+      gg.beginPath(); gg.ellipse(cx + s * 2.3, cy + 2.4, 1.9, 1.6, s * 0.5, 0, Math.PI * 2); gg.fill();
+    }
+    gg.fillRect(cx - 0.4, cy - 3.6, 0.8, 7.6);
+  }), 0, 0, 20, 17);
   return c;
 }
