@@ -22,6 +22,10 @@ is then `DarkBlit:blit`, which is not blacklisted, so these get the dark shader 
 toggle and shader choice. To darken more Create textures, add their paths to `DARK` in
 `AllGuiTexturesMixin`. A baked dark texture would not follow the toggle: do not use one.
 
+DME's font rule turns text light only when red, green and blue are all under 65.
+`PackagePortScreenMixin` moves the frogport/mailbox title color from #3D3C48 to #3D3C40 so the
+rule catches it; check other dark-panel text against the same rule.
+
 Build: Gradle runs on JDK 17 (system default is 27, too new); the toolchain gets JDK 21.
 
 ## Instance config (not in this repo)
