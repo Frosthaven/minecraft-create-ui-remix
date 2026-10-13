@@ -110,7 +110,20 @@ tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.s
 tap('cast', () => { if (st.irons != null) st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; if (st.ars != null) st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
 tap('armorBtn', () => { st.armor = st.armor ? 0 : 14; document.getElementById('armorBtn').setAttribute('aria-pressed', String(!!st.armor)); });
-tap('roll', () => { st.rolls = st.rolls <= 0 ? (st.rollCount || 2) : Math.round((st.rolls - 0.5) * 10) / 10; });
+// Roll: uses a whole charge (when one is ready); charges then refill one at a time, as the mod's server config says:
+// 40 ticks (2 s) for a roll, 20 more ticks for each charge above one.
+let rechargeTimer = null;
+tap('roll', () => {
+  if (st.rolls < 1) return;
+  st.rolls -= 1;
+  clearInterval(rechargeTimer);
+  rechargeTimer = setInterval(() => {
+    const n = st.rollCount || 2, k = Math.floor(st.rolls) + 1, secs = 2 + Math.max(0, k - 1) * 1;   // the charge being refilled
+    st.rolls = Math.min(n, st.rolls + 0.05 / secs);
+    if (st.rolls >= n) clearInterval(rechargeTimer);
+    render();
+  }, 50);
+});
 tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
 /** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air. */
 function swim(on, diving) {
