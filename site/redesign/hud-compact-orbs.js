@@ -271,9 +271,9 @@ function ccOrbs(g, s) {
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT, style: 'cloud' }
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth, style: 'broth',
-          wave: s.food <= 6 ? 0.9 : 0, t: s.t + 400 };   // low food (no sprinting): the broth sloshes too
+          wave: s.food <= 6 ? 0.35 : 0, t: s.t + 400 };   // low food (no sprinting): the broth sloshes too
     const low = s.health <= 4;   // vanilla shakes the hearts here; the orb's liquid sloshes instead
-    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.9 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
+    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.35 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
     });
     ccOrbFx(g, s, ORB.lx, ORB.y, hp, max, riding);
