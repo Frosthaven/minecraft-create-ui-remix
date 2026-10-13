@@ -5,7 +5,8 @@
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { tex: 0.67,   // tex: the orbs' texture strength (a third less than first drawn)
+const ORB = { tex: 0.67, housing: 16.5,   // housing: the housing's radius (r + bezel + 2.4)
+    // tex: the orbs' texture strength (a third less than first drawn)
   r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 96.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
   // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
   bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
@@ -18,7 +19,8 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   // The brass bezel; a ring (armor, breath) takes it over where its segments are lit: ten segments clockwise from the
   // top, the unlit ones staying plain brass.
   const B = ORB.bezel, R1 = r + B;
-  circle(g, cx, cy, R1); g.fillStyle = brass(g, cy - R1, cy + R1); g.fill();
+  // The bezel: dark stone grey (not brass), a little lighter where the light falls.
+  circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#6a6c70'], [0.35, '#45474b'], [1, '#232427']]); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);   // a light brushed finish
   if (ring) {
     // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim.
@@ -84,7 +86,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.beginPath(); g.ellipse(cx - r * 0.32, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
-  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, P.brassHi, 0.3);
+  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#a8abb0', 0.3);
 }
 
 /** The orb's housing, part of its wing plate: the plate rises into a round iron boss around the orb (the plate's own
@@ -108,7 +110,11 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
     g.restore();
   };
   g.save(); g.translate(0, -0.6); outline(true); g.fillStyle = 'rgba(0,0,0,0.55)'; g.save(); g.beginPath(); g.rect(cx - dx - 1, cy - R - 2, 2 * dx + 2, wing - (cy - R - 2)); g.clip(); outline(true); g.fill(); g.restore(); g.restore();
-  outline(true); g.fillStyle = iron(g, wing, b); g.fill(); ironSurface(g, () => outline(true));
+  // The plate's own gradient (shared, from the dome's peak), plus a soft light on the dome's crown so it reads round.
+  outline(true); g.fillStyle = iron(g, cy - R, b); g.fill(); ironSurface(g, () => outline(true));
+  g.save(); outline(true); g.clip();
+  circle(g, cx, cy - R * 0.55, R * 0.75); g.fillStyle = radial(g, cx, cy - R * 0.7, R * 0.75, [[0, 'rgba(255,240,220,0.10)'], [1, 'rgba(255,240,220,0)']]); g.fill();
+  g.restore();
   // The rim along the smooth outline only (not the closing sides inside the plate).
   rim(g, () => outline(false), cy - R, cy + R, P.brassHi, 0.35);
   // The seat: a recessed groove the orb's bezel drops into.

@@ -163,8 +163,8 @@ function ccPlate(g, ears = {}) {
   const inner = ears.inner || CC.plate.inner;   // the wings' inner ends (with orbs: just past the orb housings)
   // One plate: a top edge of level runs [x from, x to, y] joined by S curves, rounded corners, its shadow, iron, a
   // lit brass rim. Returns its path.
-  const plate = (runs) => {
-    const xa = runs[0][0], xb = runs[runs.length - 1][1], top = Math.min(...runs.map(q => q[2]));
+  const plate = (runs, gradTop) => {
+    const xa = runs[0][0], xb = runs[runs.length - 1][1], top = gradTop ?? Math.min(...runs.map(q => q[2]));
     const path = () => {
       const y0 = runs[0][2], yl = runs[runs.length - 1][2];
       g.beginPath(); g.moveTo(xa, b - r); g.lineTo(xa, y0 + r); g.quadraticCurveTo(xa, y0, xa + r, y0);
@@ -188,9 +188,9 @@ function ccPlate(g, ears = {}) {
     g.lineTo(edge, mid); g.lineTo(edge, wing); g.closePath(); g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
     g.restore();
   };
-  const left = plate(ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], -inner, mid]] : [[x0, -inner, wing]]);
+  const left = plate(ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], -inner, mid]] : [[x0, -inner, wing]], ears.gradTop);
   if (ears.left) tab(left[0], E.l[0], -inner, -1);
-  const right = plate(ears.right ? [[inner, E.r[1], mid], [E.r[1] + step, x1, wing]] : [[inner, x1, wing]]);
+  const right = plate(ears.right ? [[inner, E.r[1], mid], [E.r[1] + step, x1, wing]] : [[inner, x1, wing]], ears.gradTop);
   if (ears.right) tab(right[0], E.r[1], inner, 1);
   const centre = plate([[-sec, sec, mid]]);
   for (const [path, top] of [left, right, centre]) rim(g, path, top, b, P.brassHi, 0.35);
@@ -210,7 +210,7 @@ function compactHud(s, font) {
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
   const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
-  ccPlate(g, { left: leftExt, right: !!rightExt, inner: s.orbs ? ORB.innerEnd : 0, pull: s.orbs ? ORB.pull : 0 });
+  ccPlate(g, { left: leftExt, right: !!rightExt, inner: s.orbs ? ORB.innerEnd : 0, pull: s.orbs ? ORB.pull : 0, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
@@ -314,7 +314,8 @@ function compactHud(s, font) {
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -152 : 152, 39);   // no dodge roll mod: a pressed-in cog
   else {
-  const [rx, ry] = s.leftHanded ? [-164.5 + pull, CC.roll[1]] : [CC.roll[0] - pull, CC.roll[1]], tier = rollTier(s.rolls);
+  const dashIn = s.orbs ? 4 : 0;   // with orbs the dash sits a little further in, centred in its space
+  const [rx, ry] = s.leftHanded ? [-164.5 + pull + dashIn, CC.roll[1]] : [CC.roll[0] - pull - dashIn, CC.roll[1]], tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
   if (font) {
     const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line
