@@ -20,7 +20,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   // top, the unlit ones staying plain brass.
   const B = ORB.bezel, R1 = r + B;
   // The bezel: dark stone grey (not brass), a little lighter where the light falls.
-  circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#6a6c70'], [0.35, '#45474b'], [1, '#232427']]); g.fill();
+  circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#55575b'], [0.35, '#36383c'], [1, '#1b1c1f']]); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);   // a light brushed finish
   // Dark rivets around the stone rim, at the gaps between the ring's segments.
   for (let k = 0; k < 10; k++) {
@@ -116,7 +116,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.beginPath(); g.ellipse(cx - r * 0.32, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
-  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#a8abb0', 0.3);
+  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
 }
 
 /** The nebula mask: white in the clouds, falling to deep space (dark blue-black) between them; multiplied over a
