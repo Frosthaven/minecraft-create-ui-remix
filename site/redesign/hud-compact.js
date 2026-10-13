@@ -162,16 +162,17 @@ function ccDashFiller(g, cx, cy) {
  *  gap next to the health orb. Left-handed mirrors which end holds which. Returns { x0, x1, offhand (slot's left x),
  *  dash (dial centre x), meka (gauge centre x) }. */
 function ccEnds(s) {
-  const G = 4, inner = s.orbs ? ORB.rx + ORB.housing : 131, dialW = 14.6, slotW = 18;   // meter mode: the meters' outer ends
+  // Orb mode: the item tucks in close to the housing's curve (1.5 px) with 3 px of plate past it; meter mode: 4 and 4.
+  const G = s.orbs ? 1.5 : 4, E = s.orbs ? 3 : 4, inner = s.orbs ? ORB.rx + ORB.housing : 131, dialW = 14.6, slotW = 18;
   const meka = !s.creative && s.mekasuit;
-  const left = inner + G + (meka ? 3.4 : 0), right = inner + G;   // the vitals (left) side holds the gauge
+  const left = inner + G + (meka ? 3.4 : 0), right = inner + G;   // meka: its gauge's slot   // the vitals (left) side holds the gauge
   const leftW = s.leftHanded ? dialW : slotW, rightW = s.leftHanded ? slotW : dialW;
   const leftItem = -(left + leftW / 2), rightItem = right + rightW / 2;
   return {
-    x0: -(left + leftW + G), x1: right + rightW + G,
+    x0: -(left + leftW + E), x1: right + rightW + E,
     offhand: (s.leftHanded ? rightItem : leftItem) - slotW / 2,
     dash: s.leftHanded ? leftItem : rightItem,
-    meka: -(inner + G / 2 + 1.7),
+    meka: -(inner + G + 1.7),
   };
 }
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer

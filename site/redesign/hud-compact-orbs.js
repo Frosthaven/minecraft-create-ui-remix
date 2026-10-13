@@ -5,9 +5,9 @@
 // whole orb);
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { tex: 0.67, housing: 16.5,   // housing: the housing's radius (r + bezel + 2.4)
+const ORB = { tex: 0.67, housing: 15.5,   // housing: the housing's radius (r + bezel + 1.4: a dome hugging the orb)
     // tex: the orbs' texture strength (a third less than first drawn)
-  r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 96.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
+  r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 97.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
   // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
   bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
@@ -235,7 +235,7 @@ function ccNebula() {
  *  iron and texture, so they read as one casting), its brass rim continuing over the top where it rises above the
  *  plate, and a dark seat line where the orb sits recessed. Drawn after the plate, before the orb. */
 function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the right, -1 to the left
-  const R = ORB.r + ORB.bezel + 2.4, wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
+  const R = ORB.housing, wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
   // The boss's outline above the plate: the plate's top edge, a concave fillet into the circle, over the top, a fillet
   // back down to the edge, so the outline flows from the straight edge into the curve without a corner.
   const fy = wing - f, dy = fy - cy, dx = Math.sqrt((R + f) ** 2 - dy ** 2);
@@ -260,8 +260,8 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
   outline(false); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.6; g.stroke();   // an even dark edge (no shifted shadow: it read as a flat top)
   rim(g, () => outline(false), cy - R, cy + R, P.brassHi, 0.35);
   // The seat: a recessed groove the orb's bezel drops into.
-  circle(g, cx, cy, ORB.r + ORB.bezel + 0.55); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.9; g.stroke();
-  g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 1.05); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
+  circle(g, cx, cy, ORB.r + ORB.bezel + 0.4); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.7; g.stroke();
+  g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 0.8); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
 }
 
 /** The dodge roll dial at (cx, cy): a stone-rimmed glass with the dash chevrons in the tier colour, and around the rim a

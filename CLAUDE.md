@@ -151,6 +151,8 @@ not packed), so other mods that reuse vanilla hearts look vanilla.
   (45, 3m, 1h; red under 10 s; none when infinite). Buffs' draining border is green, debuffs' red.
   Hover (page) shows the name, level and time; in game: names while the numbers key is held or a screen is open.
   Not in game yet (it would replace MOB_EFFECTS).
+- In game (to build when the orbs are approved): a client config "Meter display: Orbs | Bars" (default Orbs), next to
+  "Primary mana pool: Iron's | Ars" (both mods installed) and the HUD size.
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
   while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
   screen is open.
