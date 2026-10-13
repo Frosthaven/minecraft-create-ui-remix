@@ -131,8 +131,8 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
   0.5 below it, 0.6 tall, the meter's length, muted tan on a dark track), draining from the right. Numbers on the orbs and meters are doubled with them; the level digits are 0.85, effect times 1.5x.
 
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
-level window centred on it; the vitals and mana either as two orbs in housings on the wing plates (default) or as three
-rows of bars per wing (client config "Meter display"). Shipping the page exports its textures (`hud-compact-export.js`,
+level window centred on it; the vitals and mana either as three rows of bars per wing (default) or as two orbs in housings on the wing
+plates (client config "Meter display"). Shipping the page exports its textures (`hud-compact-export.js`,
 6 files under `createhud:textures/gui/compact/`: 4 plates, `parts`, `orbs`) and haven-create-ui-ux draws the layout
 from them, piece by piece in the page's order (the page and the export draw with the same functions, so preview and
 game match). The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is not packed), so other
@@ -187,7 +187,7 @@ mods that reuse vanilla hearts look vanilla.
 - Liquids are lifted a step (`ccLift`: mid toward white 10 %, dark toward mid 30 %); mana more (16 % / 50 %, nebula
   deep tone (128, 122, 166), the orb's mask at 0.55) to the cast bar's value. A smooth ring meter darkens the bezel
   under it all round (`ccOrbRingTrack`, atlas cell `ringTrack`).
-- Client config (`UiConfig`, Mods > Config in game): meter display Orbs | Bars (default Orbs), primary mana pool
+- Client config (`UiConfig`, Mods > Config in game): meter display Bars | Orbs (default Bars), primary mana pool
   Iron's | Ars, action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
