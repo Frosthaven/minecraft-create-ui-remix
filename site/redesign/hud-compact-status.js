@@ -134,20 +134,16 @@ function ccHealthPreview(g, s, [x, y, w, h], max) {
   g.fillStyle = `rgba(255,200,200,${0.3 + 0.25 * Math.sin(s.t / 160)})`; g.fillRect(x + 0.5 + from, y, to - from, h);
   g.restore();
 }
-/** AppleSkin's exhaustion (0 to 4, a food point lost at 4): a soft dim glow hugging the food meter's lower edge, full
- *  at 0 and draining from the right end as exhaustion rises (as food empties), refilling smoothly when the game takes
- *  the point (s.exhShown eases). Screen-blended; the game draws the band from the export (on black), cropped. */
-function ccExhaustBand(g, [x, y, w, h]) {
-  g.save(); g.filter = `blur(${0.4 * g.getTransform().a}px)`;
-  rrect(g, x + 1, y + h - 0.5, w - 2, 1.2, 0.6); g.fillStyle = 'rgba(232,200,140,0.38)'; g.fill();
-  g.restore();
-}
+/** AppleSkin's exhaustion (0 to 4, a food point lost at 4), bar mode: a slim solid strip directly under the food
+ *  meter (the old hairline's height, the meter's length, crisp edges, a dim muted tan on a dark track), full at 0 and
+ *  draining from the right end as exhaustion rises (as food empties), refilling smoothly when the game takes the point
+ *  (s.exhShown eases). The game draws the same strip with fills (CC_EXH_STRIP). */
+const CC_EXH_STRIP = { gap: 0.5, h: 0.6, track: '#15120f', fill: '#8a7458' };
 function ccExhaustion(g, s, [x, y, w, h]) {
   if (s.exhaustion == null) return;
-  const frac = 1 - Math.min(1, (s.exhShown ?? s.exhaustion) / 4);
-  if (frac <= 0.001) return;
-  g.save(); g.beginPath(); g.rect(x - 1, y + h - 1.5, (w + 2) * frac, 4); g.clip();
-  g.globalCompositeOperation = 'screen'; ccExhaustBand(g, [x, y, w, h]); g.restore();
+  const frac = 1 - Math.min(1, (s.exhShown ?? s.exhaustion) / 4), sy = y + h + CC_EXH_STRIP.gap;
+  g.fillStyle = CC_EXH_STRIP.track; g.fillRect(x, sy, w, CC_EXH_STRIP.h);
+  if (frac > 0.001) { g.fillStyle = CC_EXH_STRIP.fill; g.fillRect(x, sy, w * frac, CC_EXH_STRIP.h); }
 }
 /** The mount icon for a camel: a head on a long neck, sandy. 9 x 9. */
 function ccCamel() {

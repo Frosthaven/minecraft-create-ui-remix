@@ -278,7 +278,7 @@ function compactHud(s, font) {
   // Breath shows as the game's air row does: while under water (eyes in water) or while air is still below full
   // (catching your breath after surfacing). Not from the tank or air values alone: when the backtank empties the air
   // is still full for a moment, and the segment must not blink out.
-  const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
+  const tank = ccTankLeft(s), showArmor = !s.creative && s.armor > 0, showBreath = ccBreathShown(s);
   const ends = CC.lay = ccEnds(s);
   // The side bars at their own size (s.side, the config's "side bars size"): scaled around (±CC_SIDE, the bottom), so
   // they stay attached to the centre plate. The plate is drawn per part, each clipped to its side of the anchor.
@@ -411,3 +411,10 @@ function compactHud(s, font) {
   if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit)) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }
+
+/** Create backtank air shown (seconds): while diving, or while a Create Jetpack drains it in flight (the game: tank air
+ *  fell in the last 3 s), else 0. */
+function ccTankLeft(s) { return s.diving || s.jetpack ? Math.max(0, s.tank) : 0; }
+/** The breath / tank segment shows as the game's air row (under water, or air below full) and while a jetpack drains
+ *  the backtank. */
+function ccBreathShown(s) { return !s.creative && (s.underwater || s.air < 1 || (s.jetpack && s.tank > 0)); }

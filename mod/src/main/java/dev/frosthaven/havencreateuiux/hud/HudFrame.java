@@ -37,7 +37,7 @@ final class HudFrame {
     final LivingEntity mount;
     final float mountHp, mountMax;
     final Float flamingo, hull;
-    final HudExtras.Suit suit;   // MekaSuit energy (a cyan status in the effects rail), or null
+    final List<GearStatus.Gear> gear;   // worn gear's statuses (cyan, in the effects rail): MekaSuit energy, fuel, oxygen
     final boolean primaryArs;
     final double side;   // the side bars' size (config)
     final Ends ends;
@@ -83,7 +83,7 @@ final class HudFrame {
         irons = HudStats.irons(p);
         ars = HudStats.ars(p);
         roll = HudStats.roll(p);
-        suit = hurtable ? HudExtras.mekaSuit(p) : null;
+        gear = hurtable ? GearStatus.read(p) : List.of();
         flamingo = hurtable ? HudExtras.flamingo(p) : null;
         hull = HudExtras.aircraftHealth(p);
         ends = new Ends(orbs, lefty);

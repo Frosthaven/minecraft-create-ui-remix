@@ -9,7 +9,6 @@
 //     (shadow included); (78, 0) the level window 10 x 4.6 (caps 2 | middle | 2); (90, 0) the icon window 9x7;
 //     (100 + 7 k, 0) window icons 7x7 (icon 5 tall, centred): flask, horse, camel, train, engine;
 //     (182, 92) the dash dial's housing 42 x 38 (orbs);
-//     (182, 132) bar mode's exhaustion glow band 34 x 4 on black (under a meter at (183, 129.5)).
 //     (0, 236) wing casing 32x4 (clear of the selection cell's rows 0..23); (0, 26) XP casing 177x3.
 //     (0, 30 + 5 k) full wing meters (the game crops their inner 0.5-inset area), WING_LIQUIDS;
 //     (0, 112 + 4 k) full XP pipes, XP_LIQUIDS.
@@ -18,7 +17,7 @@
 //     (180, 20 + 3.5 r) digits "0123456789/:+" at 0.6, 3 apart, TINTS rows (meter and orb numbers, the tank time).
 //     (180, 76 + 5 r) the same at CC_LEVEL.k (0.85, the level): green, dim, black.
 //     (0, 190) follower plate 24x9; gear row centred (46, 196); groove (80, 190) 32x4; dash cog centred (129, 199);
-//     effect frames 10x10 at (140|152|164|176, 190) (buff, debuff, ambient, MekaSuit); overlays at y 210 (see compactExports).
+//     effect frames 10x10 at (140|152|164|176, 190) (buff, debuff, ambient, MekaSuit and fuelled gear); overlays at y 210 (see compactExports).
 //   orbs (384 x 320): orb pieces centred in cells. Small cells (32 x 32): cell n centred at (28 + 32 (n % 11),
 //     34.5 + 32 floor(n / 11)), ORB_CELLS. Ring cells (48 x 48): centred at (28 + 64 m, 290.5), RING_CELLS. Centres are
 //     28 and 2.5 modulo 32, so the material textures (256 px tiles) line up with the page's.
@@ -129,9 +128,6 @@ function compactExports() {
   ccLevelWindow(g, 78, 0, 10, CC_LEVEL.h);
   ccLevelWindow(g, 90, 0, CC_LEVEL.iconW, CC_LEVEL.iconH);
   CCX.winIcons.forEach((n, k) => ccIcon(g, ccxIcon(n), 100 + 7 * k + 3.5, 3.5, CC_LEVEL.icon));
-  // Bar mode's exhaustion glow band on black (182, 132) 34 x 4: a meter at (183, 129.5) (the game screen-blends it).
-  g.fillStyle = '#000'; g.fillRect(182, 132, 34, 4);
-  g.save(); g.beginPath(); g.rect(182, 132, 34, 4); g.clip(); ccExhaustBand(g, [183, 129.5, 32, 4]); g.restore();
   // The dash dial's housing in orb mode (182, 92) 42 x 38: logical (dash - 21, 12.5) of the bar, fillets both sides.
   g.save(); g.beginPath(); g.rect(182, 92, 42, 38); g.clip(); g.translate(182 + 21, 92 - 12.5);
   ccHousing(g, 0, CC_DIAL.y, 0, ccDialR(), ORB.y - ORB_H(), (CC_DASH.r + CC_DASH.B) * CC_DIAL.S, CC_DIAL.S);
@@ -175,7 +171,7 @@ function compactExports() {
   ccGroove(g, 80, 190, MW, 4);
   ccDashFiller(g, 129, 199);
   // Effect frames at 10 x 10 (no icon, no time border: the game draws those): buff (140, 190), debuff (152, 190),
-  // ambient (164, 190), the MekaSuit's energy (176, 190).
+  // ambient (164, 190), the MekaSuit's energy and fuelled gear (176, 190).
   for (const [kind, ux, amb] of [['buff', 140, false], ['debuff', 152, false], ['buff', 164, true], ['suit', 176, false]]) {
     g.save(); g.translate(ux, 190); g.scale(10 / 24, 10 / 24); ccEffect(g, 0, 0, kind, null, 1, amb, true); g.restore();
   }

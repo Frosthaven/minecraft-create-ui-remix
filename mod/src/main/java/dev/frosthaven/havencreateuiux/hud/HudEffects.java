@@ -22,8 +22,9 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * floating lines left-aligned to the bar's edge, buffs nearest the bar and debuffs (1.5x) above, each line always-on
  * effects first; a socket per effect with a border draining clockwise from the top (green buff, red debuff) and the
  * time left under it (45, 3m, 1h) in the kind's tint (it does not change as it runs down). Hovering one while a screen is open shows its name and time.
- * A worn MekaSuit is one more socket in the buffs line, after the always-on buffs: cyan, its icon the worn piece, the
- * border draining with the suit's energy and the percent under it (no sign), cyan.
+ * Worn gear (GearStatus: MekaSuit energy, jetpack hydrogen, scuba / space suit oxygen, Jet Suit energy, O2 backtanks)
+ * adds sockets to the buffs line after the always-on buffs: all cyan, each the worn item as its icon, the border draining
+ * with what is left and the percent under it (no sign), cyan; the tooltip names the resource and its amount.
  * Drawn in texels relative to (bar centre, screen bottom); CompactHud's pose maps them to the screen.
  */
 final class HudEffects {
@@ -37,16 +38,17 @@ final class HudEffects {
     private HudEffects() {}
 
     /** left: the bar's left edge + 1, top: where the lines start (units; with orbs, clear of the housings). */
-    static void draw(GuiGraphics g, Player p, HudExtras.Suit suit, int cx, int bottom, float scale, double left, double startTop) {
+    static void draw(GuiGraphics g, Player p, List<GearStatus.Gear> gear, int cx, int bottom, float scale, double left, double startTop) {
         BOXES.clear();
         List<MobEffectInstance> all = new ArrayList<>();
         for (MobEffectInstance e : p.getActiveEffects()) if (e.showIcon()) all.add(e);
         all.sort((a, b) -> b.compareTo(a));
         START.keySet().removeIf(h -> all.stream().noneMatch(e -> e.getEffect().equals(h)));
         List<Object> green = new ArrayList<>(line(all, false)), red = new ArrayList<>(line(all, true));
-        if (suit != null) green.add(alwaysOn(green), suit);   // after the always-on buffs, before the timed ones
+        green.addAll(alwaysOn(green), gear);   // after the always-on buffs, before the timed ones
         HudLog.changed("effects", green.size() + "/" + red.size(), "effects: {} buffs, {} debuffs", green.size(), red.size());
-        HudLog.changed("suit", suit != null, "MekaSuit energy status: {}", suit != null ? "shown (cyan, in the buffs line)" : "hidden");
+        HudLog.changed("gear", gear.stream().map(GearStatus.Gear::id).toList(), "gear statuses (cyan, in the buffs line): {}",
+                gear.isEmpty() ? "none" : String.join(", ", gear.stream().map(GearStatus.Gear::id).toList()));
         double top = startTop;
         for (Object[] l : new Object[][] {{green, 1.0}, {red, 1.5}}) {
             @SuppressWarnings("unchecked") List<Object> list = (List<Object>) l[0];
@@ -57,7 +59,7 @@ final class HudEffects {
                 for (int i = 0; i < per && r * per + i < list.size(); i++) {
                     Object e = list.get(r * per + i);
                     int x = (int) Math.round(left * K) + (int) (CELL * m * i), y = (int) Math.round((top - 50) * K);
-                    if (e instanceof HudExtras.Suit su) suit(g, su, x, y);
+                    if (e instanceof GearStatus.Gear su) suit(g, su, x, y);
                     else effect(g, (MobEffectInstance) e, x, y, m);
                     double s = scale / K;
                     BOXES.add(new Object[] {e, cx + x * s, bottom + y * s, SIZE * m * s});
@@ -73,8 +75,8 @@ final class HudEffects {
         return n;
     }
 
-    /** The MekaSuit's socket: cyan frame, the worn piece's icon, the border draining with its energy, the percent. */
-    private static void suit(GuiGraphics g, HudExtras.Suit su, int x, int y) {
+    /** A gear socket: cyan frame, the worn item's icon, the border draining with what is left, the percent. */
+    private static void suit(GuiGraphics g, GearStatus.Gear su, int x, int y) {
         var pose = g.pose();
         pose.pushPose();
         pose.translate(x, y, 0);
@@ -162,8 +164,8 @@ final class HudEffects {
             double x = (double) box[1], y = (double) box[2], s = (double) box[3];
             if (mx < x || mx > x + s || my < y || my > y + s) continue;
             var mc = Minecraft.getInstance();
-            if (box[0] instanceof HudExtras.Suit su) {
-                event.getGuiGraphics().renderComponentTooltip(mc.font, List.of(Component.literal("MekaSuit energy"), su.text()), (int) mx, (int) my);
+            if (box[0] instanceof GearStatus.Gear su) {
+                event.getGuiGraphics().renderComponentTooltip(mc.font, List.of(su.name(), su.text()), (int) mx, (int) my);
                 return;
             }
             MobEffectInstance e = (MobEffectInstance) box[0];

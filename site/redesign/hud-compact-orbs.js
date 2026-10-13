@@ -438,7 +438,7 @@ function ccOrbs(g, s) {
   // Right: the mana pools (primary the liquid, the other the crescent), breath as the ring under water.
   const pools = [['irons', s.irons, MANA.irons, 200], ['ars', s.ars, MANA.ars, 150]].filter(p => p[1] != null);
   if (s.manaPrimary === 'ars') pools.reverse();
-  const tank = s.diving ? Math.max(0, s.tank) : 0, breath = !s.creative && (s.underwater || s.air < 1);
+  const tank = ccTankLeft(s), breath = ccBreathShown(s);
   // The right ring shows one thing: breath (or the backtank), else the Helium Flamingo's charge, else an aircraft's health.
   const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: ['#ffd9b0', '#c98a5a', '#5a2814'], smooth: true } : { frac: s.air, on: LIQUID.air, smooth: true })
     : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO, smooth: true }

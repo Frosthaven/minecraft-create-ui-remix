@@ -11,12 +11,11 @@ screens. Client only; nothing to install on the server.
 
 ## Install
 
-1. Copy everything in the zip's `mods/` into your instance's `mods` folder
-   (Prism: right-click the instance > Folder, then `minecraft/mods`). Replace Dark Mode Everywhere if asked.
-2. Copy `resourcepacks/haven-create-hud.zip` into the instance's `resourcepacks` folder (from an older
-   version, delete the old `Create-HUD` and `DarkModeEverywhere-Veil-Fix` packs and the `createdarkinventory` jar).
+1. Copy all three jars in the zip's `mods/` (haven-create-ui-ux, haven-mob-health-bars and Dark Mode Everywhere) into
+   your instance's `mods` folder (Prism: right-click the instance > Folder, then `minecraft/mods`).
+2. Copy `resourcepacks/haven-create-hud.zip` into the instance's `resourcepacks` folder.
 3. Start the game. Options > Resource Packs: enable **haven-create-hud** at the top of the list.
-4. The "Dark Mode" button on inventory screens turns dark mode on and off.
+4. The "Dark Mode" button on inventory screens cycles 4 shades, from vanilla light mode to perfect dark.
 
 To update, download the zip again and replace the files.
 
@@ -25,11 +24,14 @@ To update, download the zip again and replace the files.
 Mods:
 - **haven-create-ui-ux** (built here): the compact action bar (orbs or bars) in place of the vanilla and mod HUD rows,
   buffs and debuffs above it, the dark mode split for the inventory and backpack screens, Dark Mode Everywhere fixes
-  for Create's screens, and a config screen. Needs Create.
+  for Create's screens, and a config screen. Needs Create. Worn gear gets a cyan status icon by the buffs: MekaSuit
+  energy, Mekanism jetpack (and MekaSuit jetpack unit) hydrogen, Mekanism scuba tank oxygen, Ad Astra space suit
+  oxygen and Jet Suit energy, Creating Space O2 backtanks; the Create backtank shows on the bar with its time left,
+  while diving and while a Create Jetpack drains it.
 - **haven-mob-health-bars** (built here): floating health bars over nearby mobs and players, with its own config.
   Works on its own.
-- **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified: a button on inventory
-  screens cycles 4 shades, from vanilla light mode through toasted light and less perfect dark to perfect dark.
+- **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified (not part of the modpack): a
+  button on inventory screens cycles 4 shades, from vanilla light mode through toasted light and less perfect dark to perfect dark.
 
 Resource packs:
 - **haven-create-hud** (built here): the action bar's art, the inventory, Curios, Cosmetic Armor, TrashSlot and

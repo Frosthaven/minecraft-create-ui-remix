@@ -12,6 +12,37 @@ const CC_EFFECT = {
   // A worn MekaSuit's energy: a cyan status in the buffs line (after the always-on buffs), border = energy left.
   suit: { bezel: ['#bdf2ff', '#3f9fb8', '#123a46'], track: 'rgba(10,40,50,0.95)', glow: '#3fe0ff' },
 };
+/** Fuelled gear, one status per resource after the MekaSuit's, the same cyan kind ('suit': cyan border and number),
+ *  told apart by the worn item's icon (the game draws the item) and the tooltip's name. Units as each mod shows them. */
+const CC_GEAR = {
+  mekJetpack: { name: 'Jetpack hydrogen', unit: 'mB', max: 24000, icon: 'jetpack' },
+  mekScuba: { name: 'Scuba tank oxygen', unit: 'mB', max: 24000, icon: 'scuba' },
+  suitOxygen: { name: 'Space suit oxygen', unit: 'mB', max: 1000, icon: 'spacesuit' },
+  jetSuitEnergy: { name: 'Jet Suit energy', unit: 'E', max: 1000000, icon: 'jetsuit' },
+  o2Tank: { name: 'O2 backtank', unit: 'O2', max: 1800, icon: 'o2tank' },
+};
+/** The preview's gear icons (the game draws the worn item): 16x16 pixel drawings. */
+const CC_GEAR_ICONS = {};
+function ccGearIcon(name) {
+  if (CC_GEAR_ICONS[name]) return CC_GEAR_ICONS[name];
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const g = c.getContext('2d'), px = (col, ...r) => { g.fillStyle = col; for (const [x, y, w, h] of r) g.fillRect(x, y, w, h); };
+  if (name === 'jetpack' || name === 'jetsuit') {   // two tanks on a harness, nozzles below
+    px('#2a2f36', [2, 2, 5, 11], [9, 2, 5, 11], [6, 4, 4, 3]);
+    px(name === 'jetsuit' ? '#e8edf2' : '#9aa3ad', [3, 3, 3, 9], [10, 3, 3, 9]);
+    px('#6b7380', [7, 5, 2, 1]); px('#ffb24a', [3, 13, 3, 2], [10, 13, 3, 2]);
+    if (name === 'jetsuit') px('#ffe14a', [4, 6, 1, 3], [11, 6, 1, 3]);
+  } else if (name === 'scuba' || name === 'o2tank') {   // an upright tank with a valve
+    px('#2a2f36', [4, 2, 8, 13], [6, 0, 4, 3]);
+    px(name === 'o2tank' ? '#c98a5a' : '#e8edf2', [5, 3, 6, 11]);
+    px('#8fc4ff', [6, 6, 4, 2]); px('#6b7380', [7, 1, 2, 2]);
+  } else {   // space suit: a white chestplate with a visor-blue panel
+    px('#2a2f36', [2, 2, 4, 3], [10, 2, 4, 3], [1, 4, 14, 3], [2, 7, 12, 7], [3, 14, 10, 1]);
+    px('#f2f2ee', [3, 3, 2, 2], [11, 3, 2, 2], [2, 5, 12, 2], [3, 7, 10, 6]);
+    px('#8fc4ff', [6, 7, 4, 3]); px('#c9c9c2', [3, 11, 10, 2]);
+  }
+  return (CC_GEAR_ICONS[name] = c);
+}
 /** The MekaSuit icon in the preview (the game draws the worn piece's item): a white chestplate with cyan trim. 16x16. */
 let CC_SUIT_ICON = null;
 function ccSuitIcon() {
@@ -83,14 +114,22 @@ function ccEffectsRail(g, s, icons) {
   const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));
   const green = line('buff'), red = line('debuff');
   // A worn MekaSuit: one more socket after the always-on buffs, before the timed ones.
-  if (!s.creative && s.mekasuit) green.splice(green.filter(e => !e.total).length, 0, { id: 'mekasuit', kind: 'suit', suit: s.mekasuit });
+  // Then one socket per fuelled gear resource worn (CC_GEAR), in the same group.
+  const worn = s.creative ? [] : [...(s.mekasuit ? [{ id: 'mekasuit', kind: 'suit', suit: s.mekasuit }] : []),
+    ...Object.entries(s.gear || {}).map(([id, frac]) => ({ id, kind: 'suit', gear: CC_GEAR[id], frac }))];
+  green.splice(green.filter(e => !e.total).length, 0, ...worn);
   // Debuffs at 1.5x (socket, spacing, digits): the ones to act on stand out.
   const draw = (e, x, y, m) => {
     const sz = size * m, kk = k * m * tk;
     g.save(); g.translate(x, y); g.scale(sz / 24, sz / 24);
-    ccEffect(g, 0, 0, e.kind, e.suit ? ccSuitIcon() : icons[e.id], e.suit ? e.suit : e.total ? e.secs / e.total : 1, e.ambient);
+    ccEffect(g, 0, 0, e.kind, e.suit ? ccSuitIcon() : e.gear ? ccGearIcon(e.gear.icon) : icons[e.id], e.suit ? e.suit : e.gear ? e.frac : e.total ? e.secs / e.total : 1, e.ambient);
     g.restore();
     CC.hit['effect:' + e.id] = [x, y, sz, sz];
+    if (e.gear) {   // the amount left (percent, no sign), cyan as the MekaSuit's
+      const t = String(Math.round(e.frac * 100));
+      ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint('#3fe0ff'), 'rgba(0,0,0,0.95)', kk);
+      return;
+    }
     if (e.suit) {   // the energy left (percent), always cyan
       const t = String(Math.round(e.suit * 100));   // percent, no sign
       ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint('#3fe0ff'), 'rgba(0,0,0,0.95)', kk);

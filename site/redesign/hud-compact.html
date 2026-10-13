@@ -29,8 +29,11 @@
      meter with its time left always on it. Preview only: shipping it needs haven-create-ui-ux to replace the HUD
      layers and draw this layout itself.</p>
   <p>Mods in this pack that draw at the hotbar or change its rows (read from their code; third row of buttons):
-     Farmer's Delight Nourishment gilds the food broth and Comfort runs a slow sheen along health; the MekaSuit's energy
-     is a cyan status after the always-on buffs (the worn piece, its border draining with the energy, the percent); an aircraft's health takes the right extension and its engine the XP
+     Farmer's Delight Nourishment gilds the food broth and Comfort runs a slow sheen along health; worn gear is a cyan
+     status after the always-on buffs (the worn item as its icon, the border draining with what is left, the percent):
+     MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen, Mekanism scuba tank oxygen, Ad Astra space
+     suit oxygen and Jet Suit energy, Creating Space O2 backtanks; the Create backtank shows with its time left while
+     diving and while a Create Jetpack drains it in flight (and 3 s after); an aircraft's health takes the right extension and its engine the XP
      pipe; a Create train's speed takes the XP pipe; the Helium Flamingo's charge takes the right extension; the
      steampunk armor's clock and compass and Artifacts cooldowns move to a small instrument plate above the bar (as
      vanilla places them they would cover the wings); Create's toolbox and schematic slot marks sit on the sockets,
@@ -58,6 +61,12 @@
   <button id="nourished" aria-pressed="false" title="Farmer's Delight Nourishment">Nourishment</button>
   <button id="comfort" aria-pressed="false" title="Farmer's Delight Comfort (shows when hurt with no saturation)">Comfort</button>
   <button id="mekasuit" aria-pressed="false" title="Mekanism MekaSuit energy: a cyan status in the effects rail">MekaSuit</button>
+  <button id="gear_mekJetpack" aria-pressed="false" title="Mekanism jetpack (or the MekaSuit jetpack unit): hydrogen, a cyan status">Mek jetpack</button>
+  <button id="gear_mekScuba" aria-pressed="false" title="Mekanism scuba tank: oxygen, a cyan status">Scuba tank</button>
+  <button id="gear_suitOxygen" aria-pressed="false" title="Ad Astra space suit (full set): oxygen, a cyan status">Space suit</button>
+  <button id="gear_jetSuitEnergy" aria-pressed="false" title="Ad Astra Jet Suit: energy, a cyan status (its oxygen shows as Space suit)">Jet Suit</button>
+  <button id="gear_o2Tank" aria-pressed="false" title="Creating Space copper or netherite oxygen backtank: O2, a cyan status">O2 backtank</button>
+  <button id="jetpackFly" aria-pressed="false" title="Create Jetpack in flight: it drains the backtank, so the tank shows with its time out of water too">Jetpack flight</button>
   <button id="aircraft" aria-pressed="false" title="Immersive Aircraft: hull health and engine">Aircraft</button>
   <button id="train" aria-pressed="false" title="Create train controls: speed">Train</button>
   <button id="flamingo" aria-pressed="false" title="Artifacts Helium Flamingo charge">Helium Flamingo</button>
@@ -95,7 +104,7 @@ const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45
   jump: null, cast: null, attack: null, creative: false, t: 0,
   spectator: false, maxHealth: 20, leftHanded: false, dash: null, holdHeal: 4, exhaustion: 2.4, itemName: '', nameAt: -1e9, actionBar: '',
   nourished: false, comfort: false, mekasuit: 0, aircraft: false, hull: 0.7, engine: null, train: null, flamingo: null, steampunk: false,
-  artifactCooldowns: [], toolboxSlots: [], schematicSlot: null, followers: 0, orbs: true, manaPrimary: 'irons' };
+  artifactCooldowns: [], toolboxSlots: [], gear: {}, jetpack: false, schematicSlot: null, followers: 0, orbs: true, manaPrimary: 'irons' };
 const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Pickaxe', 'Bread', 'Torch', 'Water Bucket', 'Goggles'];
 let font = null, waterTimer = null;
 function render() {
@@ -163,6 +172,14 @@ document.getElementById('hud').addEventListener('mousemove', e => {
     tip.style.left = e.clientX + 14 + 'px'; tip.style.top = e.clientY + 10 + 'px';
     return;
   }
+  const gearHit = st.creative ? null : Object.keys(st.gear).find(inBox);
+  if (gearHit) {   // the game shows the mod's own amount text
+    const gd = CC_GEAR[gearHit], amt = Math.round(st.gear[gearHit] * gd.max);
+    tip.hidden = false;
+    tip.innerHTML = `<b style="color:#3fe0ff">${gd.name}</b> · ${amt.toLocaleString()}/${gd.max.toLocaleString()} ${gd.unit}`;
+    tip.style.left = e.clientX + 14 + 'px'; tip.style.top = e.clientY + 10 + 'px';
+    return;
+  }
   const hit = (st.effects || []).find(f => inBox(f.id));
   tip.hidden = !hit;
   if (!hit) return;
@@ -184,6 +201,26 @@ tap('riding', () => { st.riding = MOUNTS[(MOUNTS.indexOf(st.riding) + 1) % 3]; d
 flag('nourished', 'nourished');
 tap('comfort', () => { st.comfort = !st.comfort; press('comfort', st.comfort); if (st.comfort) { st.saturation = 0; st.health = Math.min(st.health, 14); st.regen = false; press('regen', false); } });
 flag('mekasuit', 'mekasuit', v => v ? 0 : 0.65); flag('steampunk', 'steampunk');
+// Fuelled gear: each button wears one piece (a status in the effects rail); its amount drains slowly while shown.
+const GEAR_START = { mekJetpack: 0.8, mekScuba: 0.6, suitOxygen: 0.45, jetSuitEnergy: 0.7, o2Tank: 0.9 };
+for (const id of Object.keys(GEAR_START)) tap('gear_' + id, () => {
+  if (id in st.gear) delete st.gear[id]; else st.gear[id] = GEAR_START[id];
+  press('gear_' + id, id in st.gear);
+});
+setInterval(() => { let any = false; for (const id in st.gear) { st.gear[id] = st.gear[id] <= 0.02 ? GEAR_START[id] : st.gear[id] - 0.002; any = true; } if (any) render(); }, 100);
+// Create Jetpack flight: the backtank drains out of the water; the tank shows while it drains and 3 s after (the game's rule).
+let jetTimer = null, jetOff = null;
+tap('jetpackFly', () => {
+  const on = !jetTimer; press('jetpackFly', on); clearTimeout(jetOff);
+  if (on) {
+    if (!st.jetpack || st.tank <= 0) st.tank = st.tankMax;
+    st.jetpack = true;
+    jetTimer = setInterval(() => { st.tank = Math.max(0, st.tank - 4); render(); }, 50);
+  } else {
+    clearInterval(jetTimer); jetTimer = null;
+    jetOff = setTimeout(() => { st.jetpack = false; render(); }, 3000);
+  }
+});
 tap('aircraft', () => { st.aircraft = !st.aircraft; press('aircraft', st.aircraft); st.engine = st.aircraft ? 0.7 : null; }); flag('train', 'train', v => v != null ? null : 0.55);
 flag('flamingo', 'flamingo', v => v != null ? null : 0.8);
 // Toolbox slots: marks slots 5 and 8 and selects 5, to show a selected toolbox slot too.

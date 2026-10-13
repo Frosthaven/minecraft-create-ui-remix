@@ -89,8 +89,8 @@ not a spectator.
   backtank eased between the game's steps).
 - Glows are drawn on black in the atlas and added with a screen blend (`ONE, ONE_MINUS_SRC_COLOR`); ImmediatelyFast's
   HUD batching keeps the blend state (`RenderSystemState`).
-- Exhaustion: `FoodData.getExhaustionLevel()` (NeoForge): bars a hairline under food; orbs cracks in the food half,
-  flakes when it drops (a point taken).
+- Exhaustion: `FoodData.getExhaustionLevel()` (NeoForge): bars a slim solid strip under food (fills, `BarHud`
+  EXH_*); orbs the crescent glow on the food half.
 - `CompactAtlas`: the textures' layout; KEEP IN STEP with `hud-compact-export.js`. `checkLayout` logs any overlap between
   parts-atlas pieces once (a cell reaching into a neighbour draws a stray bit of it: the wing casing once sat inside the
   selection cell and showed under the selected item).
@@ -102,12 +102,14 @@ not a spectator.
 - Side bars size (`UiConfig.SIDE_SCALE`): `HudDraw.side` scales each wing's parts around (±WING_ANCHOR, the bottom);
   the plate is drawn in three crops (centre, each wing); the offhand item follows; the effects rail moves with it.
 - Exhaustion: `HudFrame.exhaustShown` eases (Smooth, 400 ms for the reset jump); orbs reveal the screen-blended
-  `exhaust` cell by angle, bars crop the `EXH` band.
+  `exhaust` cell by angle, bars draw the strip's width.
 - Attack cooldown: on the selected socket whenever the attack indicator is not OFF, from `getAttackStrengthScale(partial
   tick)`; the indicator mode is logged on change.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
   (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank
-  (persistent `VisualBacktankAir`, `BacktankUtil.maxAir` over `getAllWithAir`), by reflection: a missing mod hides its row.
+  (under water / in lava: persistent `VisualBacktankAir`; out of the water while the tanks' `BacktankUtil.getAir` total
+  falls, a Create Jetpack in flight, and 3 s after: that total; capacity `maxAir` over `getAllWithAir`), by reflection: a
+  missing mod hides its row.
 - `RollHudMixin` (`haven_create_ui_ux.bosses.mixins.json`, optional): cancels Block Factory's Bosses' own roll icon
   (`ClientEvents.renderGUI`, a RenderGuiEvent.Pre we cannot hide as a layer) while the bar is active.
 - `Followers`: Haven Link's web map followers from its chat lines; reset on logout.
@@ -118,6 +120,14 @@ not a spectator.
   Immersive Aircraft health and engine, Create train speed / toolbox slots / schematic slot, Artifacts Helium Flamingo
   and cooldowns, Immersive Armors steampunk chestplate, AppleSkin food and health previews, vanilla attack indicator),
   through `Reflect` (cached, absent mod = hidden, logged once). `HudEffects`: buffs and debuffs (replaces EFFECTS),
-  hover tooltip while a screen is open; the MekaSuit's energy as a cyan socket in the buffs line (`HudExtras.Suit`:
-  fraction, Mekanism's `EnergyDisplay` text, the worn piece rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in `BUFF` / `DEBUFF`). The bar hides those mods' own layers (`REPLACED`).
+  hover tooltip while a screen is open; worn gear as cyan sockets in the buffs line (`GearStatus.Gear`: fraction, name,
+  the mod's amount text, the worn item rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in
+  `BUFF` / `DEBUFF`). `GearStatus` reads (bytecode of the pack's jars): MekaSuit energy (`HudExtras.mekaSuit`); Mekanism
+  jetpack / scuba tank / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through
+  `Capabilities.CHEMICAL.item()` (hydrogen / oxygen; the breathing unit stores none); Ad Astra: full suit set
+  (`SpaceSuitItem.hasFullSet`), oxygen `getOxygenAmount` over `FluidAmounts.toPlatformAmount(tankSize)`, Jet Suit energy
+  `getEnergy(stack, ModifyOnlyContext)` (the Jet Suit has no separate fuel); Creating Space `OxygenBacktankItem` as
+  chestplate: `OxygenBacktankUtil.getOxygen` / `maxOxygen(ItemStack)`. Hidden: Creating Space's
+  `creatingspace:remaining_oxygen` layer (its O2 dial alone). Kept: Mekanism's top-left `MekanismHUD` (one layer for all
+  its gear's lines, not separable) and Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
 

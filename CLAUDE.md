@@ -127,8 +127,8 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 - Sizes: config "Action bar size" scales everything around the bottom centre; "Side bars size" scales each wing
   around (±`CC_SIDE` 93.5, the bottom), so the wings stay attached (page buttons Side size / Bar size).
 - Exhaustion: orbs: a soft screen-blended crescent glow on the food half's edge, full at 0 and draining from the top
-  as exhaustion rises, refilling smoothly at the reset; bars: the same glow under the food meter, draining from the
-  right. Numbers on the orbs and meters are doubled with them; the level digits are 0.85, effect times 1.5x.
+  as exhaustion rises, refilling smoothly at the reset; bars: a slim solid strip under the food meter (`CC_EXH_STRIP`:
+  0.5 below it, 0.6 tall, the meter's length, muted tan on a dark track), draining from the right. Numbers on the orbs and meters are doubled with them; the level digits are 0.85, effect times 1.5x.
 
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
 level window centred on it; the vitals and mana either as two orbs in housings on the wing plates (default) or as three
@@ -144,20 +144,22 @@ mods that reuse vanilla hearts look vanilla.
   riding; saturation a paler cream tint of the broth below its level), armor as ten bolted plates on the bezel; right
   orb the mana pools (primary on the left half; one mod fills the orb), breath / the backtank / Helium Flamingo /
   aircraft hull as a smooth ring. Statuses in the glass: low health and food pulses in sync, sloshing waves, damage
-  flash, Regeneration motes, Comfort glow, Nourishment glaze, AppleSkin previews (half strength), exhaustion as cracks
-  in the food half (4 stages; flakes fall when it wraps). Creative or no mana mod: a cog in the empty housing.
+  flash, Regeneration motes, Comfort glow, Nourishment glaze, AppleSkin previews (half strength), exhaustion as the
+  crescent glow above. Creative or no mana mod: a cog in the empty housing.
 - Bars: no icons; left rows health, food (or the mount), armor; right rows breath (the backtank while it holds air,
   with its m:ss time) / Helium Flamingo / aircraft hull or a groove, then the mana pools (primary first; one mod: the
   last row a groove; none: gears). Liquids carry the orbs' looks (cloud, broth, galaxy at half strength); AppleSkin's
-  exhaustion is a hairline under food.
+  exhaustion is the solid strip under food (above).
 - XP pipe: lime with the cloud texture; a charging spell (galaxy), a camel's dash cooldown, a jump charge, a train's
   speed or an aircraft engine take it over, the level window growing to 9 x 7 to show their icon (5 tall).
 - Hardcore: a skull on a small floating plate above the offhand socket (no trims).
 - Breath and the backtank move smoothly in game (`Smooth`: eased between the game's steps; the tank time stays exact).
+- The backtank shows (ring / row 1, with its m:ss) while diving (Create's counter) and also out of the water while its
+  air falls (a Create Jetpack drains the same tanks in flight) and 3 s after; page button Jetpack flight.
 - Statuses (`hud-compact-status.js`): heart effects recolour health (poison, wither, frozen); Hunger spoils the broth;
   attack cooldown shades the selected socket (attack indicator crosshair or hotbar; per frame); creative hides health, food, armor, air.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
-  Nourishment and Comfort; MekaSuit energy (a status, below); Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
+  Nourishment and Comfort; MekaSuit energy and fuelled gear (statuses, below); Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
   liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns, Immersive Armors steampunk
   clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the bar. Followers come
   from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped following").
@@ -165,9 +167,11 @@ mods that reuse vanilla hearts look vanilla.
   wing, left-aligned to its edge: buffs nearest the bar, debuffs at 1.5x above, each line always-on first; at most 10 a
   line (6 debuffs), wrapping upward; each effect a 10 x 10 socket with a border draining clockwise from the top (green
   buff, red debuff) and its time left under it (45, 3m, 1h; none when infinite) in the kind's tint, never by time left.
-  A worn MekaSuit (pieces with energy) is a cyan socket in the buffs line after the always-on buffs: the worn piece's
-  icon (the chestplate when worn), the border draining with the energy, the percent under it (no sign, always cyan); hover:
-  Mekanism's own energy text ("1.2 MJ/16 MJ", its configured unit). It replaced the upright gauge, so the wings keep
+  Worn gear is a cyan socket each in the buffs line after the always-on buffs, all the same kind (cyan border and
+  number), told apart by the worn item's icon: MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen,
+  Mekanism scuba tank oxygen, Ad Astra space suit oxygen (full set) and Jet Suit energy, Creating Space O2 backtanks
+  (`CC_GEAR`; page buttons per piece). The border drains with what is left, the percent under it (no sign); hover: the
+  resource's name and the mod's amount ("1.2 MJ/16 MJ", "12,000/24,000 mB"). It replaced the upright gauge, so the wings keep
   one layout.
 - Client config (`UiConfig`, Mods > Config in game): meter display Orbs | Bars (default Orbs), primary mana pool
   Iron's | Ars, action bar size (1.0).

@@ -48,7 +48,8 @@ public final class CompactHud {
             id("appleskin", "exhaustion_level"), VanillaGuiLayers.EFFECTS, id("irons_spellbooks", "cast_bar"), id("create", "toolbox"),
             id("create", "train_hud"), id("mekanism", "energy_level"), id("immersive_aircraft", "ia_overlay"),
             id("immersive_armors", "ia_overlay"), id("artifacts", "helium_flamingo_charge"), id("artifacts", "artifact_cooldowns"),
-            id("farmersdelight", "comfort"), id("farmersdelight", "nourishment"));
+            id("farmersdelight", "comfort"), id("farmersdelight", "nourishment"),
+            id("creatingspace", "remaining_oxygen"));   // its O2 dial: a gear status now (GearStatus)
 
     /** The bar's size in game (the config's "action bar size", 1.0 by default: the hotbar at vanilla's size). */
     public static float scale() { return (float) (double) UiConfig.HUD_SCALE.get(); }
@@ -201,9 +202,9 @@ public final class CompactHud {
         Float attack = HudExtras.attackCharge(mc, p, delta);
         boolean[] toolbox = HudExtras.toolboxSlots(p);
         int schematic = HudExtras.schematicSlot();
-        HudLog.changed("extras", (cast != null) + "/" + (f.suit != null) + "/" + (f.hull != null) + "/" + (engine != null) + "/" + (train != null) + "/" + (f.flamingo != null) + "/" + (f.apple != null) + "/" + schematic,
-                "extras: cast {}, MekaSuit {}, aircraft {}, engine {}, train {}, Helium Flamingo {}, AppleSkin food {}, schematic slot {}",
-                cast != null, f.suit != null, f.hull != null, engine != null, train != null, f.flamingo != null, f.apple != null, schematic);
+        HudLog.changed("extras", (cast != null) + "/" + (!f.gear.isEmpty()) + "/" + (f.hull != null) + "/" + (engine != null) + "/" + (train != null) + "/" + (f.flamingo != null) + "/" + (f.apple != null) + "/" + schematic,
+                "extras: cast {}, gear statuses {}, aircraft {}, engine {}, train {}, Helium Flamingo {}, AppleSkin food {}, schematic slot {}",
+                cast != null, f.gear.size(), f.hull != null, engine != null, train != null, f.flamingo != null, f.apple != null, schematic);
         HudLog.changed("ext", f.showArmor + "/" + f.showBreath + "/" + (f.tank != null), "armor {}, breath {}{}", f.showArmor ? "shown" : "hidden",
                 f.showBreath ? "shown" : "hidden", f.tank != null ? " (Create backtank: " + (int) f.tank[0] + "s of " + (int) f.tank[1] + "s)" : "");
         HudLog.changed("mana", (f.irons != null) + "/" + (f.ars != null), "mana mods: Iron's Spellbooks {}, Ars Nouveau {}",
@@ -250,7 +251,7 @@ public final class CompactHud {
         if (f.hardcore) side(g, offSide, f.side, () -> part(g, SKULL_U, 0, SKULL_W, SKULL_H, x(f.ends.offhand + 9 - 4.5), y(wingTop - 9 - 2.5)));   // a skull above the offhand
         // The effects rail: above the orbs' domes; bar mode: above the tall wings (and the skull); following the side size.
         double railTop = f.orbs ? OrbHud.OY - OrbHud.HOUSING * OrbHud.S : BarHud.TOP - (f.hardcore ? 9 + 2.5 + 1 : 0);
-        HudEffects.draw(g, p, f.suit, cx, bottom, scale, sideX(f.ends.x0, f.side) + 1, sideY(railTop, f.side) - 2);
+        HudEffects.draw(g, p, f.gear, cx, bottom, scale, sideX(f.ends.x0, f.side) + 1, sideY(railTop, f.side) - 2);
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.

@@ -14,6 +14,8 @@ import net.minecraft.client.gui.GuiGraphics;
 final class BarHud {
     static final double[] ROWS = {31.4, 37.4, 43.4};
     static final double MW = 32, MH = 4, LEFT_X = -131, RIGHT_X = 99;
+    private static final double EXH_GAP = 0.5, EXH_H_L = 0.6;   // the exhaustion strip under food (CC_EXH_STRIP)
+    private static final int EXH_TRACK = 0xFF15120F, EXH_FILL = 0xFF8A7458;
     /** The meter blocks are drawn S x around (±ANCHOR, BY) (the page's CC_WING): the left spans -165..-101 and 13.8..45.8,
      *  centred (MID) in the wing plate (top TOP); OUTER: the blocks' outer edge plus 2. */
     static final double S = 2, ANCHOR = 97, BY = 49, TOP = 9.6, MID = 29.8, OUTER = 167;
@@ -85,9 +87,10 @@ final class BarHud {
             }
             if (f.apple != null && f.apple[0] > 0)   // AppleSkin: what the held food restores
                 inner(g, LEFT_X, y1, ix + ffill, ix + iw * Math.min(20, f.food + f.apple[0]) / 20.0, argb(0.35 + 0.25 * Math.sin(t / 160.0), 0xFFE6B4));
-            // Exhaustion: a soft glow hugging the food meter's lower edge, full at 0, draining from the right (screen).
-            int ew = (int) Math.round(EXH_W * (1 - clamp(f.exhaustShown)));
-            if (ew > 0) screen(() -> part(g, EXH_U, EXH_V, ew, EXH_H, x(LEFT_X - 1), y(y1 + MH - 1.5)));
+            // Exhaustion: a slim solid strip under the food meter (the page's CC_EXH_STRIP), full at 0, draining from the right.
+            double sy = y1 + MH + EXH_GAP, frac = 1 - clamp(f.exhaustShown);
+            g.fill(x(LEFT_X), y(sy), x(LEFT_X + MW), y(sy + EXH_H_L), EXH_TRACK);
+            if (frac > 0.001) g.fill(x(LEFT_X), y(sy), x(LEFT_X + MW * frac), y(sy + EXH_H_L), EXH_FILL);
             if (f.nums) numbers(g, LEFT_X, y1, f.food + "/20", liq);
         }
         if (f.showArmor) {   // armor: the meter shows up to 20 (as vanilla's ten icons); the number the real value

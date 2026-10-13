@@ -20,7 +20,8 @@ final class CompactAtlas {
             "mount", "irons", "ars", "armor", "air", "tank", "flamingo", "hull");
     static final List<String> XP_LIQUIDS = List.of("xp", "jump", "cooldown", "cast", "train", "engine");
     static final String DIGITS = "0123456789/:+smh";
-    // 0.625 digit rows: effect times in their kind's tint (BUFF, DEBUFF, CYAN for the MekaSuit), never by time left.
+    // 0.625 digit rows: effect times in their kind's tint (BUFF, DEBUFF, CYAN for the MekaSuit and fuelled
+    // gear), never by time left.
     static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3, RED = 4, CYAN = 5, BUFF = 6, DEBUFF = 7;
     static final String GLYPHS = "0123456789/:+";
     static final List<String> TINTS = List.of("blood", "poison", "wither", "frozen", "broth", "hunger", "mount", "irons", "ars",
@@ -37,8 +38,6 @@ final class CompactAtlas {
     // The dash dial's housing (orb mode): 42 x 38 at (182, 92), drawn at (dash - 21, 12.5) of the bar.
     static final int DOME_U = 182 * K, DOME_V = 92 * K, DOME_W = 42 * K, DOME_H = 38 * K;
     static final double DOME_HALF = 21, DOME_TOP = 12.5;
-    // Bar mode's exhaustion glow band (on black, screen-blended): 34 x 4 at (182, 132), drawn at (meter x - 1, y + h - 1.5).
-    static final int EXH_U = 182 * K, EXH_V = 132 * K, EXH_W = 34 * K, EXH_H = 4 * K;
     static final int WING_CASE_V = 236 * K, XP_CASE_V = 26 * K;   // the wing casing below everything: in rows 20..24 it
     // sat inside the selection cell (20, 0, 24 x 23), which drew a piece of it under the selected item
     static final int WING_W = 32 * K, WING_H = 4 * K, XP_W = 177 * K, XP_H = 3 * K;
@@ -57,7 +56,7 @@ final class CompactAtlas {
             {"effect frames", 140, 190, 46, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
             {"toolbox selection", 40, 210, 24, 23}, {"schematic frame", 66, 210, 18, 18}, {"instrument plate", 86, 210, 24, 9},
             {"clock", 112, 210, 9, 9}, {"compass", 122, 210, 9, 9}, {"wing casing", 0, 236, 32, 4},
-            {"dial housing", 182, 92, 42, 38}, {"exhaustion band", 182, 132, 34, 4}};
+            {"dial housing", 182, 92, 42, 38}};
 
     static void checkLayout() {
         for (int i = 0; i < PARTS_PIECES.length; i++) {

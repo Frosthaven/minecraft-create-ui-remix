@@ -61,23 +61,44 @@ final class HudStats {
         }
     }
 
-    /** Create backtank air in seconds: {left, capacity}, or null when Create shows none (its remaining_air rule). */
+    /** When the backtanks' total air last fell (ms), and the total then: a Create Jetpack drains it in flight. */
+    private static long tankDrainAt = Long.MIN_VALUE / 2;
+    private static int tankLast = -1;
+    /** How long the tank stays shown after its air last fell out of the water (a jetpack flight, a pause between bursts). */
+    private static final long TANK_DRAIN_SHOW = 3000;
+
+    /** Create backtank air in seconds: {left, capacity}, or null when none shows. Shown as Create's remaining_air does
+     *  (under water or in lava, its VisualBacktankAir), and also while the tanks' own air falls (a Create Jetpack drains
+     *  the same tanks in flight) and TANK_DRAIN_SHOW after; then the left value is the tanks' air (getAir over
+     *  getAllWithAir, which includes jetpacks). */
     static float[] backtank(Player player, boolean underwater) {
-        if (player.isCreative() || !player.getPersistentData().contains("VisualBacktankAir")) return null;
-        if (!underwater && !player.isInLava()) return null;
-        int left = player.getPersistentData().getInt("VisualBacktankAir");
-        int cap = 0;
+        if (player.isCreative()) return null;
+        int total = 0, cap = 0;
         try {
             Class<?> util = Class.forName("com.simibubi.create.content.equipment.armor.BacktankUtil");
-            Method max = util.getMethod("maxAir", ItemStack.class);
+            Method max = util.getMethod("maxAir", ItemStack.class), air = util.getMethod("getAir", ItemStack.class);
             for (Object s : (List<?>) util.getMethod("getAllWithAir", net.minecraft.world.entity.LivingEntity.class).invoke(null, player)) {
                 cap += ((Number) max.invoke(null, s)).intValue();
+                total += ((Number) air.invoke(null, s)).intValue();
             }
+        } catch (ClassNotFoundException | LinkageError e) {
+            HudLog.once("create-absent", "Create's BacktankUtil not present: no backtank segment");
+            return null;
         } catch (ReflectiveOperationException | RuntimeException e) {
-            HudLog.error("backtank", "reading Create's backtank capacity failed (time still shown)", e);
-            cap = 0;
+            HudLog.error("backtank", "reading Create's backtanks failed (Create's own counter value still used under water)", e);
         }
-        return new float[] {left, Math.max(cap, left)};
+        long now = net.minecraft.Util.getMillis();
+        if (tankLast >= 0 && total < tankLast) tankDrainAt = now;
+        tankLast = total;
+        boolean wet = (underwater || player.isInLava()) && player.getPersistentData().contains("VisualBacktankAir");
+        boolean draining = !wet && total > 0 && now - tankDrainAt < TANK_DRAIN_SHOW;
+        HudLog.changed("tank-source", wet ? "water" : draining ? "drain" : "none",
+                "backtank segment: {}", wet ? "under water / in lava (Create's counter)" : draining ? "draining out of the water (a jetpack in flight), shown for 3 s after the air last fell" : "hidden");
+        if (wet) {
+            int left = player.getPersistentData().getInt("VisualBacktankAir");
+            return new float[] {left, Math.max(cap, left)};
+        }
+        return draining ? new float[] {total, Math.max(cap, total)} : null;
     }
 
     private static final java.util.Map<String, Method> METHODS = new java.util.concurrent.ConcurrentHashMap<>();

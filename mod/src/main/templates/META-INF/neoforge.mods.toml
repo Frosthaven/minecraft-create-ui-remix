@@ -7,8 +7,10 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 description='''
-Haven's Create UI: the compact action bar (orbs or bars), floating mob health bars, and Dark Mode Everywhere fixes
-for Create and the haven-create-hud screens. Client only.
+Haven's Create UI: the compact action bar (orbs or bars) with buffs and debuffs, cyan status icons for worn gear
+(MekaSuit energy, Mekanism jetpack hydrogen, scuba tank oxygen, Ad Astra suit oxygen and Jet Suit energy, Creating Space
+O2 backtanks), the Create backtank's air and time while diving or flying a Create Jetpack, and Dark Mode Everywhere
+fixes for Create and the haven-create-hud screens. Client only.
 '''
 
 [[mixins]]
