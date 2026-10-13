@@ -21,6 +21,7 @@
   <button id="sockets" aria-pressed="false">Show slots</button>
   <button id="hover" aria-pressed="false">Hover recipe book</button>
   <button id="cosScreen" aria-pressed="false" title="The Cosmetic Armor screen (its panel is in cosarmorinventory.png)">Cosmetic screen</button>
+  <button id="curiosScreen" aria-pressed="false" title="The Curios screen: accessory slots in a side panel (curios/inventory.png)">Curios screen</button>
   <span style="color:var(--muted);align-self:center">GUI scale</span>
   <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4" aria-pressed="true">4</button>
   <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
@@ -37,13 +38,15 @@
 <script src="components.js"></script>
 <script src="inventory.js"></script>
 <script src="inv-mods.js"></script>
+<script src="inv-curios.js"></script>
 <script src="mcfont.js"></script>
 <script src="screen-page.js"></script>
 <script>
-let showSlots = false, hover = false, cosScreen = pageQuery.has('cos'), before = {}, after = {};
+let showSlots = false, hover = false, cosScreen = pageQuery.has('cos'), curiosScreen = pageQuery.has('curios'), before = {}, after = {};
 
 /** The inventory screen: panel, slot icons, buttons and title, as InventoryScreen and the mods place them. */
 function compose(set, scale) {
+  if (curiosScreen) return composeCurios(set, scale);
   if (cosScreen) return composeCos(set, scale);
   const { c, g, put, text } = screenCanvas(INV.w, INV.h + 22, scale);   // + the trash slot's tab below the panel
   put(set.panel, 0, 0, INV.w, INV.h);
@@ -81,10 +84,37 @@ function composeCos(set, scale) {
   text('Crafting', 97, 6);
   return c;
 }
+/** The Curios screen (CuriosScreen): the inventory panel with Curios' side panel and cosmetics tab to its left (layout in
+ *  inv-curios.js), slot icons, render toggles (shown here alternating on and off) and the title "Crafting" at (97, 8). */
+function composeCurios(set, scale) {
+  const { x0, items } = curiosLayout(), ox = -x0 + 2, oy = 25;
+  const { c, put: p, text } = screenCanvas(INV.w + ox, INV.h + oy, scale);
+  const put = (img, x, y, ...rest) => p(img, x + ox, y + oy, ...rest);
+  put(set.panel, 0, 0, INV.w, INV.h);
+  ['helmet', 'chestplate', 'leggings', 'boots'].forEach((k, i) => put(set.icons[k], ...INV.armor[i], 16, 16));
+  put(set.icons.shield, ...INV.offhand, 16, 16);
+  put(set.curiosSheet, ...CURIOS.tab, 32, 0, 28, 24);
+  const grid = CURIOS.grid, upper = 7 + grid[0] * 18;
+  let x = x0;
+  grid.forEach((_, r) => {
+    const u = r === 0 ? 91 : 98;
+    put(set.curiosSheet, x, 0, 25, upper, u, 0, 25, upper); put(set.curiosSheet, x, upper, 25, 7, u, 159, 25, 7);
+    x += r === 0 ? 25 : 18;
+  });
+  grid.forEach((rows, col) => put(set.curiosSheet, x0 + 7 + 18 * col, 7, 18, rows * 18, 7, 7, 18, rows * 18));
+  items.forEach(([ix, iy], i) => {
+    put(set.curiosIcons[CURIOS.slots[i]], ix, iy, 16, 16);
+    put(set.curiosSheet, ix + 12, iy - 1, 8, 8, i % 2 ? 83 : 75, 0, 8, 8);
+  });
+  put(set.curiosCosmetic, ...CURIOS.cosmetic);
+  text('Crafting', INV.title[0] + ox, INV.title[1] + oy);
+  return c;
+}
 screenPage(compose, () => ({ before, after }));
 pageToggle('sockets', on => { showSlots = on; });
 pageToggle('hover', on => { hover = on; });
 pageToggle('cosScreen', on => { cosScreen = on; }, cosScreen);
+pageToggle('curiosScreen', on => { curiosScreen = on; }, curiosScreen);
 (async () => {
   const icons = k => Object.fromEntries(['helmet', 'chestplate', 'leggings', 'boots', 'shield'].map(n => [n, k(n)]));
   after = { panel: inventoryPanel(), book: bookButton(false), bookHover: bookButton(true), icons: icons(slotIcon),
@@ -94,6 +124,20 @@ pageToggle('cosScreen', on => { cosScreen = on; }, cosScreen);
     icons: {}, curios: await tex('curios/button', 'curios'), cos: await tex('cosarmorinventory', 'cosmeticarmorreworked'),
     trash: await tex('slot', 'trashslot'), trashIcon: await tex('textures/item/trashcan', 'trashslot') };
   after.cos = cosSheet(before.cos);
+  before.curiosSheet = await tex('curios/inventory', 'curios');
+  before.curiosCosmetic = await tex('curios/cosmetic_off', 'curios');
+  before.curiosIcons = {}; after.curiosIcons = {};
+  const curioFiles = [];   // [file name, canvas], one per icon texture
+  for (const [type, [ns, path, drawing]] of Object.entries(CURIO_TYPES)) {
+    before.curiosIcons[type] = await tex('textures/' + path, ns);
+    after.curiosIcons[type] = drawing ? slotIcon(drawing) : after.icons.boots;
+    if (drawing && !curioFiles.some(([n]) => n === `${ns}: ${path}`)) curioFiles.push([`${ns}: ${path}`, after.curiosIcons[type]]);
+  }
+  for (const [ns, path, drawing] of CURIO_EXTRA) curioFiles.push([`${ns}: ${path}`, slotIcon(drawing)]);
+  after.curiosSheet = curiosSheet();
+  const cosBtn = {};
+  for (const on of [true, false]) for (const hl of [false, true]) cosBtn[`cosmetic_${on ? 'on' : 'off'}${hl ? '_highlighted' : ''}`] = curiosCosmeticButton(on, hl);
+  after.curiosCosmetic = cosBtn.cosmetic_off;
   // 1.21.1 draws empty armor and shield slots from the item atlas (textures/item/empty_armor_slot_*); the
   // container/slot sprites some packs carry are 1.21.2's and unused here.
   for (const n of ['helmet', 'chestplate', 'leggings', 'boots', 'shield']) before.icons[n] = await tex('textures/item/empty_armor_slot_' + n);
@@ -101,7 +145,10 @@ pageToggle('cosScreen', on => { cosScreen = on; }, cosScreen);
   fileList([['container/inventory', sheetTexture(after.panel)], ['sprites/recipe_book/button', after.book],
     ['sprites/recipe_book/button_highlighted', after.bookHover], ['curios: curios/button', after.curios], ['curios: curios/button_highlighted', after.curiosHover],
     ...Object.entries(after.icons).map(([n, img]) => ['item/empty_armor_slot_' + n, img]),
-    ['cosmeticarmorreworked: cosarmorinventory', after.cos], ['trashslot: slot', after.trash], ['trashslot: item/trashcan', after.trashIcon]]);
+    ['cosmeticarmorreworked: cosarmorinventory', after.cos], ['trashslot: slot', after.trash], ['trashslot: item/trashcan', after.trashIcon],
+    ['curios: curios/inventory', sheetTexture(after.curiosSheet)],
+    ...Object.entries(cosBtn).map(([n, img]) => ['curios: curios/' + n, img]),
+    ...curioFiles]);
 })();
 </script>
 <script src="../live.js"></script>

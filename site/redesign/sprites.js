@@ -8,6 +8,14 @@ const P = {
   bronze: '#6e4f22', brass: '#b8893f', brassHi: '#f4d898', copper: '#9a4a28', copperHi: '#f2a676',
 };
 
+/** Makes every pixel fully opaque or fully clear (alpha cut at half), for art the game draws unblended
+ *  (the item atlas, many GUI blits): there any pixel not fully clear shows at full strength. */
+function solidAlpha(c) {
+  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height);
+  for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] >= 128 ? 255 : 0;
+  g.putImageData(d, 0, 0);
+}
+
 /** A canvas for a sprite of logical size w x h, drawn at R x; g works in logical units. */
 function hires(w, h) {
   const c = document.createElement('canvas');

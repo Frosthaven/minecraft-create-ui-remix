@@ -11,7 +11,7 @@ All textures are R x (8) the originals; every user scales UVs by the logical siz
 """
 import base64, json, os, re, shutil, subprocess, sys
 
-PAGES = {'': None, 'inventory.html': 13, 'backpack.html': 8}  # page: files it lists (None: the page records it)
+PAGES = {'': None, 'inventory.html': 34, 'backpack.html': 9}  # page: files it lists (None: the page records it)
 
 
 def target(name):
@@ -21,7 +21,7 @@ def target(name):
     ns, path = name.split(': ') if ': ' in name else ('minecraft', name)
     if name.startswith('hud/'):
         path = 'sprites/' + path
-    if path.startswith(('item/', 'font/')):   # item atlas textures (1.21.1's empty armor slot icons), font glyphs
+    if path.startswith(('item/', 'font/', 'slot/')):   # item atlas textures (empty armor and Curios slot icons), font glyphs
         return f'assets/{ns}/textures/{path}.png'
     return f'assets/{ns}/textures/gui/{path}.png'
 

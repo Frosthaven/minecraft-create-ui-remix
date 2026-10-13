@@ -28,7 +28,8 @@ the page's `Last-Modified`, on localhost only).
 - Sources, in load order (later wins, like the game):
   1. vanilla client jar;
   2. every mod jar in the instance's `mods/` (and jars nested inside them, two levels);
-  3. the active resource packs from `options.txt` (`resourcePacks`, `file/...` entries).
+  3. the active resource packs from `options.txt` (`resourcePacks`, `file/...` entries, zips or folders), except
+     `Create-HUD` (our own output: "before" must stay the game without it).
 - Paths taken (plus `assets/minecraft/textures/font/ascii.png`, the GUI font, for the mockups):
   - `assets/<ns>/textures/{gui,guis,hud,screen,screens,jei,contextmenu,waystones_gui,slot,crosshair}/**`;
   - `assets/<ns>/gui/**` (Mekanism keeps its screen art there).
@@ -135,6 +136,14 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
   offhand `(77, 62)`, crafting `(98 + 18 j, 18 + 18 i)`, result `(154, 28)`, main `(8 + 18 j, 84 + 18 i)`,
   hotbar `(8 + 18 j, 142)`, player box `(26, 8)` to `(75, 78)` (about 1 px free around it), title
   "Crafting" at `(97, 8)`, recipe book button `(104, 61)` 20x18.
+- **Curios screen** (toggle, `?curios`; `inv-curios.js`): Curios' side panel, cosmetics tab, page buttons and render
+  toggles (`curios:textures/gui/curios/inventory.png`, cut as described at the top of the file), the cosmetics button
+  sprites, and an icon per slot type. The player's 19 slots come from `data/*/curios/slots` + `curios/entities` in the
+  jars (`CURIO_TYPES`, `CURIOS.slots`, in order); each icon is drawn for what the slot holds (spell focus, hat,
+  necklace, cape, ring, bangle, glove, waist pouch, belt, charm, spellbook, bundle sack), written to the texture the
+  slot names (`curios:slot/*`, `cataclysm:item/*`). Re-read the slot data when mods change.
+- TrashSlot: every attached piece has the join to the panel's border built into both ends (in game the bottom-right
+  piece sits a few px inside the panel's edge, not flush as the mod's code suggests).
 - Mod buttons (from the jars and the instance config): Curios `(26, 8)` 10x10 (`curios:curios/button`);
   Cosmetic Armor Reworked `(65, 67)` 10x10 and a toggle `(59, 72)` 5x5.
 - The game draws container titles in fixed `#404040`: each title needs a light ground.
@@ -177,6 +186,8 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
   buttons draw a 9.6 px face inset 1.2 px, with glyphs about 4.4 x 5.6, so they do not crowd slot rows.
 - The search box is the mod's flat #777777 square with a magnifier hint; the texture frames it like the
   sort buttons beside it. Gauges have no reflection stripe.
+- Upgrade tab slots: `upgrade_slots_background` (ours, blueprint cells like the armor column); Create Dark Inventory's
+  `TabSlots` makes the mod draw tab slots from it. The storage grid keeps `slots_background`.
 - Not restylable (drawn in code by the mod): the scrollbar, the search box (a bezel frames its collapsed
   spot), slot highlights. Upgrade item icons are item art; the mockup uses placeholders.
 

@@ -43,8 +43,9 @@ function trashFrame(g, x, y, w, h, join) {
   else if (join === 'left') g.transform(0, 1, 1, 0, 0, 0);
   else if (join === 'right') g.transform(0, 1, -1, 0, w, 0);
 }
-/** A tab: iron, its frame running straight up both sides into the panel's (where the tab lines up with the panel's
- *  edge); the patches below turn the frame where it meets the panel's border instead. */
+/** A tab: iron, its frame turning into the panel's border at both ends (the join patch's shape, built in). The mod
+ *  places a piece flush with the panel's edge only in theory: in game the bottom-right piece sits a few px inside, so
+ *  a frame running straight up into the panel showed over it. */
 function trashTab(g, x, y, w, h, join) {
   const side = join === 'top' || join === 'bottom', L = side ? w : h, D = side ? h : w, r = 2.4;
   g.save(); trashFrame(g, x, y, w, h, join);
@@ -52,16 +53,21 @@ function trashTab(g, x, y, w, h, join) {
   g.beginPath(); g.moveTo(0.85, 0); g.lineTo(0.85, D - 0.85 - r); g.arcTo(0.85, D - 0.85, 0.85 + r, D - 0.85, r);
   g.lineTo(L - 0.85 - r, D - 0.85); g.arcTo(L - 0.85, D - 0.85, L - 0.85, D - 0.85 - r, r); g.lineTo(L - 0.85, 0);
   g.strokeStyle = '#3a3c3f'; g.lineWidth = 0.9; g.stroke();
+  patchShape(g); g.save(); g.transform(-1, 0, 0, 1, L, 0); patchShape(g); g.restore();
   g.restore();
+}
+/** The join patch's drawing in its piece's (u, v) frame, corner at u = 0. */
+function patchShape(g) {
+  g.fillStyle = '#232426';
+  g.fillRect(0, 0, 4, TRASH_FRAME + 0.45); g.fillRect(0.4, TRASH_FRAME, 3.6, 4 - TRASH_FRAME);
+  g.beginPath(); g.moveTo(0, TRASH_FRAME); g.lineTo(0.85, TRASH_FRAME); g.lineTo(0.85, 4);
+  g.strokeStyle = '#3a3c3f'; g.lineWidth = 0.9; g.lineJoin = 'miter'; g.stroke();
 }
 /** A 4 x 4 join patch: the panel's border turning into the tab's side (corner at u = 0, or mirrored). */
 function trashPatch(g, x, y, join, mirror) {
   g.save(); trashFrame(g, x, y, 4, 4, join);
   if (mirror) g.transform(-1, 0, 0, 1, 4, 0);
-  g.fillStyle = '#232426';
-  g.fillRect(0, 0, 4, TRASH_FRAME + 0.45); g.fillRect(0.4, TRASH_FRAME, 3.6, 4 - TRASH_FRAME);
-  g.beginPath(); g.moveTo(0, TRASH_FRAME); g.lineTo(0.85, TRASH_FRAME); g.lineTo(0.85, 4);
-  g.strokeStyle = '#3a3c3f'; g.lineWidth = 0.9; g.lineJoin = 'miter'; g.stroke();
+  patchShape(g);
   g.restore();
 }
 /** The slot's socket: an 18 x 18 bezel 0.5 wide (brass, or rust for instant deletion) around the 16 x 16 well. */
@@ -88,5 +94,6 @@ function trashSheet() {
     for (const [x, y, join, mirror] of [[50, 29, 'top', false], [54, 29, 'top', true], [50, 25, 'bottom', false], [54, 25, 'bottom', true],
       [50, 33, 'right', false], [50, 37, 'right', true], [54, 33, 'left', false], [54, 37, 'left', true]]) trashPatch(g, u + x, y, join, mirror);
   }
+  solidAlpha(c);   // blitted unblended: soft edges would show at full strength
   return c;
 }

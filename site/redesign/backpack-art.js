@@ -61,6 +61,7 @@ function storageBackground(cols, wider) {
   };
   ironPlate(g, plate, join, 256);
   playerInventory(g, off + 8, 162, { plate: false });   // the label's position (H - 94 on screen); no plate (chosen)
+  solidAlpha(c);   // drawn unblended: the rim's and shadow's soft edges showed as bright clumps on the corners
   return c;
 }
 
@@ -79,6 +80,15 @@ function searchGlyph() {
 function slotsBackground() {
   const [c, g] = hires(256, 256);
   for (let r = 0; r < 12; r++) for (let q = 0; q < 12; q++) cell(g, q * 18, r * 18);
+  return c;
+}
+
+/** upgrade_slots_background (ours; Create Dark Inventory draws upgrade tab slots from it, same layout as
+ *  slots_background): blueprint cells like the inventory's armor column, one paper square per cell. */
+function upgradeSlotsBackground() {
+  const [c, g] = hires(256, 256);
+  for (let r = 0; r < 12; r++) for (let q = 0; q < 12; q++) { blueprint(g, q * 18, r * 18, 18, 18); draftMark(g, q * 18, r * 18); }
+  solidAlpha(c);
   return c;
 }
 
@@ -128,6 +138,7 @@ function guiControls(orig) {
   // Tab art (128..256): canvas flaps, raised (they are controls), stitched along the top, right, bottom.
   clear(128, 0, 128, 256);
   tabArt(g);
+  solidAlpha(c);   // the tabs and pouch are blitted unblended too
   return c;
 }
 

@@ -162,12 +162,6 @@ const SLOT_ICONS = {
     g.moveTo(2.5, 3.5); g.lineTo(13.5, 3.5); g.rect(6.5, 1.5, 3, 2);
   },
 };
-/** Makes every pixel fully opaque or fully clear (alpha cut at half), for item-atlas art the game draws unblended. */
-function solidAlpha(c) {
-  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height);
-  for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] >= 128 ? 255 : 0;
-  g.putImageData(d, 0, 0);
-}
 function slotIcon(kind) {
   const [c, g] = hires(16, 16);
   const path = () => SLOT_ICONS[kind](g);

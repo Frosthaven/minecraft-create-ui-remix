@@ -10,7 +10,7 @@ os.makedirs(tex_dir, exist_ok=True)
 # Screen art: textures/gui (most mods and vanilla), and the other folders mods use for screens
 # (Mekanism keeps it in assets/<ns>/gui/). Item icons and map markers are left out.
 GUI = re.compile(r"^assets/([^/]+)/((?:textures/(?:gui|guis|hud|screens?|jei|contextmenu|waystones_gui|slot|crosshair)|gui)/.+"
-                 r"|textures/font/ascii(?:_sga)?|textures/icons|textures/item/empty_armor_slot_[a-z]+|textures/item/empty_slot_lapis_lazuli|textures/item/trashcan)\.png$")  # the GUI and enchanting fonts, for the mockups;
+                 r"|textures/font/ascii(?:_sga)?|textures/icons|textures/item/empty_[a-z_]+|textures/item/empty_slot_lapis_lazuli|textures/item/trashcan)\.png$")  # the GUI and enchanting fonts, for the mockups;
                                                                          # AppleSkin's HUD overlay sheet; 1.21.1's
                                                                          # empty armor and shield slot icons
 
@@ -78,7 +78,8 @@ for jar in sorted(os.listdir(mods_dir)):
 opts = open(os.path.join(inst, "options.txt"), encoding="utf8", errors="replace").read()
 packs = json.loads(re.search(r"^resourcePacks:(.*)$", opts, re.M).group(1))
 for p in packs:
-    if not p.startswith("file/"):
+    # Create-HUD is this repo's own output (the pages' "after"): leave it out so "before" stays the game as it was.
+    if not p.startswith("file/") or p == "file/Create-HUD":
         continue
     path = os.path.join(inst, "resourcepacks", p[5:])
     label = re.sub(r"§.", "", p[5:]).removesuffix(".zip")

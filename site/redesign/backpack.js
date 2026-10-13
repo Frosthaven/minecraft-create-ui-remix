@@ -112,7 +112,7 @@ function bpCompose(T, L, scale, state) {
     if (open === 'crafting') {
       // CraftingUpgradeTab: two toggles (shift-click target, refill grid), the 3x3 grid, arrow, result.
       toggleButton(put, T, x + 3, y + 24, [32, 48]); toggleButton(put, T, x + 21, y + 24, [32, 112]);
-      put(T.slots, x + 3, y + 44, 54, 54, 0, 0, 54, 54);
+      put(T.tabSlots || T.slots, x + 3, y + 44, 54, 54, 0, 0, 54, 54);   // tab slots: our own texture (see TabSlots)
       put(T.controls, x + 22, y + 101, 15, 8, 97, 216, 15, 8);
       put(T.controls, x + 17, y + 111, 26, 26, 71, 216, 26, 26);
       if (state.results) {   // only when the recipe has several results (shouldShowResultSelection)
@@ -124,7 +124,7 @@ function bpCompose(T, L, scale, state) {
     } else {
       // PumpUpgradeTab: input/output, tanks and pipes, world, hand toggles; four fluid filter slots.
       [[144, 0], [0, 112], [176, 0], [208, 0]].forEach((uv, i) => toggleButton(put, T, x + 3 + 18 * i, y + 24, uv));
-      put(T.slots, x + 3, y + 44, 72, 18, 0, 0, 72, 18);
+      put(T.tabSlots || T.slots, x + 3, y + 44, 72, 18, 0, 0, 72, 18);
     }
   }
   // Title (8, 6) and "Inventory" (8 + off, H - 94), the game's grey, no shadow.
