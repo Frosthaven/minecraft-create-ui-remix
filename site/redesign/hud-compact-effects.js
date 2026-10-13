@@ -63,7 +63,7 @@ function ccEffectTime(secs) {
   return sec < 60 ? String(sec) : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
 }
 function ccEffectsRail(g, s, icons) {
-  const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, left = CC.plate.x0;
+  const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, left = (CC.lay || CC.plate).x0;   // the bar's actual left edge
   // Two lines: buffs nearest the bar, debuffs above them at 1.5x. A line that runs out of room wraps upward.
   // Each line starts with its always-on effects (infinite or a beacon's), then the timed ones.
   const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));

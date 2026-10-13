@@ -12,7 +12,7 @@
 //     (40, 62 + 4 k), XP (0, 130 + 4 k).
 //     digits "0123456789/:+smh" at 0.625 size, 2.5 apart, rows 170 + 4 r: white, dim, level green, shadow black, red.
 //     ghost plate (0, 190) 24x9 (the follower count's digits are drawn after the ghost); fillers: gear row centred
-//     at (46, 196), groove (80, 190) 38x4, dash cog centred at (129, 199); effect frames 10x10 at (140|152|164, 190)
+//     at (46, 196), groove (80, 190) 38x4; effect frames 10x10 at (140|152|164, 190)
 //     (buff, debuff, ambient).
 const CCX = {
   wingIcons: ['heart', 'heart_poison', 'heart_wither', 'heart_frozen', 'drumstick', 'horse', 'camel', 'flask', 'gem'],
@@ -79,11 +79,10 @@ function compactExports() {
   const plate = () => rrect(g, 0, 190, 24, 9, CC.plate.r);
   plate(); g.fillStyle = iron(g, 190, 199); g.fill(); ironSurface(g, plate); rim(g, plate, 190, 199, P.brassHi, 0.35);
   ccInstruments.ghost(g, 6, 194.5);
-  // Pressed-in fillers for empty spots: the gear row (centred at (46, 196)), an empty groove (80, 190) 38x4, the
-  // dash's cog (centred at (129, 199)).
+  // Pressed-in fillers: the gear row (centred at (46, 196), creative's empty vitals wing), an empty groove (80, 190)
+  // 38x4 (a missing mana row).
   ccGearRow(g, 46, 196);
   ccGroove(g, 80, 190, 38, 4);
-  ccDashFiller(g, 129, 199);
   // Effect frames at 10 x 10 (no icon, no time border: the game draws those): buff (140, 190), debuff (152, 190),
   // ambient (164, 190).
   for (const [kind, ux, amb] of [['buff', 140, false], ['debuff', 152, false], ['buff', 164, true]]) {

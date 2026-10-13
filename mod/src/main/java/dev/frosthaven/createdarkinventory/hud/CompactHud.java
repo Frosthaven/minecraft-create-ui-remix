@@ -118,6 +118,16 @@ public final class CompactHud {
 
     private static void icon(GuiGraphics g, int u, int v, int cx, int cy) { part(g, u, v, ICON, ICON, cx - ICON / 2, cy - ICON / 2); }
 
+    /** The plate between texel x0 and x1: the texture's middle, then its own end caps (the last 3.5 px at each side,
+     *  rounded corner and shadow) copied onto the new ends. */
+    private static void plateTrimmed(GuiGraphics g, ResourceLocation tex, int x0, int x1) {
+        int cap = 28, edge0 = -165 * K, edge1 = 165 * K;   // a cap: 2.5 px corner + the texture's 1 px margin
+        int from = x0 + (x0 > edge0 ? 20 : -8), to = x1 - (x1 < edge1 ? 20 : -8);
+        g.blit(tex, from, PLATE_Y, from - PLATE_X, 0, to - from, PLATE_H, PLATE_W, PLATE_H);
+        if (x0 > edge0) g.blit(tex, x0 - 8, PLATE_Y, 0, 0, cap, PLATE_H, PLATE_W, PLATE_H);
+        if (x1 < edge1) g.blit(tex, x1 - 20, PLATE_Y, PLATE_W - cap, 0, cap, PLATE_H, PLATE_W, PLATE_H);
+    }
+
     /** The pressed-in gear row, centred on (x, y). */
     private static void gears(GuiGraphics g, int x, int y) { part(g, GEARS_U, GEARS_V, GEARS_W, GEARS_H, x - GEARS_W / 2, y - GEARS_H / 2); }
 
@@ -142,11 +152,24 @@ public final class CompactHud {
         pose.translate(cx, bottom, 0);
         pose.scale(1f / K, 1f / K, 1);
         RenderSystem.enableBlend();
-        g.blit(plate(showArmor, showBreath), PLATE_X, PLATE_Y, 0, 0, PLATE_W, PLATE_H, PLATE_W, PLATE_H);
+        // The bar's width for what the pack has (the page's ccLayout): no mana mod drops the right wing, no dodge roll the
+        // dash's spot; with no right wing it grows back out while breath shows. The plate textures are full width:
+        // drawn trimmed to [x0, x1], with their rounded end caps copied to the new ends.
+        float[] irons = HudStats.irons(p), ars = HudStats.ars(p), roll = HudStats.roll(p);
+        boolean mana = irons != null || ars != null, hasRoll = roll != null && roll[1] > 0;
+        double rightStart = mana ? 143 : 93;
+        boolean rightEnd = lefty || hasRoll, leftEnd = !lefty || hasRoll;
+        double x1 = rightEnd ? rightStart + 22 : mana ? 152 : 97;
+        if (showBreath) x1 = Math.max(x1, 152);
+        double x0 = leftEnd ? -165 : -152;
+        double ox = lefty ? rightStart : -161, rollX = lefty ? -164.5 : rightStart - 3.5;
+        // A narrower bar stays centred on the screen: everything shifts by whole pixels (items stay sharp).
+        int shift = (int) Math.round(-(x0 + x1) / 2);
+        pose.translate(shift * K, 0, 0);
+        plateTrimmed(g, plate(showArmor, showBreath), x(x0), x(x1));
 
         // Hotbar sockets, the offhand socket (its shield ghost while empty), the selection frame.
         for (int i = 0; i < 9; i++) part(g, SOCKET_U, 0, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
-        int ox = lefty ? 143 : -161;
         part(g, SOCKET_U, 0, 18 * K, 18 * K, x(ox), y(30));
         if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(ox), y(30));
         part(g, SELECTION_U, 0, 24 * K, 23 * K, x(-92 + 20 * p.getInventory().selected), y(27));
@@ -201,9 +224,7 @@ public final class CompactHud {
         }
 
         // Right wing: Iron's mana, Ars mana.
-        float[] irons = HudStats.irons(p), ars = HudStats.ars(p);
-        // No mana mod: gears pressed into the wing; one: the other row is an empty groove.
-        if (irons == null && ars == null) gears(g, x(116), y(39));
+        // One mana mod: the other row is an empty groove (none: no right wing at all, above).
         if (irons != null) {
             icon(g, wingIconU("flask"), WING_ICON_V, x(136), y(35.5));
             meter(g, rx, row0, false, "irons", irons[0] / Math.max(1, irons[1]));
@@ -239,15 +260,11 @@ public final class CompactHud {
         }
 
         // The dodge roll: our dash icon by readiness (the mod's tiers), its count after it.
-        float[] roll = HudStats.roll(p);
         int tier = -1;
-        double rollX = lefty ? -164.5 : 139.5;
-        if (roll != null && roll[1] > 0) {
+        if (hasRoll) {
             float ready = roll[0], n = roll[1];
             tier = ready - 1 >= (n - 1) * 0.75f ? 0 : ready - 1 >= (n - 1) * 0.5f ? 1 : ready - 1 >= (n - 1) * 0.25f ? 2 : ready >= 1 ? 3 : 4;
             part(g, dashU(tier), 0, 18 * K, 18 * K, x(rollX), y(30));
-        } else {   // no dodge roll: a cog pressed into the plate in the dash's place
-            part(g, DASH_COG_U, DASH_COG_V, DASH_COG, DASH_COG, x(lefty ? -152 : 152) - DASH_COG / 2, y(39) - DASH_COG / 2);
         }
 
         // Web map followers (Haven Link): the ghost plate above the bar.
@@ -258,14 +275,15 @@ public final class CompactHud {
         }
         pose.popPose();
 
-        // Items, at vanilla's exact spots (mods that mark hotbar slots line up), then the roll count in the game font.
-        for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
-        slotItem(g, mc, p, p.getOffhandItem(), cx + (lefty ? 144 : -160), bottom - 19, 10);
+        // Items at vanilla's spots relative to the bar (exactly vanilla's while the bar is full width), then the roll count.
+        int bx = cx + shift;   // the bar's centre
+        for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), bx - 88 + 20 * i, bottom - 19, i + 1);
+        slotItem(g, mc, p, p.getOffhandItem(), bx + (int) ox + 1, bottom - 19, 10);
         if (tier >= 0) {
             String t = String.valueOf((int) roll[0]);
             int color = new int[] {0x74CD00, 0xE8B500, 0xE84D00, 0xD90003, 0x353535}[tier];
             pose.pushPose();
-            pose.translate(cx + rollX + 17, bottom - 14.5, 0);
+            pose.translate(bx + rollX + 17, bottom - 14.5, 0);
             for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) g.drawString(mc.font, t, d[0], d[1], 0xFF000000, false);
             g.drawString(mc.font, t, 0, 0, 0xFF000000 | color, false);
             pose.popPose();
