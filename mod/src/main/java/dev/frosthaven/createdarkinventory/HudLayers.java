@@ -14,7 +14,8 @@ import java.util.Set;
  * draw; {@code DarkModeClientProxyMixin} then skips DME's shader and text recolor.
  * With ImmediatelyFast's HUD batching the layers only queue their draws and the whole HUD is
  * drawn at once ({@code BatchingBuffersMixin}); the bars cannot be told apart there, so the
- * whole HUD keeps its look while the pack is on.
+ * whole HUD keeps its look while the pack is on. Mod HUD parts keep their look when the pack
+ * retextures their mod (see {@link PackScreens#retexturedCaller}).
  */
 public final class HudLayers {
     private static final Set<ResourceLocation> MAIN = Set.of(
@@ -28,6 +29,7 @@ public final class HudLayers {
             VanillaGuiLayers.OVERLAY_MESSAGE,
             ResourceLocation.fromNamespaceAndPath("create", "remaining_air"));
     private static boolean drawing;
+    private static boolean anyLayer;
     private static boolean flushing;
 
     private HudLayers() {}
@@ -40,7 +42,12 @@ public final class HudLayers {
      * types pick their shader there, which can happen outside the flagged draws.
      */
     public static boolean skipDarkMode(String caller) {
-        return drawing || ((flushing || caller.startsWith(BATCHING_LAYERS)) && createHudPack());
+        if (drawing) return true;
+        if (!createHudPack()) return false;
+        if (flushing || caller.startsWith(BATCHING_LAYERS)) return true;
+        // Mod HUD parts the pack retextures (Ars Nouveau mana bar, Iron's Spellbooks bars).
+        boolean hud = anyLayer || Minecraft.getInstance().screen == null;
+        return hud && PackScreens.retexturedCaller(caller);
     }
 
     /** ImmediatelyFast is drawing the batched HUD. */
@@ -49,11 +56,13 @@ public final class HudLayers {
     }
 
     public static void pre(RenderGuiLayerEvent.Pre event) {
+        anyLayer = true;
         drawing = MAIN.contains(event.getName()) && createHudPack();
     }
 
     public static void post(RenderGuiLayerEvent.Post event) {
         drawing = false;
+        anyLayer = false;
     }
 
     /** A selected resource pack named like "Create-HUD" / "Create HUD". */

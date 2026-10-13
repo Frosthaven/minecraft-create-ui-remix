@@ -66,3 +66,5 @@ No player config edits needed; the instance config stays at DME's defaults.
   `gui.screens.inventory.*` / `gui.components.*`; JEI and other side panels stay dark.
   Mods whose asset namespace the pack contains (trash slot, Curios, Cosmetic Armor) are skipped too,
   on those screens and on their own screens: the caller class is mapped to its mod jar's ids.
+  The same rule skips their HUD parts (Ars Nouveau mana bar, Iron's Spellbooks bars) while a
+  GUI layer draws or no screen is open.

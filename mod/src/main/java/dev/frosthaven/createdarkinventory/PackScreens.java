@@ -38,7 +38,12 @@ public final class PackScreens {
         if (!backpack && !(screen instanceof InventoryScreen) && !retextured(screenClass)) return false;
         return caller.startsWith(VANILLA_INVENTORY) || caller.startsWith(VANILLA_WIDGETS)
                 || (backpack && caller.startsWith(SOPHISTICATED))
-                || retextured(caller.substring(0, Math.max(caller.indexOf(':'), 0)));
+                || retexturedCaller(caller);
+    }
+
+    /** DME's caller ("class:method") comes from a mod whose textures the Create HUD pack replaces. */
+    public static boolean retexturedCaller(String caller) {
+        return retextured(caller.substring(0, Math.max(caller.indexOf(':'), 0)));
     }
 
     /** The class comes from a mod (not vanilla) whose textures the Create HUD pack replaces. */
