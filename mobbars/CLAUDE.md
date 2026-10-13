@@ -12,7 +12,7 @@ blocks (default 10): hostile (`Enemy`, bosses included) #a83a3a, players #4a76b8
 toggled in the client config (`haven_mob_health_bars-client.toml`). Not the player, armor stands, invisible or dying entities.
 - `RenderLivingEvent.Post`, drawn into the entity pass's buffers with `RenderType.textBackground()` (as a name tag
   background: same quad order, which matters for culling), billboarded with `cameraOrientation()`, in model px (1/16
-  block). Half a block over the bounding box, 0.3 more when a name tag shows. Depth-tested, so walls hide it (no
+  block). Placed like vanilla's name tag (`NameTags`): at the NAME_TAG attachment plus half a block (riders, babies, scaled and modded mobs line up); when the tag is drawn this frame (`RenderNameTagEvent` result at LOWEST priority, else the renderer's own `shouldShowName` via `EntityRendererInvoker`, within the nameplate distance), just above the tag's background (anchor + 0.025) with a 0.04 gap, so it never covers the text. Depth-tested, so walls hide it (no
   line-of-sight raycast); full brightness (the colours are already dim); outside the GUI, so DME never sees it.
 - The pieces are coplanar and never overlap (edge strips, fill with a lighter top strip, trail, empty backing): no
   z-fighting, no doubled alpha.

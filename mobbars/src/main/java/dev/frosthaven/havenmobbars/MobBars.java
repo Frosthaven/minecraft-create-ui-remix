@@ -13,6 +13,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
@@ -29,12 +30,13 @@ import org.joml.Matrix4f;
 public final class MobBars {
     private static final Log LOG = new Log();
     // Sizes in model pixels (16 = a block), as on the page.
-    private static final float W = 14, H = 1.4f, EDGE = 0.15f, LIFT = 0.5f, NAME_LIFT = 0.3f;
+    private static final float W = 14, H = 1.4f, EDGE = 0.15f, NAME_GAP = 0.04f;   // NAME_GAP: blocks between bar and tag
     private static final int BACK = argb(158, 10, 11, 14), EDGE_COL = argb(179, 0, 0, 0);
     private static final int HOSTILE = 0xa83a3a, NOT_HOSTILE = 0x5c9a46, PLAYER = 0x4a76b8, ATTACKER = 0xa8409a;
     private static final long ATTACKER_MS = 30_000;   // a player who hit any player stays magenta this long
     private static final Map<Player, Long> ATTACKERS = new WeakHashMap<>();
     private static final java.util.Set<Integer> LOGGED_KINDS = new java.util.HashSet<>();   // a first-draw line per colour
+    private static final java.util.Set<net.minecraft.world.entity.EntityType<?>> LOGGED_NAMED = new java.util.HashSet<>(), LOGGED_RIDING = new java.util.HashSet<>();
     private static final long TRAIL_WAIT = 400, TRAIL_DRAIN = 600;   // ms
     private static final float TRAIL_ALPHA = 0.5f;
     /** The trail: the bar's colour at {@link #TRAIL_ALPHA} over the backing, flattened into one quad (the bar's pieces
@@ -102,9 +104,16 @@ public final class MobBars {
                 Integer.toHexString(col), e.getType().getDescriptionId(), hp, max, String.format("%.1f", Math.sqrt(e.distanceToSqr(mc.player))));
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
-        // Half a block over the head (a name tag sits there: then above it), turned to face the camera, in model px.
-        boolean named = e instanceof Player || e.shouldShowName();
-        pose.translate(0, e.getBbHeight() + LIFT + (named ? NAME_LIFT : 0), 0);
+        // At the name tag's anchor (vanilla's NAME_TAG attachment plus half a block: right for riders, babies, scaled
+        // and modded mobs); when the tag is drawn this frame, just above its background so the text stays clear.
+        Vec3 at = NameTags.anchor(e, event.getPartialTick());
+        boolean named = NameTags.shown(e, event.getRenderer());
+        float half = (H / 2 + EDGE) / 16f;
+        double y = at.y + (named ? NameTags.BACKGROUND_TOP + NAME_GAP + half : 0);
+        if (named && LOGGED_NAMED.add(e.getType())) LOG.once("named:" + e.getType(), "bar above the name tag for {}", e.getType().getDescriptionId());
+        if (e.getVehicle() != null && LOGGED_RIDING.add(e.getType())) LOG.once("riding:" + e.getType(),
+                "bar for {} riding {} (at its NAME_TAG attachment)", e.getType().getDescriptionId(), e.getVehicle().getType().getDescriptionId());
+        pose.translate(at.x, y, at.z);
         pose.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
         pose.scale(1 / 16f, -1 / 16f, 1 / 16f);
         Matrix4f m = pose.last().pose();

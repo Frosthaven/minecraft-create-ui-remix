@@ -4,7 +4,8 @@
   "package": "dev.frosthaven.havenmobbars.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "RecentAttackerMixin"
+    "RecentAttackerMixin",
+    "EntityRendererInvoker"
   ],
   "injectors": {
     "defaultRequire": 1
