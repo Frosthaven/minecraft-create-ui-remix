@@ -110,14 +110,18 @@ function ccNumber(g, s, x, y, col, shadow, k = 1) {
 
 /** The selected slot, snug on its socket: a steel ring over the brass bezel with an ember glow, and a small amber
  *  lamp on its top edge (the HUD's selection, without the frame around the socket). */
-function ccSelection(g, x, y) {
-  g.save(); g.shadowColor = 'rgba(255,140,30,1)'; g.shadowBlur = 2.4;
+function ccSelection(g, x, y, toolbox = false) {
+  // A toolbox-linked slot's selection glows the toolbox's red instead of amber (ring glow, inner line, lamp).
+  const [halo, line, lamp, core] = toolbox
+    ? ['rgba(230,40,40,1)', 'rgba(255,120,110,0.9)', 'rgba(240,60,50,0.85)', '#ffd0c8']
+    : ['rgba(255,140,30,1)', 'rgba(255,200,110,0.9)', 'rgba(255,170,50,0.85)', '#fff1b0'];
+  g.save(); g.shadowColor = halo; g.shadowBlur = 2.4;
   rrect(g, x + 0.75, y + 0.75, 16.5, 16.5, 1); g.strokeStyle = steel(g, y, y + 18); g.lineWidth = 0.9; g.stroke();
   g.restore();
   rim(g, () => rrect(g, x + 0.3, y + 0.3, 17.4, 17.4, 1.3), y, y + 18, '#f4f6f8', 0.3);
-  rrect(g, x + 1.35, y + 1.35, 15.3, 15.3, 0.7); g.strokeStyle = 'rgba(255,200,110,0.9)'; g.lineWidth = 0.3; g.stroke();
+  rrect(g, x + 1.35, y + 1.35, 15.3, 15.3, 0.7); g.strokeStyle = line; g.lineWidth = 0.3; g.stroke();
   rrect(g, x + 7.2, y - 0.1, 3.6, 1.2, 0.4); g.fillStyle = steel(g, y - 0.1, y + 1.1); g.fill();
-  glow(g, x + 9, y + 0.5, 1.8, 'rgba(255,170,50,0.85)', '#fff1b0');
+  glow(g, x + 9, y + 0.5, 1.8, lamp, core);
 }
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
@@ -274,7 +278,9 @@ function compactHud(s, font) {
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);
   ccAttackShade(g, s, [sx, sy]);
-  ccSelection(g, sx, sy);
+  const toolboxSel = (s.toolboxSlots || []).includes(s.slot);
+  ccSelection(g, sx, sy, toolboxSel);
+  if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
   ccInstruments(g, s);
   return c;
 }

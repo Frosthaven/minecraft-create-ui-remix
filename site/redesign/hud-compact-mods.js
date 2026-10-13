@@ -83,25 +83,27 @@ function ccInstruments(g, s) {
 }
 /** Create's marks over hotbar slots: toolbox-linked slots (red liquid corner chips), the schematic tool's slot (cyan). */
 function ccSlotMarks(g, s) {
-  // Toolbox-linked: triangular chips in the top-right and bottom-left corners, red liquid (the toolbox's red) in a
-  // brass casing that grows out of the socket's bezel.
-  for (const i of s.toolboxSlots || []) {
-    const [x, y] = CC.slot(i), L = 7, r = 0.8;
-    const chip = (ax, ay, sx, sy, inset) => {   // right angle at (ax, ay), legs along +sx (x) and +sy (y)
-      const a = [ax + sx * inset, ay + sy * inset], b = [ax + sx * (L - inset * 2.4), ay + sy * inset], c = [ax + sx * inset, ay + sy * (L - inset * 2.4)];
-      g.beginPath(); g.moveTo(...a); g.arcTo(...b, ...c, r * (1 - inset)); g.arcTo(...c, ...a, r * (1 - inset)); g.arcTo(...a, ...b, r * (1 - inset)); g.closePath();
-    };
-    for (const [ax, ay, sx, sy] of [[x + 17.5, y + 0.5, -1, 1], [x + 0.5, y + 17.5, 1, -1]]) {
-      // Part of the bezel: both chips in quiet bronze, tucked inside the bezel's rounded corners (not past them), the
-      // same deep red with a soft core.
-      chip(ax, ay, sx, sy, 0.3); g.fillStyle = P.bronze; g.fill();
-      chip(ax, ay, sx, sy, 0.95);
-      g.fillStyle = radial(g, ax + sx * 2.2, ay + sy * 2.2, 4.5, [[0, '#b02028'], [1, '#4a0a10']]); g.fill();
-    }
-  }
+  for (const i of s.toolboxSlots || []) ccToolboxChips(g, i, false);
   if (s.schematicSlot != null) {
     const [x, y] = CC.slot(s.schematicSlot);
     rrect(g, x + 1, y + 1, 16, 16, 0.6); g.strokeStyle = 'rgba(110,220,255,0.9)'; g.lineWidth = 0.6; g.stroke();
+  }
+}
+/** A toolbox-linked slot's marks: triangular chips in the top-right and bottom-left corners, red liquid (the
+ *  toolbox's red) in quiet bronze tucked inside the bezel's rounded corners. lit: the selected slot's, drawn over its
+ *  selection ring with a brighter, glowing red. */
+function ccToolboxChips(g, i, lit) {
+  const [x, y] = CC.slot(i), L = 7, r = 0.8;
+  const chip = (ax, ay, sx, sy, inset) => {   // right angle at (ax, ay), legs along +sx (x) and +sy (y)
+    const a = [ax + sx * inset, ay + sy * inset], b = [ax + sx * (L - inset * 2.4), ay + sy * inset], c = [ax + sx * inset, ay + sy * (L - inset * 2.4)];
+    g.beginPath(); g.moveTo(...a); g.arcTo(...b, ...c, r * (1 - inset)); g.arcTo(...c, ...a, r * (1 - inset)); g.arcTo(...a, ...b, r * (1 - inset)); g.closePath();
+  };
+  for (const [ax, ay, sx, sy] of [[x + 17.5, y + 0.5, -1, 1], [x + 0.5, y + 17.5, 1, -1]]) {
+    chip(ax, ay, sx, sy, 0.3); g.fillStyle = P.bronze; g.fill();
+    if (lit) { g.save(); g.shadowColor = 'rgba(230,40,40,0.9)'; g.shadowBlur = 1.6; }
+    chip(ax, ay, sx, sy, 0.95);
+    g.fillStyle = radial(g, ax + sx * 2.2, ay + sy * 2.2, 4.5, lit ? [[0, '#ff4a48'], [1, '#7a1018']] : [[0, '#b02028'], [1, '#4a0a10']]); g.fill();
+    if (lit) g.restore();
   }
 }
 /** Farmer's Delight Comfort: a slow warm sheen along the health meter (Comfort, saturation 0, hurt, no Regeneration). */
