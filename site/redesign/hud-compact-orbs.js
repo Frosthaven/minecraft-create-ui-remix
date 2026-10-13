@@ -22,6 +22,12 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   // The bezel: dark stone grey (not brass), a little lighter where the light falls.
   circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#6a6c70'], [0.35, '#45474b'], [1, '#232427']]); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);   // a light brushed finish
+  // Dark rivets around the stone rim, at the gaps between the ring's segments.
+  for (let k = 0; k < 10; k++) {
+    const a = -Math.PI / 2 + k * Math.PI / 5, x = cx + Math.cos(a) * (r + B / 2), y = cy + Math.sin(a) * (r + B / 2);
+    circle(g, x, y, 0.42); g.fillStyle = '#121315'; g.fill();
+    circle(g, x - 0.1, y - 0.12, 0.16); g.fillStyle = 'rgba(160,165,170,0.5)'; g.fill();
+  }
   if (ring) {
     // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim.
     const n = 10, gap = 0.07;
@@ -46,27 +52,63 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.save(); circle(g, cx, cy, r); g.clip();
   const level = f => cy + r - 2 * r * Math.max(0, Math.min(1, f));
   // A liquid: its gradient, then slow swirls (broad blotches) and a fine shimmer, clipped to its level.
-  const liquid = (liq, y0, y1) => {
+  // A liquid with depth: its gradient darkening toward the bottom, a soft inner glow, then its style: 'mana' a galaxy
+  // (deep space, nebula clouds in its colour, fine stars), 'cloud' billowing lighter and darker layers (health).
+  const liquid = (liq, y0, y1, style) => {
     const area = () => { g.beginPath(); g.rect(cx - r, y0, 2 * r, y1 - y0); };
-    g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
-    surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light');
+    g.save(); area(); g.clip();
+    if (style === 'mana') {
+      // A galaxy: the pool's own colour where the nebula clouds are, darkening toward deep space everywhere else
+      // (a multiply mask from the cloud texture, at two scales).
+      g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
+      g.globalCompositeOperation = 'multiply';
+      const pat = g.createPattern(ccNebula(), 'repeat');
+      for (const k of [0.07, 0.16]) {
+        pat.setTransform(new DOMMatrix().translateSelf(cx * 3, cy * 5).rotateSelf(k * 900).scaleSelf(k, k));
+        g.fillStyle = pat; area(); g.fill();
+      }
+      g.globalCompositeOperation = 'screen';
+      // Stars: fixed points (seeded by the orb's position), a few brighter.
+      for (let i = 0; i < 26; i++) {
+        const h = Math.sin((cx + i * 12.9898) * 78.233) * 43758.5453, u = h - Math.floor(h), v = (h * 7.13) - Math.floor(h * 7.13);
+        const x = cx - r + u * 2 * r, y = cy - r + v * 2 * r, big = i % 7 === 0;
+        g.fillStyle = big ? 'rgba(255,255,255,0.95)' : 'rgba(220,230,255,0.7)';
+        g.fillRect(x, y, big ? 0.45 : 0.25, big ? 0.45 : 0.25);
+      }
+      g.globalCompositeOperation = 'source-over';
+    } else {
+      g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
+      if (style === 'cloud') {   // billows: lighter clouds rising, darker ones settling, at two scales
+        g.save(); g.translate(cx, cy); g.scale(0.55, 0.55); g.translate(-cx, -cy);
+        surface(g, () => { g.beginPath(); g.rect(cx - 3 * r, cy - 3 * r, 6 * r, 6 * r); }, TEX.blotch, 0.55 * ORB.tex, 'soft-light');
+        g.restore();
+        surface(g, area, TEX.blotch, 0.45 * ORB.tex, 'overlay');
+        surface(g, area, TEX.rock, 0.25 * ORB.tex, 'soft-light');
+      } else {
+        surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light');
+      }
+    }
+    // Depth: darker toward the bottom and the sides, a little light from within.
+    g.fillStyle = vgrad(g, y0, cy + r, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.35)']]); area(); g.fill();
+    g.fillStyle = radial(g, cx, cy + r * 0.1, r, [[0, 'rgba(255,255,255,0.08)'], [0.6, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); area(); g.fill();
+    g.restore();
   };
   // With a secondary the orb splits down the middle (as Path of Exile does for life and mana): the primary fills the
   // left half, the secondary the right, each rising from the bottom on its own, a thin dark divider between them.
-  const half = (x0, w, f, liq, overTo) => {
+  const half = (x0, w, f, liq, overTo, style) => {
     if (!f || f.frac <= 0) return;
     g.save(); g.beginPath(); g.rect(x0, cy - r, w, 2 * r); g.clip();
     const top = level(f.frac);
-    liquid(liq, top, cy + r);
+    liquid(liq, top, cy + r, style);
     if (overTo && overTo.to > overTo.from) liquid(overTo.liq, level(overTo.to), level(overTo.from));
     const surfaceY = overTo && overTo.to > overTo.from ? level(overTo.to) : top;
     g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, surfaceY, w, 0.4);   // the surface catching the light
     g.restore();
   };
   const split = crescent != null;
-  half(cx - r, split ? r : 2 * r, fill, fill && fill.liq, over);
+  half(cx - r, split ? r : 2 * r, fill, fill && fill.liq, over, fill && fill.style);
   if (split) {
-    half(cx, r, crescent, crescent.liq);
+    half(cx, r, crescent, crescent.liq, null, crescent.style);
     g.fillStyle = vgrad(g, cy - r, cy + r, [[0, '#5a5c60'], [1, '#1c1d20']]); g.fillRect(cx - 0.35, cy - r, 0.7, 2 * r);
   }
   // Glass: a soft dark rim and a highlight top-left.
@@ -75,6 +117,26 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
   rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#a8abb0', 0.3);
+}
+
+/** The nebula mask: white in the clouds, falling to deep space (dark blue-black) between them; multiplied over a
+ *  liquid it keeps most of the colour in the clouds (the dark glass showing a little through) and darkens the rest.
+ *  Cached. */
+let NEBULA = null;
+function ccNebula() {
+  if (NEBULA) return NEBULA;
+  const t = TEX.blotch, c = document.createElement('canvas');
+  c.width = t.width; c.height = t.height;
+  const g = c.getContext('2d');
+  g.drawImage(t, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), px = d.data, deep = [78, 72, 118];   // deep space, not quite black
+  for (let i = 0; i < px.length; i += 4) {
+    const v = Math.min(1, Math.max(0, (px[i] / 255 - 0.3) / 0.45));   // 0 deep space .. 1 cloud
+    for (let k = 0; k < 3; k++) px[i + k] = deep[k] + (222 - deep[k]) * v;   // the brightest clouds a little see-through
+    px[i + 3] = 255;
+  }
+  g.putImageData(d, 0, 0);
+  return (NEBULA = c);
 }
 
 /** The orb's housing, part of its wing plate: the plate rises into a round iron boss around the orb (the plate's own
@@ -135,7 +197,7 @@ function ccOrbs(g, s) {
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT }
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth };
-    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
+    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud' }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
       shake: ccShake(s)[1] });
     CC.hit.orbL = [ORB.lx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
@@ -150,7 +212,7 @@ function ccOrbs(g, s) {
     : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO }
     : s.aircraft ? { frac: s.hull, on: CC_HULL } : null;
   if (pools.length) {
-    ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2] }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2] } : null, ring });
+    ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring });
     CC.hit.orbR = [ORB.rx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
     if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], '#ffffff']));
   } else if (ring) ccOrb(g, ORB.rx, ORB.y, { ring });   // no mana mod: an empty orb still carries the ring
