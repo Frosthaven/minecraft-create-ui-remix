@@ -5,9 +5,10 @@
 // Uses sprites.js. Shipping it: Create Dark Inventory replaces the MOB_EFFECTS layer (the frame from the pack, the
 // border drawn as fills).
 
+// Buffs read green, debuffs red: the draining border (and its glow) in that colour, on a brass or rust bezel.
 const CC_EFFECT = {
-  buff: { bezel: ['#f4d898', '#b8893f', '#6e4f22'], track: 'rgba(110,79,34,0.9)', glow: '#ffd27a' },
-  debuff: { bezel: ['#e8a080', '#9a4a28', '#4a1c0a'], track: 'rgba(90,36,16,0.9)', glow: '#ff8a5a' },
+  buff: { bezel: ['#f4d898', '#b8893f', '#6e4f22'], track: 'rgba(20,60,26,0.95)', glow: '#62e07a' },
+  debuff: { bezel: ['#e8a080', '#9a4a28', '#4a1c0a'], track: 'rgba(70,14,12,0.95)', glow: '#ff4e44' },
 };
 
 /** One effect at (x, y), 24 x 24: socket, icon (18 x 18 at +3), the draining border. frac: time left / starting time
@@ -48,28 +49,31 @@ function ccEffectsCorner(effects, icons, w = 180) {
   return c;
 }
 
-/** Effects in the action bar area: two small iron plates above the bar, buffs above the left wing (from the centre
- *  outward, newest nearest the centre), debuffs above the right; each effect a 14 x 14 socket with the draining
- *  border, its time left under it in the bar's digits (seconds, or m:ss from a minute; none when infinite).
- *  effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
+/** Effects in the action bar area: two floating rows above the bar's right wing (no plate), buffs on top and debuffs
+ *  below as vanilla stacks them, right-aligned to the bar's edge (newest at the right); each effect an 11 x 11 socket
+ *  with the draining border and its time left under it in the bar's digits (seconds, or m:ss from a minute; red
+ *  under 10 s; none when infinite). effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
 function ccEffectsRail(g, s, icons) {
   const list = s.effects || [];
-  const cell = 16, size = 14, top = CC.plate.mid - 22.5, k = 0.8;
-  for (const [kind, dir, x0] of [['buff', -1, -46], ['debuff', 1, 46]]) {
-    const row = list.filter(e => e.kind === kind);
-    if (!row.length) continue;
-    const w = row.length * cell + 4, px = dir < 0 ? x0 - w : x0, r = CC.plate.r;
-    const plate = () => rrect(g, px, top, w, 21, r);
-    g.save(); g.translate(0, 0.6); plate(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill(); g.restore();
-    plate(); g.fillStyle = iron(g, top, top + 21); g.fill(); ironSurface(g, plate); rim(g, plate, top, top + 21, P.brassHi, 0.35);
-    row.forEach((e, i) => {
-      const x = dir < 0 ? px + w - 2 - cell * (i + 1) + 1 : px + 2 + cell * i + 1, y = top + 1.5;
+  const size = 11, cell = 15, rowH = 16.5, k = 0.7, right = CC.plate.x1;
+  const rows = { buff: list.filter(e => e.kind === 'buff'), debuff: list.filter(e => e.kind === 'debuff') };
+  const debuffTop = CC.plate.mid - 2 - rowH, buffTop = rows.debuff.length ? debuffTop - rowH : debuffTop;
+  for (const [kind, top] of [['buff', buffTop], ['debuff', debuffTop]]) {
+    rows[kind].forEach((e, i) => {
+      const x = right - size - 1 - cell * i - (cell - size) / 2, y = top;
       g.save(); g.translate(x, y); g.scale(size / 24, size / 24);
       ccEffect(g, 0, 0, kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
       g.restore();
+      CC.hit['effect:' + e.id] = [x, y, size, size];
       if (!e.total) return;
       const sec = Math.ceil(e.secs), t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : String(sec);
-      ccNumber(g, t, x + size / 2 - ccNumberWidth(t, k) / 2, y + size + 1, sec <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.9)', k);
+      ccNumber(g, t, x + size / 2 - ccNumberWidth(t, k) / 2, y + size + 1.2, sec <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.95)', k);
     });
   }
+}
+
+/** An effect's name as the game shows it: words capitalised, the level in Roman numerals from II. */
+function ccEffectName(e) {
+  const name = e.id.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  return e.amp ? `${name} ${['II', 'III', 'IV', 'V'][e.amp - 1] || e.amp + 1}` : name;
 }

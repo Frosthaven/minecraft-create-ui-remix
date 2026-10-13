@@ -127,7 +127,21 @@ document.getElementById('hud').addEventListener('mousemove', e => {
   const id = Object.keys(CC.hit).find(k => { const [bx, by, bw, bh] = CC.hit[k]; return x >= bx - 9 && x <= bx + bw && y >= by - 1 && y <= by + bh + 1; }) || null;
   if (id !== st.hover) { st.hover = id; render(); }
 });
-document.getElementById('hud').addEventListener('mouseleave', () => { st.hover = null; render(); });
+document.getElementById('hud').addEventListener('mouseleave', () => { st.hover = null; render(); tip.hidden = true; });
+// Hovering an effect: its name, level and time left in a small tooltip by the pointer.
+const tip = document.createElement('div');
+tip.hidden = true;
+tip.style.cssText = 'position:fixed;pointer-events:none;padding:4px 8px;border-radius:6px;font-size:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);z-index:5';
+document.body.append(tip);
+document.getElementById('hud').addEventListener('mousemove', e => {
+  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
+  const hit = (st.effects || []).find(f => { const b = CC.hit['effect:' + f.id]; return b && x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3]; });
+  tip.hidden = !hit;
+  if (!hit) return;
+  const sec = Math.ceil(hit.secs), time = !hit.total ? 'no time limit' : sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} s`;
+  tip.innerHTML = `<b style="color:${hit.kind === 'buff' ? '#62e07a' : '#ff6a60'}">${ccEffectName(hit)}</b> · ${time}${hit.ambient ? ' (beacon)' : ''}`;
+  tip.style.left = e.clientX + 14 + 'px'; tip.style.top = e.clientY + 10 + 'px';
+});
 const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', String(on));
 const flag = (id, key, on = v => !v) => tap(id, () => { st[key] = on(st[key]); press(id, !!st[key]); });
 const EFFECTS = ['', 'poison', 'wither', 'frozen'];
@@ -174,7 +188,7 @@ addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot =
 // Buffs and debuffs above the bar: a fixed set, each effect's time running down (and restarting), so the draining
 // border and the seconds can be seen.
 const EFFECT_DEMO = [
-  { id: 'speed', kind: 'buff', total: 180 }, { id: 'strength', kind: 'buff', total: 90 }, { id: 'regeneration', kind: 'buff', total: 22 },
+  { id: 'speed', kind: 'buff', total: 180, amp: 1 }, { id: 'strength', kind: 'buff', total: 90 }, { id: 'regeneration', kind: 'buff', total: 22 },
   { id: 'haste', kind: 'buff', total: 0, ambient: true }, { id: 'poison', kind: 'debuff', total: 12 }, { id: 'slowness', kind: 'debuff', total: 45 },
 ];
 let effectIcons = {}, effectsOn = false, effectsT0 = 0;
