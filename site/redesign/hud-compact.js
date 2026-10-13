@@ -12,13 +12,13 @@ const CX = 172, BOTTOM = 50, TOPM = 30;   // TOPM: room above the bar for the ga
 const GAP = 4;
 const CC = {
   plate: { x0: -165, x1: 165, wing: 26, mid: 19.4, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
-  slot: i => [-89 + 20 * i, 29],          // socket top left (item at +1); centred on x 0
-  offhand: [-161, 29],
-  rows: [32.5, 39.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 38)
+  slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
+  offhand: [-161, 30],
+  rows: [33.5, 40.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 39)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 93 },           // magic: Iron's mana, Ars mana (breath extends the band above)
   ext: { l: [-140, -85], r: [85, 140], y: 21, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
-  roll: [139.5, 29],                      // the dash's chevrons start at 143 (its art is inset 3.5)
+  roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
   xp: { y: 21, h: 3.2, x0: -84, x1: 84 },   // 1.6 under the band's top, 1.8 above the wings   // the level window, then the pipe (inside the section)
 };
@@ -158,7 +158,10 @@ function compactHud(s, font) {
   // (catching your breath after surfacing). Not from the tank or air values alone: when the backtank empties the air
   // is still full for a moment, and the segment must not blink out.
   const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
-  ccPlate(g, { left: showArmor, right: showBreath });
+  // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
+  const rightExt = showBreath ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
+  const leftExt = showArmor || (!s.creative && s.mekasuit);
+  ccPlate(g, { left: leftExt, right: !!rightExt });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
@@ -175,7 +178,9 @@ function compactHud(s, font) {
   const mounted = s.riding === 'camel' ? ccCamel : ccHorse;
   const take = s.cast != null ? [s.cast, MANA.irons, () => ccFlask(MANA.irons)]
     : s.riding === 'camel' && s.dash != null ? [s.dash, CC_COOLDOWN, ccCamel]
-    : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted] : null;
+    : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted]
+    : s.train != null ? [s.train, CC_TRAIN, () => ccModIcon('train')]      // Create's train HUD speed
+    : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
   const [xf, xl] = take ? take : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
   ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, xf, xl, 18);
   rrect(g, X.x0, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
@@ -217,13 +222,20 @@ function compactHud(s, font) {
   // gold continues past the health, AppleSkin's regeneration preview (held food) pulses past that.
   const maxH = s.maxHealth || 20, hpNum = s.absorb ? `${Math.round(s.health)}+${Math.round(s.absorb)}` : s.health;
   row(L, 0, ccHeartIcon(s), s.health / maxH, ccHealthLiquid(s), 10, hpNum, maxH, { shake: ccShake(s),
-    after: (g2, s2, box) => { ccAbsorb(g2, s2, box, maxH); ccHealthPreview(g2, s2, box, maxH); ccHealthFx(g2, s2, box); } });
+    after: (g2, s2, box) => { ccAbsorb(g2, s2, box, maxH); ccHealthPreview(g2, s2, box, maxH); ccHealthFx(g2, s2, box); ccComfortFx(g2, s2, box); } });
   if (s.riding) row(L, 1, s.riding === 'camel' ? ccCamel() : ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
-  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20,
+  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth, 10, s.food, 20,
     { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
   }
   // Armor: the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
-  if (showArmor) row(L, 'ear', armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
+  // With a MekaSuit the extension holds two half-height pipes: armor above, suit energy below (Mekanism's bar).
+  if (leftExt && s.mekasuit) {
+    const [ex, ey, ew, eh] = extL, hh = (eh - 0.4) / 2;
+    ccIcon(g, armor('full'), L.iconC, ey + hh / 2, hh + 0.6); ccIcon(g, ccModIcon('bolt'), L.iconC, ey + eh - hh / 2, hh + 0.6);
+    ccMeter(g, ex, ey, ew, hh, Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10);
+    ccMeter(g, ex, ey + hh + 0.4, ew, hh, s.mekasuit, CC_MEKA, 10);
+    CC.hit.Lear = [ex, ey, ew, eh];
+  } else if (showArmor) row(L, 'ear', armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
   // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
@@ -237,6 +249,8 @@ function compactHud(s, font) {
     CC.hit.Rear = [ex, ey, ew, eh];
     ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
   } else if (showBreath) row(Rt, 'ear', air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
+  else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
+  else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = s.leftHanded ? [-164.5, CC.roll[1]] : CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
@@ -246,7 +260,9 @@ function compactHud(s, font) {
     mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
   }
   const [sx, sy] = CC.slot(s.slot);
+  ccSlotMarks(g, s);
   ccAttackShade(g, s, [sx, sy]);
   g.drawImage(selection(), sx - 3, sy - 3, 24, 23);
+  ccInstruments(g, s);
   return c;
 }
