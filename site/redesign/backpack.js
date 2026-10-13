@@ -52,6 +52,19 @@ function toggleButton(put, T, x, y, [u, v]) {
 
 /** The whole screen for layout L and texture set T at scale.
  *  state: { open: null | 'crafting' | 'pump', results, showSlots }. */
+/** A tab's slot group (cols x rows at x, y): before, the mod's cells; after, Create Dark Inventory's scroll (see
+ *  upgradeSlotsBackground). */
+function tabSlots(put, T, x, y, cols, rows) {
+  const w = cols * 18, h = rows * 18;
+  if (!T.tabSlots) { put(T.slots, x, y, w, h, 0, 0, w, h); return; }
+  put(T.tabSlots, x - 1, y - 1, w + 1, h + 1, 0, 0, w + 1, h + 1);
+  put(T.tabSlots, x + w, y - 1, 1, h + 2, 0, 0, 1, h + 2);
+  put(T.tabSlots, x - 1, y + h, w + 2, 1, 0, 0, w + 2, 1);
+  for (const ry of [y - 2, y + h]) {
+    put(T.tabSlots, x - 2, ry, 1, 2, 0, 220, 1, 2); put(T.tabSlots, x - 1, ry, w + 2, 2, 1, 220, w + 2, 2);
+    put(T.tabSlots, x + w + 1, ry, 1, 2, 235, 220, 1, 2);
+  }
+}
 function bpCompose(T, L, scale, state) {
   const OPEN = { crafting: [63, 142], pump: [81, 68] }, open = L.installed.includes(state.open) ? state.open : null;
   const tabW = open ? OPEN[open][0] : 21;
@@ -112,7 +125,7 @@ function bpCompose(T, L, scale, state) {
     if (open === 'crafting') {
       // CraftingUpgradeTab: two toggles (shift-click target, refill grid), the 3x3 grid, arrow, result.
       toggleButton(put, T, x + 3, y + 24, [32, 48]); toggleButton(put, T, x + 21, y + 24, [32, 112]);
-      put(T.tabSlots || T.slots, x + 3, y + 44, 54, 54, 0, 0, 54, 54);   // tab slots: our own texture (see TabSlots)
+      tabSlots(put, T, x + 3, y + 44, 3, 3);
       put(T.controls, x + 22, y + 101, 15, 8, 97, 216, 15, 8);
       put(T.controls, x + 17, y + 111, 26, 26, 71, 216, 26, 26);
       if (state.results) {   // only when the recipe has several results (shouldShowResultSelection)
@@ -124,7 +137,7 @@ function bpCompose(T, L, scale, state) {
     } else {
       // PumpUpgradeTab: input/output, tanks and pipes, world, hand toggles; four fluid filter slots.
       [[144, 0], [0, 112], [176, 0], [208, 0]].forEach((uv, i) => toggleButton(put, T, x + 3 + 18 * i, y + 24, uv));
-      put(T.tabSlots || T.slots, x + 3, y + 44, 72, 18, 0, 0, 72, 18);
+      tabSlots(put, T, x + 3, y + 44, 4, 1);
     }
   }
   // Title (8, 6) and "Inventory" (8 + off, H - 94), the game's grey, no shadow.

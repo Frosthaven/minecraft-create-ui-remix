@@ -66,13 +66,14 @@ function storageBackground(cols, wider) {
 }
 
 /** The search box's hint glyph, U+1F50D (the mod writes "🔍" centred on its grey fill, in #BBBBBB with a shadow, from
- *  the game's font): a basic pixel magnifier in an 8 x 8 font cell (ascent 7), crisp like the font itself: a 5 x 5
- *  ring with its corners cut and a 2 px handle, white so the mod's grey tints it. Shipped as createhud:font/search.png
- *  with a bitmap provider in minecraft:font/default.json. */
+ *  the game's font): a magnifier in an 8 x 8 font cell (ascent 7) drawn at R x (64 px): a bitmap provider scales a glyph
+ *  by height / image height, so it keeps the 8 px cell and stays smooth. White, so the mod's grey tints it. Shipped as
+ *  createhud:font/search.png with a bitmap provider in minecraft:font/default.json. */
 function searchGlyph() {
-  const c = document.createElement('canvas'); c.width = c.height = 8;
-  const g = c.getContext('2d'); g.fillStyle = '#ffffff';
-  for (const [x, y] of [[1, 0], [2, 0], [3, 0], [0, 1], [4, 1], [0, 2], [4, 2], [0, 3], [4, 3], [1, 4], [2, 4], [3, 4], [5, 5], [6, 6]]) g.fillRect(x, y, 1, 1);
+  const [c, g] = hires(8, 8);
+  g.strokeStyle = '#ffffff'; g.lineCap = 'round';
+  circle(g, 2.9, 2.9, 2.1); g.lineWidth = 0.9; g.stroke();
+  g.beginPath(); g.moveTo(4.6, 4.6); g.lineTo(6.6, 6.6); g.lineWidth = 1.3; g.stroke();
   return c;
 }
 
@@ -83,11 +84,19 @@ function slotsBackground() {
   return c;
 }
 
-/** upgrade_slots_background (ours; Create Dark Inventory draws upgrade tab slots from it, same layout as
- *  slots_background): blueprint cells like the inventory's armor column, one paper square per cell. */
+/** upgrade_slots_background (ours): Create Dark Inventory draws every upgrade tab's slot group from it as a schematic
+ *  scroll (TabSlots.java; tabScroll() mirrors it). Layout, logical:
+ *    (0, 0) 218 x 218: blueprint paper, its 1 px edge all round, slot marks at (1 + 18 c, 1 + 18 r) for 12 x 12 cells.
+ *      The group is cut from (0, 0) at w + 1 x h + 1 (left and top edges included), its right and bottom edges from the
+ *      left column and top row (both plain edge).
+ *    (0, 220) 236 x 2: a wooden roller: brass cap (0..1), body (1..235), cap (235..236); one above and one below.
+ *  Sizes are whole GUI pixels (the game blits in them): the mod leaves only 2 to 3 px around a group. */
 function upgradeSlotsBackground() {
   const [c, g] = hires(256, 256);
-  for (let r = 0; r < 12; r++) for (let q = 0; q < 12; q++) { blueprint(g, q * 18, r * 18, 18, 18); draftMark(g, q * 18, r * 18); }
+  blueprint(g, 0, 0, 218, 218);
+  for (let r = 0; r < 12; r++) for (let q = 0; q < 12; q++) draftMark(g, 1 + q * 18, 1 + r * 18);
+  g.fillStyle = vgrad(g, 220, 222, [[0, '#d9aa70'], [0.3, '#a8743f'], [0.75, '#6e4520'], [1, '#3a220c']]); g.fillRect(1, 220, 234, 2);
+  g.fillStyle = brass(g, 220, 222); g.fillRect(0, 220, 1, 2); g.fillRect(235, 220, 1, 2);
   solidAlpha(c);
   return c;
 }
