@@ -13,7 +13,9 @@ final class CompactAtlas {
     static final int K = 8;   // texels per GUI pixel
     static final ResourceLocation PARTS = tex("parts"), ORBS = tex("orbs");
     static final int PARTS_SIZE = 256 * K, ORBS_W = 384 * K, ORBS_H = 320 * K;
-    static final int PLATE_W = 428 * K, PLATE_H = 66 * K, PLATE_X = -214 * K, PLATE_Y = (-15 - 50) * K;
+    static final int PLATE_W = 436 * K, PLATE_H = 66 * K, PLATE_X = -218 * K, PLATE_Y = (-15 - 50) * K;
+    /** The plate texture's parts lie apart: the wings shifted out this far (each part padded past its joint edge). */
+    static final int WING_SHIFT = 2 * K;
 
     static final List<String> WIN_ICONS = List.of("flask", "horse", "camel", "train", "engine");
     static final List<String> WING_LIQUIDS = List.of("blood", "poison", "wither", "frozen", "absorb", "broth", "hunger", "saturation",

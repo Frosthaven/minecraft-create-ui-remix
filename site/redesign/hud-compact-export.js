@@ -1,7 +1,8 @@
 // Compact HUD textures for the game (createhud:textures/gui/compact/*), drawn by the same functions as the page so
 // the game shows exactly the preview. haven-create-ui-ux's hud/ classes draw from them in 1/8 GUI px (one texel), so
 // every position here is a whole multiple of 1/8. KEEP IN STEP with CompactAtlas.java.
-//   plate_{bars,orbs}: 428 x 66 at (-214, -15) of the bar (bottom at 50; the wings' sloped ends reach ±212.2). Orbs: with the housings
+//   plate_{bars,orbs}: 436 x 66 at (-218, -15) of the bar (bottom at 50). Three parts apart, each padded 1 past its joint
+//     edge: the centre at its place (to ±94.5), the wings shifted out 2 (the game crops each at ±93.5). Orbs: with the housings
 //     (the orbs are drawn at ORB.S x, so their domes rise to y -14); bars: the wings one plate each at CC_WING.top.
 //     The dash dial's housing (orbs) is a separate piece in parts, so the plate does not depend on which hand.
 //   parts (256 x 256):
@@ -113,11 +114,16 @@ function ccxOrbs() {
 function compactExports() {
   const files = [];
   for (const [name, orbs] of [['bars', false], ['orbs', true]]) {
-    const [c, g] = hires(428, 66);
-    g.translate(214, 15);
-    const ends = ccEnds({ orbs });
-    ccPlate(g, { x0: ends.x0, x1: ends.x1, gradTop: ccPlateGradTop({ orbs }), raise: orbs ? null : CC_WING.top });
-    if (orbs) { ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1); }
+    const [c, g] = hires(436, 66);
+    g.translate(218, 15);
+    const ends = ccEnds({ orbs }), opts = only => ({ x0: ends.x0, x1: ends.x1, gradTop: ccPlateGradTop({ orbs }), raise: orbs ? null : CC_WING.top, only, pad: 1 });
+    ccPlate(g, opts('centre'));
+    for (const sign of [-1, 1]) {   // each wing shifted out 2, clipped to its own side of its padded joint edge
+      g.save(); g.translate(sign * 2, 0); g.beginPath(); g.rect(sign < 0 ? -1e3 : CC_SIDE - 1, -1e3, 1e3 - CC_SIDE + 1, 2e3); g.clip();
+      ccPlate(g, opts('wings'));
+      if (orbs) ccHousing(g, sign < 0 ? ORB.lx : ORB.rx, ORB.y, sign < 0 ? 1 : -1);
+      g.restore();
+    }
     files.push(['createhud: compact/plate_' + name, c]);
   }
   const [c, g] = hires(256, 256);

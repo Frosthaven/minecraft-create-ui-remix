@@ -224,11 +224,13 @@ public final class CompactHud {
         checkBlend("frame start"); restoreBlend();
         // The plate in three parts: the centre, and each wing at the side bars' size (attached at WING_ANCHOR).
         ResourceLocation plate = plate(f.orbs);
-        int cut = x(-WING_ANCHOR) - PLATE_X, mid = PLATE_W - 2 * cut;   // each wing part: the plate's edge to the anchor
+        // The texture's parts lie apart (the wings shifted out WING_SHIFT, each padded past its joint edge), so a crop at
+        // the anchor filters into its own material, never into the neighbour part.
+        int uc = x(-WING_ANCHOR) - PLATE_X, wc = 2 * x(WING_ANCHOR), uw = uc - WING_SHIFT;
         use(g, plate);
-        g.blit(plate, x(-WING_ANCHOR), PLATE_Y, cut, 0, mid, PLATE_H, PLATE_W, PLATE_H);
-        side(g, -1, f.side, () -> g.blit(plate, PLATE_X, PLATE_Y, 0, 0, cut, PLATE_H, PLATE_W, PLATE_H));
-        side(g, 1, f.side, () -> g.blit(plate, x(WING_ANCHOR), PLATE_Y, cut + mid, 0, cut, PLATE_H, PLATE_W, PLATE_H));
+        g.blit(plate, x(-WING_ANCHOR), PLATE_Y, uc, 0, wc, PLATE_H, PLATE_W, PLATE_H);
+        side(g, -1, f.side, () -> g.blit(plate, PLATE_X + WING_SHIFT, PLATE_Y, 0, 0, uw, PLATE_H, PLATE_W, PLATE_H));
+        side(g, 1, f.side, () -> g.blit(plate, x(WING_ANCHOR), PLATE_Y, uc + wc + WING_SHIFT, 0, uw, PLATE_H, PLATE_W, PLATE_H));
         HudJoint.draw(g, f.orbs, f.side);   // the fillets joining the centre to each wing at its size
         double offSide = f.lefty ? 1 : -1;   // the offhand's wing; the dash takes the other
 

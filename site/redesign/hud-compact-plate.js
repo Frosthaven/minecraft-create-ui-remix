@@ -45,15 +45,22 @@ function ccPlate(g, ears = {}) {
   };
   // ears.only: 'wings' or 'centre' (each is drawn in its own space: a part's square joint edge must not show in the
   // other's); both by default (the export's plate texture).
-  const wy = ears.raise ?? wing, only = ears.only;   // the wings' top edge (bar mode: the tall wing plates)
+  // ears.pad (the export): each part continues past its joint edge by pad as its edge column continues (the centre's
+  // flat top; the wing's side below its rounded corner), so a texture crop there filters into the same material, not
+  // into the neighbour part (a bright sliver of the wing's rim rose at the joint in game).
+  const wy = ears.raise ?? wing, only = ears.only, pad = ears.pad || 0;   // the wings' top edge (bar mode: the tall wing plates)
   const parts = [];
   if (only !== 'centre') {
+    if (pad) for (const sx of [-1, 1]) {
+      const area = () => { g.beginPath(); g.rect(sx > 0 ? A - pad : -A, wy + CC_JOINT.corner, pad, b - wy - CC_JOINT.corner); };
+      area(); g.fillStyle = plateIron(g, ears.gradTop ?? wy, b); g.fill(); ironSurface(g, area);
+    }
     parts.push(plate([[x0 - T, b, r], [x0, wy, r], [-A, wy, CC_JOINT.corner], [-A, b, 0]], ears.gradTop, 2));
     parts.push(plate([[A, b, 0], [A, wy, CC_JOINT.corner], [x1, wy, r], [x1 + T, b, r]], ears.gradTop, 0));
   }
   if (only !== 'wings') {   // the centre: its rim along the flat top only (both ends are joints)
-    const [, top] = plate([[-A, b, 0], [-A, mid, 0], [A, mid, 0], [A, b, 0]], ears.gradTop);
-    parts.push([() => { g.beginPath(); g.moveTo(-A, mid); g.lineTo(A, mid); }, top]);
+    const [, top] = plate([[-A - pad, b, 0], [-A - pad, mid, 0], [A + pad, mid, 0], [A + pad, b, 0]], ears.gradTop);
+    parts.push([() => { g.beginPath(); g.moveTo(-A - pad, mid); g.lineTo(A + pad, mid); }, top]);
   }
   g.save(); g.lineCap = 'butt';   // an open rim ending at a joint: no round cap poking past the outline
   for (const [path, top] of parts) rim(g, path, top, b, P.brassHi, 0.35);
