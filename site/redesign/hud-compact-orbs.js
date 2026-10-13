@@ -205,12 +205,10 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
   if (!riding && s.saturation > 0 && s.food > 0) {   // saturation: a lighter cream broth at the bottom of the food half,
     // up to its level (never past the food), as the bar's cream segments
     const ys = level(Math.min(s.saturation, s.food) / 20);
-    // A solid layer (its edge is just where it stops), a little lighter and paler than the broth (low contrast: it reads as richer broth).
-    const sl = LIQUID.broth.map(c => mixHex(c, '#ffe6c0', 0.16));
-    g.save(); g.beginPath(); g.rect(cx, ys, r, cy + r - ys); g.clip(); g.globalAlpha = 0.6;   // the broth shows through
-    g.fillStyle = vgrad(g, cy - r, cy + r, [[0, sl[0]], [0.45, sl[1]], [1, sl[2]]]); g.fillRect(cx, ys, r, cy + r - ys);
-    surface(g, () => { g.beginPath(); g.rect(cx, ys, r, cy + r - ys); }, TEX.blotch, 0.4 * ORB.tex, 'overlay');
-    g.fillStyle = vgrad(g, ys, cy + r, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); g.fillRect(cx, ys, r, cy + r - ys);
+    // The broth below that level, tinted paler and creamier: its own texture (clouds, bubbles) shows straight through.
+    g.save(); g.beginPath(); g.rect(cx, ys, r, cy + r - ys); g.clip();
+    g.globalCompositeOperation = 'soft-light'; g.fillStyle = 'rgba(255,240,210,0.35)'; g.fillRect(cx, ys, r, cy + r - ys);
+    g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(255,225,180,0.06)'; g.fillRect(cx, ys, r, cy + r - ys);
     g.restore();
   }
   if (!riding && s.nourished && s.food > 0) {   // Nourishment: the broth keeps its level, glazed gold with slow sparkles
