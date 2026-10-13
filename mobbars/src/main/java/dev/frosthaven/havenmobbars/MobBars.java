@@ -19,7 +19,7 @@ import org.joml.Matrix4f;
 /**
  * Floating health bars (designed on the redesign page mob-bars.html): a flat, dim bar above every living entity within
  * {@link MobBarsConfig#RANGE} blocks, facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
- * other mob), with recent damage as a trail of its colour at 25% opacity that waits, then drains.
+ * other mob), with recent damage as a trail of its colour at 50% opacity that waits, then drains.
  *
  * Drawn from {@link RenderLivingEvent.Post} into the entity pass's own buffers with the name tag background's render
  * type, like a name tag: Iris shader packs and Sodium handle it as they handle name tags, it is depth-tested (walls
@@ -36,7 +36,7 @@ public final class MobBars {
     private static final Map<Player, Long> ATTACKERS = new WeakHashMap<>();
     private static final java.util.Set<Integer> LOGGED_KINDS = new java.util.HashSet<>();   // a first-draw line per colour
     private static final long TRAIL_WAIT = 400, TRAIL_DRAIN = 600;   // ms
-    private static final float TRAIL_ALPHA = 0.25f;
+    private static final float TRAIL_ALPHA = 0.5f;
     /** The trail: the bar's colour at {@link #TRAIL_ALPHA} over the backing, flattened into one quad (the bar's pieces
      *  never overlap, so the blend is done here). */
     private static final java.util.function.IntUnaryOperator TRAIL_OVER_BACK = col -> {

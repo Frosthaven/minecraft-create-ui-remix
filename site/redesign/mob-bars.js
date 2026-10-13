@@ -121,13 +121,13 @@ function mobScene(canvas, { skin, grass, kind, hp, max, trail }) {
   mobBar(g, top.x, top.y, MOB_BAR.w * CAM.s, MOB_BAR.h * CAM.s, kind, hp, max, trail);
 }
 
-/** The bar: a dim backing, the health in the kind's flat colour, recent damage as a trail of the same colour at 25% opacity that drains away. */
+/** The bar: a dim backing, the health in the kind's flat colour, recent damage as a trail of the same colour at 50% opacity that drains away. */
 function mobBar(g, cx, cy, w, h, kind, hp, max, trail = hp) {
   const x = Math.round(cx - w / 2), y = Math.round(cy - h / 2), col = MOB_KINDS[kind].col;
   g.fillStyle = MOB_BAR.edge; g.fillRect(x - 1, y - 1, w + 2, h + 2);
   g.fillStyle = MOB_BAR.back; g.fillRect(x, y, w, h);
   const fw = w * Math.max(0, hp) / max, tw = w * Math.max(0, trail) / max;
-  if (tw > fw) { g.fillStyle = col + '40'; g.fillRect(x + fw, y, tw - fw, h); }
+  if (tw > fw) { g.fillStyle = col + '80'; g.fillRect(x + fw, y, tw - fw, h); }
   g.fillStyle = col; g.fillRect(x, y, fw, h);
   g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(x, y, fw, 1);   // one faint top line, so the flat fill still reads as a bar
 }
