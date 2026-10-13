@@ -2,8 +2,8 @@
 // Uses sprites.js, meters.js (LIQUID), hud-compact.js (ccMeter). s.t is the time in ms (animations).
 //   Hearts: poison / wither / frozen recolour the health liquid; hardcore adds a crimson trim; at 4 health or less the
 //     meter shakes; damage flashes it white; regeneration sweeps a light along it.
-//   Food: saturation (vanilla's yellow outline, AppleSkin's overlay) is a cream layer along the broth's top, filled to
-//     the saturation level (never past the food); the Hunger effect turns the broth spoiled olive; holding food shows
+//   Food: saturation (vanilla's yellow outline, AppleSkin's overlay) fills the first segments, up to its level (never
+//     past the food), in light cream against the orange broth; the Hunger effect turns the broth spoiled olive; holding food shows
 //     what it would restore (AppleSkin), a pale pulsing band past the fill.
 //   The heart icon follows the effect (poisoned, withered, frozen), as vanilla's hearts do.
 //   Riding: the mount's health replaces food (vanilla hides food then); charging a jump turns the XP pipe into the
@@ -46,13 +46,16 @@ function ccHeartIcon(s) {
   heartFrame(g);
   return c;
 }
-/** Saturation over the food meter: a cream layer in the top 45 % of the glass, from the left to saturation / 20. */
+/** Saturation over the food meter: the segments up to saturation / 20 (never past the food) in their own colour, a
+ *  light cream against the orange broth, full height, the segment lines kept. */
 function ccSaturation(g, s, [x, y, w, h]) {
   const sat = Math.min(s.saturation, s.food);
   if (sat <= 0) return;
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
-  g.fillStyle = vgrad(g, y + 0.5, y + 0.5 + (h - 1) * 0.45, [[0, '#fff3dc'], [1, '#f0c890']]);
-  g.fillRect(x + 0.5, y + 0.5, (w - 1) * sat / 20, (h - 1) * 0.45);
+  g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, '#fff4e2'], [0.45, '#e9c79c'], [1, '#6e4e30']]);
+  g.fillRect(x + 0.5, y, (w - 1) * sat / 20, h);
+  g.fillStyle = 'rgba(0,0,0,0.55)';
+  for (let k = 1; k < 10; k++) g.fillRect(x + 0.5 + (w - 1) * k / 10 - 0.15, y, 0.3, h);
   g.restore();
 }
 /** AppleSkin's restore preview over the food meter: from the fill to fill + restore, pale and pulsing. */
