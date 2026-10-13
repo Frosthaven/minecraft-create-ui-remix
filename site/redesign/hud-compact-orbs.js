@@ -184,9 +184,9 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
     g.restore();
   };
   if (s.regen) sweep(1400, '#ffe6dc');
-  if (s.comfort && s.saturation <= 0 && hp < 1 && !s.regen) {   // Comfort: a slow pink glow rising through the whole glass
+  if (s.comfort && s.saturation <= 0 && hp < 1 && !s.regen) {   // Comfort: a slow pink glow rising through the health half's whole glass
     const y = cy + r + 4 - ((s.t / 2600) % 1) * (2 * r + 8);
-    g.fillStyle = vgrad(g, y - 5, y + 5, [[0, '#ff9ec400'], [0.5, '#ff9ec488'], [1, '#ff9ec400']]); g.fillRect(cx - r, y - 5, 2 * r, 10);
+    g.fillStyle = vgrad(g, y - 5, y + 5, [[0, '#ff9ec400'], [0.5, '#ff9ec488'], [1, '#ff9ec400']]); g.fillRect(cx - r, y - 5, r, 10);
   }
   const pulse = 0.3 + 0.25 * Math.sin(s.t / 160);
   if (s.holdFood) {
