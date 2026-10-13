@@ -20,7 +20,8 @@ final class CompactAtlas {
             "mount", "irons", "ars", "armor", "air", "tank", "flamingo", "hull");
     static final List<String> XP_LIQUIDS = List.of("xp", "jump", "cooldown", "cast", "train", "engine");
     static final String DIGITS = "0123456789/:+smh";
-    static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3, RED = 4;   // 0.625 digit rows (effects)
+    // 0.625 digit rows: effect times in their kind's tint (BUFF, DEBUFF, CYAN for the MekaSuit), never by time left.
+    static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3, RED = 4, CYAN = 5, BUFF = 6, DEBUFF = 7;
     static final String GLYPHS = "0123456789/:+";
     static final List<String> TINTS = List.of("blood", "poison", "wither", "frozen", "broth", "hunger", "mount", "irons", "ars",
             "armor", "air", "tank", "flamingo", "hull", "black");
@@ -33,7 +34,6 @@ final class CompactAtlas {
     static final int SKULL_U = 66 * K, SKULL_W = 9 * K, SKULL_H = 10 * K;
     static final int WINDOW_U = 78 * K, WINDOW_W = 10 * K, WINDOW_CAP = 2 * K, ICON_WIN_U = 90 * K;
     static final int WIN_ICON_U = 100 * K, WIN_ICON = 7 * K;
-    static final int MEKA_CASE_U = 136 * K, MEKA_FILL_U = 140 * K, MEKA_W = 19, MEKA_H = 18 * K;   // 2.4 x 18
     // The dash dial's housing (orb mode): 42 x 38 at (182, 92), drawn at (dash - 21, 12.5) of the bar.
     static final int DOME_U = 182 * K, DOME_V = 92 * K, DOME_W = 42 * K, DOME_H = 38 * K;
     static final double DOME_HALF = 21, DOME_TOP = 12.5;
@@ -50,11 +50,11 @@ final class CompactAtlas {
      *  neighbour draws a stray bit of it in game. */
     private static final Object[][] PARTS_PIECES = {
             {"socket", 0, 0, 18, 18}, {"selection", 20, 0, 24, 23}, {"offhand ghost", 46, 0, 18, 18}, {"skull plate", 66, 0, 9, 10},
-            {"level window", 78, 0, 10, 5}, {"icon window", 90, 0, 9, 7}, {"window icons", 100, 0, 35, 7}, {"MekaSuit casing", 136, 0, 3, 18},
-            {"MekaSuit fill", 140, 0, 3, 18}, {"XP casing", 0, 26, 177, 3}, {"wing liquids", 0, 30, 32, 80}, {"XP liquids", 0, 112, 177, 24},
-            {"digits 0.625", 0, 140, 56, 20}, {"glyphs 0.6", 180, 20, 39, 53}, {"level glyphs 0.85", 180, 76, 39, 15},
+            {"level window", 78, 0, 10, 5}, {"icon window", 90, 0, 9, 7}, {"window icons", 100, 0, 35, 7},
+            {"XP casing", 0, 26, 177, 3}, {"wing liquids", 0, 30, 32, 80}, {"XP liquids", 0, 112, 177, 24},
+            {"digits 0.625", 0, 140, 56, 32}, {"glyphs 0.6", 180, 20, 39, 53}, {"level glyphs 0.85", 180, 76, 39, 15},
             {"follower plate", 0, 190, 24, 9}, {"gear row", 30, 190, 32, 12}, {"groove", 80, 190, 32, 4}, {"dash cog", 120, 190, 18, 18},
-            {"effect frames", 140, 190, 34, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
+            {"effect frames", 140, 190, 46, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
             {"toolbox selection", 40, 210, 24, 23}, {"schematic frame", 66, 210, 18, 18}, {"instrument plate", 86, 210, 24, 9},
             {"clock", 112, 210, 9, 9}, {"compass", 122, 210, 9, 9}, {"wing casing", 0, 236, 32, 4},
             {"dial housing", 182, 92, 42, 38}, {"exhaustion band", 182, 132, 34, 4}};
@@ -75,8 +75,8 @@ final class CompactAtlas {
         return ResourceLocation.fromNamespaceAndPath("createhud", "textures/gui/compact/" + name + ".png");
     }
 
-    static ResourceLocation plate(boolean orbs, boolean wide) {
-        return tex("plate_" + (orbs ? "orbs" : "bars") + (wide ? "_meka" : ""));
+    static ResourceLocation plate(boolean orbs) {
+        return tex("plate_" + (orbs ? "orbs" : "bars"));
     }
 
     static int winIconU(String n) { return WIN_ICON_U + WIN_ICON * WIN_ICONS.indexOf(n); }
@@ -93,8 +93,8 @@ final class CompactAtlas {
     static int levelV(int row) { return (int) Math.round((76 + 5 * row) * K); }
 
     static final int GHOST_PLATE_V = 190 * K, GHOST_PLATE_W = 24 * K, GHOST_PLATE_H = 9 * K;
-    // Effect frames (10x10): buff, debuff, ambient.
-    static final int EFFECT_BUFF_U = 140 * K, EFFECT_DEBUFF_U = 152 * K, EFFECT_AMBIENT_U = 164 * K, EFFECT_V = 190 * K;
+    // Effect frames (10x10): buff, debuff, ambient, the MekaSuit's energy (cyan).
+    static final int EFFECT_BUFF_U = 140 * K, EFFECT_DEBUFF_U = 152 * K, EFFECT_AMBIENT_U = 164 * K, EFFECT_SUIT_U = 176 * K, EFFECT_V = 190 * K;
     // Overlays at y 210: toolbox chips (18x18) and lit, the toolbox slot's selection (24x23 cell), the schematic frame,
     // a blank instrument plate (24x9, sliced 4 | middle | 4), clock and compass faces (9x9).
     static final int OVER_V = 210 * K, CHIPS_U = 0, CHIPS_LIT_U = 20 * K, TOOLBOX_SEL_U = 40 * K, SCHEMATIC_U = 66 * K;

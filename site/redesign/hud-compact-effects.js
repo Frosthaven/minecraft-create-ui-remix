@@ -9,7 +9,21 @@
 const CC_EFFECT = {
   buff: { bezel: ['#f4d898', '#b8893f', '#6e4f22'], track: 'rgba(20,60,26,0.95)', glow: '#62e07a' },
   debuff: { bezel: ['#e8a080', '#9a4a28', '#4a1c0a'], track: 'rgba(70,14,12,0.95)', glow: '#ff4e44' },
+  // A worn MekaSuit's energy: a cyan status in the buffs line (after the always-on buffs), border = energy left.
+  suit: { bezel: ['#bdf2ff', '#3f9fb8', '#123a46'], track: 'rgba(10,40,50,0.95)', glow: '#3fe0ff' },
 };
+/** The MekaSuit icon in the preview (the game draws the worn piece's item): a white chestplate with cyan trim. 16x16. */
+let CC_SUIT_ICON = null;
+function ccSuitIcon() {
+  if (CC_SUIT_ICON) return CC_SUIT_ICON;
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const g = c.getContext('2d'), px = (col, ...r) => { g.fillStyle = col; for (const [x, y, w, h] of r) g.fillRect(x, y, w, h); };
+  px('#2a2f36', [2, 2, 4, 3], [10, 2, 4, 3], [1, 4, 14, 3], [2, 7, 12, 7], [3, 14, 10, 1]);   // outline
+  px('#e8edf2', [3, 3, 2, 2], [11, 3, 2, 2], [2, 5, 12, 2], [3, 7, 10, 6]);                     // shell
+  px('#b6bec8', [3, 11, 10, 2], [7, 5, 2, 8]);                                                  // shade, centre seam
+  px('#3fe0ff', [6, 7, 4, 2], [4, 10, 1, 2], [11, 10, 1, 2]);                                   // cyan trim and core
+  return (CC_SUIT_ICON = c);
+}
 
 /** One effect at (x, y), 24 x 24: socket, icon (14 x 14 at +5), the draining border (thick, ~1 px when drawn at 11). frac: time left / starting time
  *  (1 for infinite), ambient: a beacon's (dimmer). */
@@ -52,8 +66,8 @@ function ccEffectsCorner(effects, icons, w = 180) {
 
 /** Effects in the action bar area, floating above the bar's left wing (no plate), left-aligned to the bar's edge,
  *  in two lines: buffs nearest the bar (green), debuffs above them (red, at 1.5x), each always-on first. Each effect a
- *  10 x 10 socket with the draining border and its time left under it in the bar's small digits (45, 3m, 1h; red
- *  under 10 s; none when infinite). At most PER_ROW in a row (the right wing's width, clear of the centre),
+ *  10 x 10 socket with the draining border and its time left under it in the bar's small digits (45, 3m, 1h;
+ *  none when infinite) in the kind's tint, which does not change as it runs out. At most PER_ROW in a row (the right wing's width, clear of the centre),
  *  more wrap onto another row above, so a long list grows upward instead of sideways into anything.
  *  effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
 const CC_EFFECTS = { size: 10, cell: 13, rowH: 19.5, k: 0.625, tk: 1.5, perRow: 10 };   // tk: the times' digits scale (the bigger bar)   // a line: the bar's left edge to x -32
@@ -68,17 +82,24 @@ function ccEffectsRail(g, s, icons) {
   // Each line starts with its always-on effects (infinite or a beacon's), then the timed ones.
   const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));
   const green = line('buff'), red = line('debuff');
+  // A worn MekaSuit: one more socket after the always-on buffs, before the timed ones.
+  if (!s.creative && s.mekasuit) green.splice(green.filter(e => !e.total).length, 0, { id: 'mekasuit', kind: 'suit', suit: s.mekasuit });
   // Debuffs at 1.5x (socket, spacing, digits): the ones to act on stand out.
   const draw = (e, x, y, m) => {
     const sz = size * m, kk = k * m * tk;
     g.save(); g.translate(x, y); g.scale(sz / 24, sz / 24);
-    ccEffect(g, 0, 0, e.kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
+    ccEffect(g, 0, 0, e.kind, e.suit ? ccSuitIcon() : icons[e.id], e.suit ? e.suit : e.total ? e.secs / e.total : 1, e.ambient);
     g.restore();
     CC.hit['effect:' + e.id] = [x, y, sz, sz];
+    if (e.suit) {   // the energy left (percent), always cyan
+      const t = String(Math.round(e.suit * 100));   // percent, no sign
+      ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint('#3fe0ff'), 'rgba(0,0,0,0.95)', kk);
+      return;
+    }
     if (!e.total) return;
     const t = ccEffectTime(e.secs);
-    const n = /[mh]$/.test(t) ? t.length - 1 : t.length, hot = e.secs <= 10;   // the number bright, its unit (m, h) dimmer
-    ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, i => { const hue = hot ? '#ff3a2a' : e.kind === 'buff' ? '#3fd060' : '#ff5a4a'; return ccTint(hue); }, 'rgba(0,0,0,0.95)', kk);
+    // The kind's tint all the way down: the colour does not change as the time runs out.
+    ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint(e.kind === 'buff' ? '#3fd060' : '#ff5a4a'), 'rgba(0,0,0,0.95)', kk);
   };
   let top = ccSideY(s.orbs ? ORB.y - ORB_H() : CC_WING.top - (s.hardcore ? CC_SKULL_PLATE.h + CC_SKULL_PLATE.lift + 1 : 0), s.side || 1) - 2;   // above the domes / the wings (and the skull), at the side size
   for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top

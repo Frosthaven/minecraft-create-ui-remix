@@ -36,7 +36,8 @@ final class HudFrame {
     final double airShown, tankShown;
     final LivingEntity mount;
     final float mountHp, mountMax;
-    final Float meka, flamingo, hull;
+    final Float flamingo, hull;
+    final HudExtras.Suit suit;   // MekaSuit energy (a cyan status in the effects rail), or null
     final boolean primaryArs;
     final double side;   // the side bars' size (config)
     final Ends ends;
@@ -82,10 +83,10 @@ final class HudFrame {
         irons = HudStats.irons(p);
         ars = HudStats.ars(p);
         roll = HudStats.roll(p);
-        meka = hurtable ? HudExtras.mekaSuit(p) : null;
+        suit = hurtable ? HudExtras.mekaSuit(p) : null;
         flamingo = hurtable ? HudExtras.flamingo(p) : null;
         hull = HudExtras.aircraftHealth(p);
-        ends = new Ends(orbs, hurtable && meka != null, lefty);
+        ends = new Ends(orbs, lefty);
     }
 
     /** The mana pools present, the primary (the setting) first. */
@@ -103,19 +104,16 @@ final class HudFrame {
     }
 
     /** Where each wing ends (the page's ccEnds): out from the orb's housing (or the meters) a gap, the end item (the
-     *  offhand slot, 18 wide, or the dash dial), then plate. The MekaSuit gauge takes its own slot next to the
-     *  vitals. Left-handed mirrors which end holds which. Units: x0, x1 (the wings' outer edges), offhand (the slot's
-     *  left x), dash (the dial's centre x), meka (the gauge's centre x); wide: the plate with the MekaSuit's slot. */
+     *  offhand slot, 18 wide, or the dash dial), then plate. Left-handed mirrors which end holds which. Units: x0, x1
+     *  (the wings' outer edges), offhand (the slot's left x), dash (the dial's centre x). */
     static final class Ends {
-        final double x0, x1, offhand, dash, meka;
-        final boolean wide;
+        final double x0, x1, offhand, dash;
 
-        Ends(boolean orbs, boolean mekaSlot, boolean lefty) {
+        Ends(boolean orbs, boolean lefty) {
             // Orbs: the dial's width is its housing's reach at the plate's edge; bars: the dial alone, in the tall wing.
             double gap = orbs ? 1.5 : 4, end = orbs ? 3 : 4, inner = orbs ? OrbHud.RX + OrbHud.HOUSING * OrbHud.S : BarHud.OUTER, slotW = 18;
             double dialW = orbs ? 2 * domeHalf(dialHousing(), DIAL_Y) : 2 * (DIAL_R + DIAL_B) * DIAL_S;
-            double ms = orbs ? 1 : BarHud.GAUGE;   // the MekaSuit gauge's scale: bar mode's meter block height
-            double left = inner + gap + (mekaSlot ? 3.4 * ms : 0), right = inner + gap;
+            double left = inner + gap, right = inner + gap;
             double leftW = lefty ? dialW : slotW, rightW = lefty ? slotW : dialW;
             double span = Math.max(left + leftW, right + rightW);
             // Each end item centred in its wing's end space (the wider wing's), so neither end leaves dead plate.
@@ -124,8 +122,6 @@ final class HudFrame {
             x1 = span + end;
             offhand = (lefty ? rightItem : leftItem) - slotW / 2;
             dash = lefty ? leftItem : rightItem;
-            meka = -(inner + gap + 1.7 * ms);
-            wide = mekaSlot && !lefty;
         }
     }
 

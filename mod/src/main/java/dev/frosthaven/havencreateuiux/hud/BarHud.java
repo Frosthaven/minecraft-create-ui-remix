@@ -15,9 +15,8 @@ final class BarHud {
     static final double[] ROWS = {31.4, 37.4, 43.4};
     static final double MW = 32, MH = 4, LEFT_X = -131, RIGHT_X = 99;
     /** The meter blocks are drawn S x around (±ANCHOR, BY) (the page's CC_WING): the left spans -165..-101 and 13.8..45.8,
-     *  centred (MID) in the wing plate (top TOP); OUTER: the blocks' outer edge plus 2. GAUGE: the MekaSuit gauge's
-     *  scale (as tall as the block). */
-    static final double S = 2, ANCHOR = 97, BY = 49, TOP = 9.6, MID = 29.8, OUTER = 167, GAUGE = 32.0 / 18;
+     *  centred (MID) in the wing plate (top TOP); OUTER: the blocks' outer edge plus 2. */
+    static final double S = 2, ANCHOR = 97, BY = 49, TOP = 9.6, MID = 29.8, OUTER = 167;
     private static final java.util.Set<String> MANA = java.util.Set.of("irons", "ars"), BROTH = java.util.Set.of("broth", "hunger");
 
     private BarHud() {}

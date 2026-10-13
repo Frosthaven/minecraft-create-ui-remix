@@ -1,24 +1,24 @@
 // Compact HUD textures for the game (createhud:textures/gui/compact/*), drawn by the same functions as the page so
 // the game shows exactly the preview. haven-create-ui-ux's hud/ classes draw from them in 1/8 GUI px (one texel), so
 // every position here is a whole multiple of 1/8. KEEP IN STEP with CompactAtlas.java.
-//   plate_{bars,bars_meka,orbs,orbs_meka}: 424 x 66 at (-212, -15) of the bar (bottom at 50). Orbs: with the housings
+//   plate_{bars,orbs}: 424 x 66 at (-212, -15) of the bar (bottom at 50). Orbs: with the housings
 //     (the orbs are drawn at ORB.S x, so their domes rise to y -14); bars: the wings one plate each at CC_WING.top.
 //     The dash dial's housing (orbs) is a separate piece in parts, so the plate does not depend on which hand.
-//     _meka: the left wing widened for the MekaSuit gauge's slot (right-handed only; ccEnds).
 //   parts (256 x 256):
 //     (0, 0) socket 18x18; (20, 0) selection 24x23; (46, 0) offhand ghost 18x18; (66, 0) the hardcore skull plate 9x10
 //     (shadow included); (78, 0) the level window 10 x 4.6 (caps 2 | middle | 2); (90, 0) the icon window 9x7;
 //     (100 + 7 k, 0) window icons 7x7 (icon 5 tall, centred): flask, horse, camel, train, engine;
-//     (136, 0) MekaSuit gauge casing 2.4 x 18, (140, 0) its fill; (182, 92) the dash dial's housing 42 x 38 (orbs);
+//     (182, 92) the dash dial's housing 42 x 38 (orbs);
 //     (182, 132) bar mode's exhaustion glow band 34 x 4 on black (under a meter at (183, 129.5)).
 //     (0, 236) wing casing 32x4 (clear of the selection cell's rows 0..23); (0, 26) XP casing 177x3.
 //     (0, 30 + 5 k) full wing meters (the game crops their inner 0.5-inset area), WING_LIQUIDS;
 //     (0, 112 + 4 k) full XP pipes, XP_LIQUIDS.
-//     (0, 140 + 4 r) digits "0123456789/:+smh" at 0.625, 3.5 apart (m is 5 wide): white, dim, green, black, red.
+//     (0, 140 + 4 r) digits "0123456789/:+smh" at 0.625, 3.5 apart (m is 5 wide): white, dim, green, black, red, cyan
+//     (MekaSuit), buff, debuff (effect times: the kind's tint).
 //     (180, 20 + 3.5 r) digits "0123456789/:+" at 0.6, 3 apart, TINTS rows (meter and orb numbers, the tank time).
 //     (180, 76 + 5 r) the same at CC_LEVEL.k (0.85, the level): green, dim, black.
 //     (0, 190) follower plate 24x9; gear row centred (46, 196); groove (80, 190) 32x4; dash cog centred (129, 199);
-//     effect frames 10x10 at (140|152|164, 190); overlays at y 210 (see compactExports).
+//     effect frames 10x10 at (140|152|164|176, 190) (buff, debuff, ambient, MekaSuit); overlays at y 210 (see compactExports).
 //   orbs (384 x 320): orb pieces centred in cells. Small cells (32 x 32): cell n centred at (28 + 32 (n % 11),
 //     34.5 + 32 floor(n / 11)), ORB_CELLS. Ring cells (48 x 48): centred at (28 + 64 m, 290.5), RING_CELLS. Centres are
 //     28 and 2.5 modulo 32, so the material textures (256 px tiles) line up with the page's.
@@ -27,7 +27,7 @@ const CCX = {
   wingLiquids: ['blood', 'poison', 'wither', 'frozen', 'absorb', 'broth', 'hunger', 'saturation', 'mount', 'irons', 'ars',
     'armor', 'air', 'tank', 'flamingo', 'hull'],
   xpLiquids: ['xp', 'jump', 'cooldown', 'cast', 'train', 'engine'],
-  digits: '0123456789/:+smh', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0'],
+  digits: '0123456789/:+smh', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0', ccTint('#3fe0ff'), ccTint('#3fd060'), ccTint('#ff5a4a')],
   glyphs: '0123456789/:+',
   tints: ['blood', 'poison', 'wither', 'frozen', 'broth', 'hunger', 'mount', 'irons', 'ars', 'armor', 'air', 'tank', 'flamingo', 'hull', 'black'],
   levelRows: ['#80ff20', '#3a5a2a', '#000000'],
@@ -112,10 +112,10 @@ function ccxOrbs() {
 /** [[file name, canvas]] for the pack. */
 function compactExports() {
   const files = [];
-  for (const [name, orbs, meka] of [['bars', false, false], ['bars_meka', false, true], ['orbs', true, false], ['orbs_meka', true, true]]) {
+  for (const [name, orbs] of [['bars', false], ['orbs', true]]) {
     const [c, g] = hires(424, 66);
     g.translate(212, 15);
-    const ends = ccEnds({ orbs, mekasuit: meka ? 1 : 0 });
+    const ends = ccEnds({ orbs });
     ccPlate(g, { inner: orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: orbs ? ORB.y - ORB_H() : undefined, raise: orbs ? null : CC_WING.top });
     if (orbs) { ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1); }
     files.push(['createhud: compact/plate_' + name, c]);
@@ -129,7 +129,6 @@ function compactExports() {
   ccLevelWindow(g, 78, 0, 10, CC_LEVEL.h);
   ccLevelWindow(g, 90, 0, CC_LEVEL.iconW, CC_LEVEL.iconH);
   CCX.winIcons.forEach((n, k) => ccIcon(g, ccxIcon(n), 100 + 7 * k + 3.5, 3.5, CC_LEVEL.icon));
-  ccMekaCasing(g, 136, 0); ccMekaFill(g, 140, 0);
   // Bar mode's exhaustion glow band on black (182, 132) 34 x 4: a meter at (183, 129.5) (the game screen-blends it).
   g.fillStyle = '#000'; g.fillRect(182, 132, 34, 4);
   g.save(); g.beginPath(); g.rect(182, 132, 34, 4); g.clip(); ccExhaustBand(g, [183, 129.5, 32, 4]); g.restore();
@@ -176,8 +175,8 @@ function compactExports() {
   ccGroove(g, 80, 190, MW, 4);
   ccDashFiller(g, 129, 199);
   // Effect frames at 10 x 10 (no icon, no time border: the game draws those): buff (140, 190), debuff (152, 190),
-  // ambient (164, 190).
-  for (const [kind, ux, amb] of [['buff', 140, false], ['debuff', 152, false], ['buff', 164, true]]) {
+  // ambient (164, 190), the MekaSuit's energy (176, 190).
+  for (const [kind, ux, amb] of [['buff', 140, false], ['debuff', 152, false], ['buff', 164, true], ['suit', 176, false]]) {
     g.save(); g.translate(ux, 190); g.scale(10 / 24, 10 / 24); ccEffect(g, 0, 0, kind, null, 1, amb, true); g.restore();
   }
   // Overlays and pieces for the mods' extras (y 210): toolbox chips on a socket (0, 210) and lit (20, 210), each 18x18;

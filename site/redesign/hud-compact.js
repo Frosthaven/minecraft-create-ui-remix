@@ -13,8 +13,8 @@ const CC_TANK = ['#c98a5a', '#7a3e1c', '#2e1206'];   // Create's backtank: coppe
 const GAP = 4;
 /** Bar mode's meter blocks drawn S x around (±anchor, by) (twice the hotbar's scale, like the orbs): the left block
  *  spans -165..-101 and 13.8..45.8 (mid 29.8); each wing is one plate at top's height out to its edge, the block
- *  centred in it; outer: the blocks' outer edge plus 2. The end items (offhand, dial, MekaSuit gauge) centre on mid. */
-const CC_WING = { S: 2, anchor: 97, by: 49, top: 9.6, mid: 29.8, outer: 167, gauge: 32 / 18 };
+ *  centred in it; outer: the blocks' outer edge plus 2. The end items (offhand, dial) centre on mid. */
+const CC_WING = { S: 2, anchor: 97, by: 49, top: 9.6, mid: 29.8, outer: 167 };
 /** Where the side bars attach (± from the centre), between the centre plate (±91) and the wings. */
 const CC_SIDE = 93.5;
 /** Draws f with a side bar's size k, scaled around (sign CC_SIDE, the bar's bottom). */
@@ -198,18 +198,15 @@ function ccDashFiller(g, cx, cy) {
   ccEngrave(g, () => { g.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; g.lineTo(cx + 2 * Math.cos(a), cy + 2 * Math.sin(a)); } g.closePath(); });
 }
 /** Where each wing ends: out from the orb's housing (or the meter icons) a 4 px gap, the end item (the offhand slot, 18
- *  wide, or the dash dial / its cog, 14.6), then 4 px of plate. The MekaSuit gauge, when worn, takes its own slot in the
- *  gap next to the health orb. Left-handed mirrors which end holds which. Returns { x0, x1, offhand (slot's left x),
- *  dash (dial centre x), meka (gauge centre x) }. */
+ *  wide, or the dash dial / its cog, 14.6), then 4 px of plate. Left-handed mirrors which end holds which. Returns
+ *  { x0, x1, offhand (slot's left x), dash (dial centre x) }. */
 function ccEnds(s) {
   // Orb mode: the item tucks in close to the housing's curve (1.5 px) with 3 px of plate past it; meter mode: 4 and 4.
   // The dial's width: its housing's reach at the plate's edge (the dial and its housing scale with the orbs).
   const G = s.orbs ? 1.5 : 4, E = s.orbs ? 3 : 4, inner = s.orbs ? ORB.rx + ORB_H() : CC_WING.outer, slotW = 18;
   // Orbs: the dial's housing reach at the plate's edge; bars: the dial alone (inside the wing's plate).
   const dialW = s.orbs ? 2 * ccDomeHalf(ccDialR(), CC_DIAL.y) : 2 * (CC_DASH.r + CC_DASH.B) * CC_DIAL.S;
-  const meka = !s.creative && s.mekasuit;
-  const MS = s.orbs ? 1 : CC_WING.gauge;   // the gauge: as tall as bar mode's meter block, as before beside the orbs
-  const left = inner + G + (meka ? 3.4 * MS : 0), right = inner + G;   // meka: its gauge's slot (the vitals side)
+  const left = inner + G, right = inner + G;
   const leftW = s.leftHanded ? dialW : slotW, rightW = s.leftHanded ? slotW : dialW;
   const span = Math.max(left + leftW, right + rightW);   // each wing's extent (the wider one's): the dial centres in its space
   // Each end item centred in its wing's end space (the wider wing's), so neither end leaves dead plate.
@@ -220,7 +217,6 @@ function ccEnds(s) {
     x0: -span - E, x1: span + E,
     offhand: (s.leftHanded ? rightItem : leftItem) - slotW / 2,
     dash: dialC,
-    meka: -(inner + G + 1.7 * MS),
   };
 }
 /** The level window: k the digits' size, h its height for digits; iconW x iconH while an icon (size icon) shows. */
@@ -228,24 +224,6 @@ const CC_LEVEL = { k: 0.85, h: 6.6, iconW: 9, iconH: 7, icon: 5 };   // k: reada
 function ccLevelWindow(g, x, y, w, h) {
   rrect(g, x, y, w, h, 1.2); g.fillStyle = steel(g, y, y + h); g.fill();
   rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, 0.8); g.fillStyle = '#060708'; g.fill();
-}
-/** MekaSuit energy: a slim upright gauge in its slot beside the vitals (ccEnds' meka), filling from the bottom. Both
- *  modes. */
-const CC_MEKA_GAUGE = { y: 30, h: 18, w: 2.4 };
-function ccMekaGauge(g, s) {
-  const { y: gy, h: gh, w: gw } = CC_MEKA_GAUGE, gx = CC.lay.meka - gw / 2;
-  ccMekaCasing(g, gx, gy);
-  const fh = (gh - 0.8) * s.mekasuit;
-  g.save(); g.beginPath(); g.rect(gx, gy + gh - 0.4 - fh, gw, fh); g.clip(); ccMekaFill(g, gx, gy); g.restore();
-}
-function ccMekaCasing(g, gx, gy) {
-  const { h: gh, w: gw } = CC_MEKA_GAUGE;
-  rrect(g, gx, gy, gw, gh, gw / 2); g.fillStyle = vgrad(g, gy, gy + gh, [[0, '#9ea4aa'], [1, '#141619']]); g.fill();
-  rrect(g, gx + 0.4, gy + 0.4, gw - 0.8, gh - 0.8, gw / 2 - 0.4); g.fillStyle = '#060708'; g.fill();
-}
-function ccMekaFill(g, gx, gy) {
-  const { h: gh, w: gw } = CC_MEKA_GAUGE;
-  rrect(g, gx + 0.4, gy + 0.4, gw - 0.8, gh - 0.8, gw / 2 - 0.4); g.fillStyle = vgrad(g, gy, gy + gh, [[0, CC_MEKA[0]], [0.5, CC_MEKA[1]], [1, CC_MEKA[2]]]); g.fill();
 }
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
@@ -414,10 +392,6 @@ function compactHud(s, font) {
   else ccGroove(g, Rt.x, rows[0], mw, mh);
   });
   }
-  if (!s.creative && s.mekasuit) side(-1, () => {   // bars: as tall as the meter block, centred on it
-    if (s.orbs) ccMekaGauge(g, s);
-    else { g.save(); g.translate(CC.lay.meka, CC_WING.mid); g.scale(CC_WING.gauge, CC_WING.gauge); g.translate(-CC.lay.meka, -39); ccMekaGauge(g, s); g.restore(); }
-  });
   // Dodge roll: a small dial like the orbs (stone rim, dark rivets, glass) with the dash chevrons behind the glass in
   // the tier colour and a ring segment per charge, lit as charges are ready. Centred in its space at the wing's end.
   // No dodge roll mod: a pressed-in cog there instead.
@@ -434,6 +408,6 @@ function compactHud(s, font) {
   if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
   ccInstruments(g, s);
   side(offSide, () => ccHardcore(g, s));
-  if (s.effects && s.effects.length) ccEffectsRail(g, s, s.effectIcons || {});
+  if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit)) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }

@@ -14,6 +14,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.network.chat.Component;
 
 /**
  * Mod state for the bar's extras, each read the way the mod's own HUD reads it (verified against the 1.21.1 jars in the
@@ -32,19 +34,29 @@ final class HudExtras {
         return type.toString().equals("CONTINUOUS") ? 1 - pct : pct;
     }
 
-    /** Mekanism: MekaSuit energy stored / capacity over the worn pieces (its energy bar), or null. */
-    static Float mekaSuit(Player p) {
+    /** Mekanism: the MekaSuit's energy over the worn pieces: the fraction, its text as Mekanism shows it ("1.2 MJ/16
+     *  MJ", its configured unit), and a worn piece for the icon (the chestplate when worn). */
+    record Suit(float frac, Component text, ItemStack icon) {}
+
+    /** The MekaSuit energy (its energy bar's rule: worn pieces with an energy container), or null. */
+    static Suit mekaSuit(Player p) {
         Class<?> suit = Reflect.cls("mekanism.common.item.gear.ItemMekaSuitArmor");
         if (suit == null) return null;
         long cap = 0, stored = 0;
+        ItemStack icon = null;
         for (ItemStack s : p.getArmorSlots()) {
             if (!suit.isInstance(s.getItem())) continue;
             Object box = Reflect.callStatic("mekanism.common.util.StorageUtils", "getEnergyContainer", s, 0);
             if (box == null) continue;
             cap += ((Number) Reflect.call(box, "getMaxEnergy")).longValue();
             stored += ((Number) Reflect.call(box, "getEnergy")).longValue();
+            if (icon == null || s.getItem() instanceof ArmorItem a && a.getType() == ArmorItem.Type.CHESTPLATE) icon = s;
         }
-        return cap > 0 ? (float) ((double) stored / cap) : null;
+        if (cap <= 0) return null;
+        Object display = Reflect.callStatic("mekanism.common.util.text.EnergyDisplay", "of", stored, cap);
+        Object text = display == null ? null : Reflect.call(display, "getTextComponent");
+        float frac = (float) ((double) stored / cap);
+        return new Suit(frac, text instanceof Component c ? c : Component.literal(Math.round(frac * 100) + "%"), icon);
     }
 
     /** Immersive Aircraft: the vehicle's health 0..1 (its heart row), or null. */

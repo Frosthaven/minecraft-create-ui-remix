@@ -120,8 +120,8 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 ## Compact HUD (`site/redesign/hud-compact.html`, `hud-compact*.js`): in game via the mod (`mod/CLAUDE.md`, hud/)
 
 - The side bars are twice the hotbar's scale: orbs at `ORB.S` (2) x around (ORB.lx | ORB.rx, ORB.y) (`ccOrbScaled`);
-  bar mode's meter blocks at `CC_WING.S` around (±97, 49), each wing one flat plate at `CC_WING.top`, the offhand,
-  dial and MekaSuit gauge centred on the block (`CC_WING.mid`); the dash dial at `CC_DIAL.S` (orbs: in its own housing,
+  bar mode's meter blocks at `CC_WING.S` around (±97, 49), each wing one flat plate at `CC_WING.top`, the offhand
+  and dial centred on the block (`CC_WING.mid`); the dash dial at `CC_DIAL.S` (orbs: in its own housing,
   a separate parts piece so the plate does not depend on the hand). The hotbar, XP pipe and centre plate keep their
   size. Plates export 424 x 66 at (-212, -15).
 - Sizes: config "Action bar size" scales everything around the bottom centre; "Side bars size" scales each wing
@@ -138,7 +138,7 @@ from them, piece by piece in the page's order (the page and the export draw with
 game match). The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is not packed), so other
 mods that reuse vanilla hearts look vanilla.
 - Wing ends (`ccEnds`): the offhand socket at the vitals end, the dodge roll dial at the other (left-handed mirrors);
-  the MekaSuit's upright energy gauge takes its own slot beside the vitals (both modes); both wings the wider one's width.
+  both wings the wider one's width. Nothing else changes the wings' layout (the MekaSuit is a status, below).
 - Orbs (`hud-compact-orbs.js`, drawn from pieces: bezel, ring, glass, liquid per half, divider, glass front, glow):
   left orb health (left half; absorption a golden cloud above it) and food (right half; the mount's health while
   riding; saturation a paler cream tint of the broth below its level), armor as ten bolted plates on the bezel; right
@@ -157,14 +157,18 @@ mods that reuse vanilla hearts look vanilla.
 - Statuses (`hud-compact-status.js`): heart effects recolour health (poison, wither, frozen); Hunger spoils the broth;
   attack cooldown shades the selected socket (attack indicator crosshair or hotbar; per frame); creative hides health, food, armor, air.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
-  Nourishment and Comfort; MekaSuit energy; Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
+  Nourishment and Comfort; MekaSuit energy (a status, below); Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
   liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns, Immersive Armors steampunk
   clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the bar. Followers come
   from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped following").
 - Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`): two floating lines (no plate) above the bar's left
   wing, left-aligned to its edge: buffs nearest the bar, debuffs at 1.5x above, each line always-on first; at most 10 a
   line (6 debuffs), wrapping upward; each effect a 10 x 10 socket with a border draining clockwise from the top (green
-  buff, red debuff) and its time left under it (45, 3m, 1h; red under 10 s; none when infinite).
+  buff, red debuff) and its time left under it (45, 3m, 1h; none when infinite) in the kind's tint, never by time left.
+  A worn MekaSuit (pieces with energy) is a cyan socket in the buffs line after the always-on buffs: the worn piece's
+  icon (the chestplate when worn), the border draining with the energy, the percent under it (no sign, always cyan); hover:
+  Mekanism's own energy text ("1.2 MJ/16 MJ", its configured unit). It replaced the upright gauge, so the wings keep
+  one layout.
 - Client config (`UiConfig`, Mods > Config in game): meter display Orbs | Bars (default Orbs), primary mana pool
   Iron's | Ars, action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game

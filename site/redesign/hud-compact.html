@@ -30,7 +30,7 @@
      layers and draw this layout itself.</p>
   <p>Mods in this pack that draw at the hotbar or change its rows (read from their code; third row of buttons):
      Farmer's Delight Nourishment gilds the food broth and Comfort runs a slow sheen along health; the MekaSuit's energy
-     joins the armor extension as a second pipe; an aircraft's health takes the right extension and its engine the XP
+     is a cyan status after the always-on buffs (the worn piece, its border draining with the energy, the percent); an aircraft's health takes the right extension and its engine the XP
      pipe; a Create train's speed takes the XP pipe; the Helium Flamingo's charge takes the right extension; the
      steampunk armor's clock and compass and Artifacts cooldowns move to a small instrument plate above the bar (as
      vanilla places them they would cover the wings); Create's toolbox and schematic slot marks sit on the sockets,
@@ -57,7 +57,7 @@
   <span style="color:var(--muted);align-self:center">Mods:</span>
   <button id="nourished" aria-pressed="false" title="Farmer's Delight Nourishment">Nourishment</button>
   <button id="comfort" aria-pressed="false" title="Farmer's Delight Comfort (shows when hurt with no saturation)">Comfort</button>
-  <button id="mekasuit" aria-pressed="false" title="Mekanism MekaSuit energy">MekaSuit</button>
+  <button id="mekasuit" aria-pressed="false" title="Mekanism MekaSuit energy: a cyan status in the effects rail">MekaSuit</button>
   <button id="aircraft" aria-pressed="false" title="Immersive Aircraft: hull health and engine">Aircraft</button>
   <button id="train" aria-pressed="false" title="Create train controls: speed">Train</button>
   <button id="flamingo" aria-pressed="false" title="Artifacts Helium Flamingo charge">Helium Flamingo</button>
@@ -156,7 +156,14 @@ tip.style.cssText = 'position:fixed;pointer-events:none;padding:4px 8px;border-r
 document.body.append(tip);
 document.getElementById('hud').addEventListener('mousemove', e => {
   const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 2 * CX - CX, y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
-  const hit = (st.effects || []).find(f => { const b = CC.hit['effect:' + f.id]; return b && x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3]; });
+  const inBox = id => { const b = CC.hit['effect:' + id]; return b && x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3]; };
+  if (st.mekasuit && !st.creative && inBox('mekasuit')) {   // the game shows Mekanism's own text ("1.2 MJ/16 MJ")
+    tip.hidden = false;
+    tip.innerHTML = `<b style="color:#3fe0ff">MekaSuit energy</b> · ${Math.round(st.mekasuit * 16 * 10) / 10} MJ/16 MJ`;
+    tip.style.left = e.clientX + 14 + 'px'; tip.style.top = e.clientY + 10 + 'px';
+    return;
+  }
+  const hit = (st.effects || []).find(f => inBox(f.id));
   tip.hidden = !hit;
   if (!hit) return;
   const sec = Math.ceil(hit.secs), time = !hit.total ? 'no time limit' : sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} s`;

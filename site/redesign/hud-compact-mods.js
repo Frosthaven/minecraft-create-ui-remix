@@ -3,7 +3,8 @@
 // hud-compact.js (ccMeter, ccIcon, CC). Elsewhere-on-screen mod HUDs (corners, crosshair, tooltips) are untouched.
 //   Farmer's Delight: Nourishment gilds the food broth (it draws gilded shanks over vanilla's food); Comfort runs a slow
 //     warm sheen along health (its sheen over the hearts: saturation 0, hurt, no Regeneration).
-//   Mekanism: the MekaSuit energy bar (above armor in vanilla's left column) joins the armor extension as a second pipe.
+//   Mekanism: the MekaSuit energy bar (above armor in vanilla's left column) is a cyan status in the effects rail
+//   (hud-compact-effects.js): the worn piece's icon, the border draining with the energy, the percent under it.
 //   Immersive Aircraft: the vehicle's health (a heart row on the air row) takes the right extension; the engine gauge
 //     (a dial over the XP bar) takes the XP pipe, an engine icon in the level window.
 //   Create: the train HUD's speed bar (over the XP bar) takes the XP pipe; toolbox-linked slots get red liquid corner chips (top right, bottom left),
@@ -14,7 +15,6 @@
 //   Haven Link (our server mod): web map viewers following you; Haven Link tells you in chat ("[Web] Name is following
 //     you on the web map" / "... stopped following ..."); the client counts them: a ghost and the count on the plate.
 
-const CC_MEKA = ['#c8ffd8', '#3fcf7a', '#0e4a26'];       // Mekanism energy
 const CC_HULL = ['#e8eef4', '#8a9aa8', '#2a323a'];        // aircraft hull
 const CC_ENGINE = ['#ffd2a0', '#e0782a', '#5a2408'];      // engine power
 const CC_TRAIN = ['#cfe8ff', '#4a8ad0', '#12305a'];       // train speed

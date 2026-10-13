@@ -21,7 +21,9 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * Buffs and debuffs in the bar's area (the page's hud-compact-effects.js), in place of vanilla's top-right icons: two
  * floating lines left-aligned to the bar's edge, buffs nearest the bar and debuffs (1.5x) above, each line always-on
  * effects first; a socket per effect with a border draining clockwise from the top (green buff, red debuff) and the
- * time left under it (45, 3m, 1h; red under 10 s). Hovering one while a screen is open shows its name and time.
+ * time left under it (45, 3m, 1h) in the kind's tint (it does not change as it runs down). Hovering one while a screen is open shows its name and time.
+ * A worn MekaSuit is one more socket in the buffs line, after the always-on buffs: cyan, its icon the worn piece, the
+ * border draining with the suit's energy and the percent under it (no sign), cyan.
  * Drawn in texels relative to (bar centre, screen bottom); CompactHud's pose maps them to the screen.
  */
 final class HudEffects {
@@ -35,30 +37,63 @@ final class HudEffects {
     private HudEffects() {}
 
     /** left: the bar's left edge + 1, top: where the lines start (units; with orbs, clear of the housings). */
-    static void draw(GuiGraphics g, Player p, int cx, int bottom, float scale, double left, double startTop) {
+    static void draw(GuiGraphics g, Player p, HudExtras.Suit suit, int cx, int bottom, float scale, double left, double startTop) {
         BOXES.clear();
         List<MobEffectInstance> all = new ArrayList<>();
         for (MobEffectInstance e : p.getActiveEffects()) if (e.showIcon()) all.add(e);
         all.sort((a, b) -> b.compareTo(a));
         START.keySet().removeIf(h -> all.stream().noneMatch(e -> e.getEffect().equals(h)));
-        List<MobEffectInstance> green = line(all, false), red = line(all, true);
+        List<Object> green = new ArrayList<>(line(all, false)), red = new ArrayList<>(line(all, true));
+        if (suit != null) green.add(alwaysOn(green), suit);   // after the always-on buffs, before the timed ones
         HudLog.changed("effects", green.size() + "/" + red.size(), "effects: {} buffs, {} debuffs", green.size(), red.size());
+        HudLog.changed("suit", suit != null, "MekaSuit energy status: {}", suit != null ? "shown (cyan, in the buffs line)" : "hidden");
         double top = startTop;
         for (Object[] l : new Object[][] {{green, 1.0}, {red, 1.5}}) {
-            @SuppressWarnings("unchecked") List<MobEffectInstance> list = (List<MobEffectInstance>) l[0];
+            @SuppressWarnings("unchecked") List<Object> list = (List<Object>) l[0];
             double m = (double) l[1];
             int per = (int) (PER_ROW / m);
             for (int r = 0; r * per < list.size(); r++) {
                 top -= ROW_H * m;
                 for (int i = 0; i < per && r * per + i < list.size(); i++) {
-                    MobEffectInstance e = list.get(r * per + i);
+                    Object e = list.get(r * per + i);
                     int x = (int) Math.round(left * K) + (int) (CELL * m * i), y = (int) Math.round((top - 50) * K);
-                    effect(g, e, x, y, m);
+                    if (e instanceof HudExtras.Suit su) suit(g, su, x, y);
+                    else effect(g, (MobEffectInstance) e, x, y, m);
                     double s = scale / K;
                     BOXES.add(new Object[] {e, cx + x * s, bottom + y * s, SIZE * m * s});
                 }
             }
         }
+    }
+
+    /** How many of a buffs line are always-on (they lead it). */
+    private static int alwaysOn(List<Object> line) {
+        int n = 0;
+        for (Object o : line) if (o instanceof MobEffectInstance e && (e.isInfiniteDuration() || e.isAmbient())) n++;
+        return n;
+    }
+
+    /** The MekaSuit's socket: cyan frame, the worn piece's icon, the border draining with its energy, the percent. */
+    private static void suit(GuiGraphics g, HudExtras.Suit su, int x, int y) {
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(x, y, 0);
+        g.blit(PARTS, 0, 0, EFFECT_SUIT_U, EFFECT_V, SIZE, SIZE, PARTS_SIZE, PARTS_SIZE);
+        if (su.icon() != null) {   // the item, 16 px, in the effect icon's 47-texel box at (17, 17)
+            pose.pushPose();
+            pose.translate(17, 17, 0);
+            pose.scale(47 / 16f, 47 / 16f, 1);
+            g.renderItem(su.icon(), 0, 0);
+            pose.popPose();
+        }
+        border(g, su.frac(), 0xFF3FE0FF, 0xF20A2832);
+        String t = String.valueOf(Math.round(su.frac() * 100));   // percent, no sign
+        pose.pushPose();
+        pose.translate(SIZE / 2f, SIZE + 8, 0);
+        pose.scale((float) TIME_K, (float) TIME_K, 1);
+        HudDraw.digits(g, t, -HudDraw.digitsWidth(t) / 2, 0, t.length(), CYAN, DIM);
+        pose.popPose();
+        pose.popPose();
     }
 
     /** A line's effects: always-on first (infinite or a beacon's), then the timed ones. */
@@ -88,11 +123,10 @@ final class HudEffects {
             border(g, dur < 0 ? 1 : dur / (double) start, bad ? 0xFFFF4E44 : 0xFF62E07A, bad ? 0xF2460E0C : 0xF2143C1A);
             if (dur >= 0) {
                 String t = time(dur / 20);
-                boolean hot = dur <= 200, unit = t.endsWith("m") || t.endsWith("h");
                 pose.pushPose();
                 pose.translate(SIZE / 2f, SIZE + 8, 0);
                 pose.scale((float) TIME_K, (float) TIME_K, 1);
-                HudDraw.digits(g, t, -HudDraw.digitsWidth(t) / 2, 0, t.length() - (unit ? 1 : 0), hot ? RED : WHITE, DIM);
+                HudDraw.digits(g, t, -HudDraw.digitsWidth(t) / 2, 0, t.length(), bad ? DEBUFF : BUFF, DIM);   // the kind's tint all the way down
                 pose.popPose();
             }
         }
@@ -127,10 +161,14 @@ final class HudEffects {
         for (Object[] box : BOXES) {
             double x = (double) box[1], y = (double) box[2], s = (double) box[3];
             if (mx < x || mx > x + s || my < y || my > y + s) continue;
+            var mc = Minecraft.getInstance();
+            if (box[0] instanceof HudExtras.Suit su) {
+                event.getGuiGraphics().renderComponentTooltip(mc.font, List.of(Component.literal("MekaSuit energy"), su.text()), (int) mx, (int) my);
+                return;
+            }
             MobEffectInstance e = (MobEffectInstance) box[0];
             Component name = e.getEffect().value().getDisplayName().copy();
             if (e.getAmplifier() > 0) name = name.copy().append(" ").append(Component.translatable("enchantment.level." + (e.getAmplifier() + 1)));
-            var mc = Minecraft.getInstance();
             Component time = e.isInfiniteDuration() ? Component.translatable("effect.duration.infinite")
                     : MobEffectUtil.formatDuration(e, 1.0f, mc.level == null ? 20f : mc.level.tickRateManager().tickrate());
             event.getGuiGraphics().renderComponentTooltip(mc.font, List.of(name, time), (int) mx, (int) my);

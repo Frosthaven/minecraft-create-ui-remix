@@ -83,7 +83,7 @@ not a spectator.
   Left Alt by default (Controls); numbers also show while a screen is open. No dark mode on it (`HudLayers.MAIN`).
 - In game the whole bar (items included) is drawn at the config's size (`UiConfig.HUD_SCALE`, 1.0) around the screen's
   bottom centre.
-- Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, MekaSuit gauge, floating plates,
+- Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, floating plates,
   items), `HudFrame` (one frame's state, the wing ends), `OrbHud` (orb mode), `BarHud` (bar mode), `HudDraw` (blits,
   circle and pill clipped fills, textured sectors that reveal a ring by angle, the digit sets), `Smooth` (breath and the
   backtank eased between the game's steps).
@@ -118,7 +118,8 @@ not a spectator.
   Immersive Aircraft health and engine, Create train speed / toolbox slots / schematic slot, Artifacts Helium Flamingo
   and cooldowns, Immersive Armors steampunk chestplate, AppleSkin food and health previews, vanilla attack indicator),
   through `Reflect` (cached, absent mod = hidden, logged once). `HudEffects`: buffs and debuffs (replaces EFFECTS),
-  hover tooltip while a screen is open. The bar hides those mods' own layers (`REPLACED`).
+  hover tooltip while a screen is open; the MekaSuit's energy as a cyan socket in the buffs line (`HudExtras.Suit`:
+  fraction, Mekanism's `EnergyDisplay` text, the worn piece rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in `BUFF` / `DEBUFF`). The bar hides those mods' own layers (`REPLACED`).
 
 ## Mob health bars (`hud/MobBars`)
 

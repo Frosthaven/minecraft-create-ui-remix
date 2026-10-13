@@ -31,7 +31,7 @@ import org.lwjgl.glfw.GLFW;
  * mana, AppleSkin, Create's backtank counter, the dodge roll). Active while the pack's textures are present
  * (createhud:textures/gui/compact/*); drawn at 1/8 GUI px from them, so it matches the page texel for texel.
  * Positions are the page's layout (logical units, x from the screen centre, the bar's bottom at 50) times 8.
- * Here: the plate, hotbar, XP pipe and level, the dash, the MekaSuit gauge, the floating plates, the items; the vitals
+ * Here: the plate, hotbar, XP pipe and level, the dash, the floating plates, the items; the vitals
  * and mana by the config's meter display, {@link OrbHud} (orbs) or {@link BarHud} (bars).
  */
 public final class CompactHud {
@@ -54,7 +54,7 @@ public final class CompactHud {
     public static float scale() { return (float) (double) UiConfig.HUD_SCALE.get(); }
 
     /** Everything the bar draws from (mipmapped, {@link MipTexture}). */
-    private static final List<ResourceLocation> TEXTURES = List.of(PARTS, ORBS, plate(true, false), plate(true, true), plate(false, false), plate(false, true));
+    private static final List<ResourceLocation> TEXTURES = List.of(PARTS, ORBS, plate(true), plate(false));
     static { CompactAtlas.checkLayout(); }
     private static List<String> packIds = List.of();
     private static boolean present;
@@ -201,9 +201,9 @@ public final class CompactHud {
         Float attack = HudExtras.attackCharge(mc, p, delta);
         boolean[] toolbox = HudExtras.toolboxSlots(p);
         int schematic = HudExtras.schematicSlot();
-        HudLog.changed("extras", (cast != null) + "/" + (f.meka != null) + "/" + (f.hull != null) + "/" + (engine != null) + "/" + (train != null) + "/" + (f.flamingo != null) + "/" + (f.apple != null) + "/" + schematic,
+        HudLog.changed("extras", (cast != null) + "/" + (f.suit != null) + "/" + (f.hull != null) + "/" + (engine != null) + "/" + (train != null) + "/" + (f.flamingo != null) + "/" + (f.apple != null) + "/" + schematic,
                 "extras: cast {}, MekaSuit {}, aircraft {}, engine {}, train {}, Helium Flamingo {}, AppleSkin food {}, schematic slot {}",
-                cast != null, f.meka != null, f.hull != null, engine != null, train != null, f.flamingo != null, f.apple != null, schematic);
+                cast != null, f.suit != null, f.hull != null, engine != null, train != null, f.flamingo != null, f.apple != null, schematic);
         HudLog.changed("ext", f.showArmor + "/" + f.showBreath + "/" + (f.tank != null), "armor {}, breath {}{}", f.showArmor ? "shown" : "hidden",
                 f.showBreath ? "shown" : "hidden", f.tank != null ? " (Create backtank: " + (int) f.tank[0] + "s of " + (int) f.tank[1] + "s)" : "");
         HudLog.changed("mana", (f.irons != null) + "/" + (f.ars != null), "mana mods: Iron's Spellbooks {}, Ars Nouveau {}",
@@ -215,7 +215,7 @@ public final class CompactHud {
         pose.scale(1f / K, 1f / K, 1);
         RenderSystem.enableBlend();
         // The plate in three parts: the centre, and each wing at the side bars' size (attached at WING_ANCHOR).
-        ResourceLocation plate = plate(f.orbs, f.ends.wide);
+        ResourceLocation plate = plate(f.orbs);
         int cut = x(-WING_ANCHOR) - PLATE_X, mid = PLATE_W - 2 * cut;   // each wing part: the plate's edge to the anchor
         g.blit(plate, x(-WING_ANCHOR), PLATE_Y, cut, 0, mid, PLATE_H, PLATE_W, PLATE_H);
         side(g, -1, f.side, () -> g.blit(plate, PLATE_X, PLATE_Y, 0, 0, cut, PLATE_H, PLATE_W, PLATE_H));
@@ -244,14 +244,13 @@ public final class CompactHud {
 
         xpPipe(g, p, cast, train, engine);
         if (f.orbs) OrbHud.draw(g, f); else BarHud.draw(g, f);
-        if (f.hurtable && f.meka != null) side(g, -1, f.side, () -> mekaGauge(g, f));
         side(g, -offSide, f.side, () -> dash(g, f));
         instruments(g, mc, p, delta);
         double wingTop = f.orbs ? 28 : BarHud.TOP;   // the plate's top over the offhand
         if (f.hardcore) side(g, offSide, f.side, () -> part(g, SKULL_U, 0, SKULL_W, SKULL_H, x(f.ends.offhand + 9 - 4.5), y(wingTop - 9 - 2.5)));   // a skull above the offhand
         // The effects rail: above the orbs' domes; bar mode: above the tall wings (and the skull); following the side size.
         double railTop = f.orbs ? OrbHud.OY - OrbHud.HOUSING * OrbHud.S : BarHud.TOP - (f.hardcore ? 9 + 2.5 + 1 : 0);
-        HudEffects.draw(g, p, cx, bottom, scale, sideX(f.ends.x0, f.side) + 1, sideY(railTop, f.side) - 2);
+        HudEffects.draw(g, p, f.suit, cx, bottom, scale, sideX(f.ends.x0, f.side) + 1, sideY(railTop, f.side) - 2);
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.
@@ -308,25 +307,6 @@ public final class CompactHud {
             g.blit(PARTS, wx + w - WINDOW_CAP, wy, WINDOW_CAP, h, WINDOW_U + WINDOW_W - WINDOW_CAP, 0, WINDOW_CAP, h, PARTS_SIZE, PARTS_SIZE);
             text(g, lvl, -tw / 2 * K, (mid - 2.5 * LEVEL_K - 50) * K, LEVEL_K, levelV(p.experienceLevel > 0 ? LEVEL_GREEN : LEVEL_DIM), levelV(LEVEL_BLACK));
         }
-    }
-
-    /** MekaSuit energy: the upright gauge in its slot beside the vitals, filling from the bottom. */
-    private static void mekaGauge(GuiGraphics g, HudFrame f) {
-        if (!f.orbs) {   // bar mode: as tall as the meter block, centred on it
-            var pose = g.pose();
-            pose.pushPose();
-            pose.translate(x(f.ends.meka), y(BarHud.MID), 0);
-            pose.scale((float) BarHud.GAUGE, (float) BarHud.GAUGE, 1);
-            pose.translate(-x(f.ends.meka), -y(39), 0);
-            try { gauge(g, f); } finally { pose.popPose(); }
-        } else gauge(g, f);
-    }
-    private static void gauge(GuiGraphics g, HudFrame f) {
-        int gx = x(f.ends.meka - 1.2), gy = y(30);
-        part(g, MEKA_CASE_U, 0, MEKA_W, MEKA_H, gx, gy);
-        double fh = (18 - 0.8) * clamp(f.meka), top = 30 + 18 - 0.4 - fh;
-        int v0 = (int) Math.round((top - 30) * K), v1 = (int) Math.round((18 - 0.4) * K);
-        part(g, MEKA_FILL_U, v0, MEKA_W, v1 - v0, gx, gy + v0);
     }
 
     /** The dodge roll dial (stone rim, the chevrons in the tier colour, a segment per charge lit as charges are ready),
