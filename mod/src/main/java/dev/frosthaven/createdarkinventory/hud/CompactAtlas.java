@@ -15,13 +15,13 @@ final class CompactAtlas {
     static final int PLATE_W = 332 * K, PLATE_H = 34 * K, PLATE_X = -166 * K, PLATE_Y = (17 - 50) * K;
 
     static final List<String> WING_ICONS = List.of("heart", "heart_poison", "heart_wither", "heart_frozen", "drumstick", "horse", "camel", "flask", "gem");
-    static final List<String> EXT_ICONS = List.of("armor", "air", "air_burst", "backtank", "bolt");
+    static final List<String> EXT_ICONS = List.of("armor", "air", "air_burst", "backtank", "bolt", "plane", "flamingo");
     static final List<String> WIN_ICONS = List.of("flask", "horse", "camel", "train", "engine");
     static final List<String> WING_LIQUIDS = List.of("blood", "poison", "wither", "frozen", "absorb", "broth", "hunger", "gilded", "saturation", "irons", "ars", "mount");
     static final List<String> EXT_LIQUIDS = List.of("armor", "air", "tank", "meka", "flamingo", "hull");
     static final List<String> XP_LIQUIDS = List.of("xp", "jump", "cooldown", "cast", "train", "engine");
-    static final String DIGITS = "0123456789/:+";
-    static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3;   // digit rows
+    static final String DIGITS = "0123456789/:+smh";
+    static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3, RED = 4;   // digit rows
 
     // Parts, in texels.
     static final int SOCKET_U = 0, SELECTION_U = 20 * K, GHOST_U = 46 * K, WINDOW_U = 66 * K, DASH_U = 80 * K;
@@ -47,10 +47,18 @@ final class CompactAtlas {
     static int wingLiquidV(String n) { return (62 + 5 * WING_LIQUIDS.indexOf(n)) * K; }
     static int extLiquidV(String n) { return (62 + 4 * EXT_LIQUIDS.indexOf(n)) * K; }
     static int xpLiquidV(String n) { return (130 + 4 * XP_LIQUIDS.indexOf(n)) * K; }
-    static int digitU(char c) { return 20 * DIGITS.indexOf(c); }
+    static int digitU(char c) { return 28 * DIGITS.indexOf(c); }   // cells 3.5 px apart
+    static int digitW(char c) { return (c == 'm' ? 5 : 3) * 5; }   // glyphs 3 font px wide (m: 5), 5 texels a font px
+    static int digitAdv(char c) { return digitW(c) + 5; }
     static int digitV(int row) { return (170 + 4 * row) * K; }
-    static final int DIGIT_W = 15, DIGIT_H = 25, DIGIT_ADV = 20;
+    static final int DIGIT_H = 25;
     static final int GHOST_PLATE_V = 190 * K, GHOST_PLATE_W = 24 * K, GHOST_PLATE_H = 9 * K;
+    // Effect frames (10x10): buff, debuff, ambient.
+    static final int EFFECT_BUFF_U = 140 * K, EFFECT_DEBUFF_U = 152 * K, EFFECT_AMBIENT_U = 164 * K, EFFECT_V = 190 * K;
+    // Overlays at y 210: toolbox chips (18x18) and lit, the toolbox slot's selection (24x23 cell), the schematic frame,
+    // a blank instrument plate (24x9, sliced 4 | middle | 4), clock and compass faces (9x9).
+    static final int OVER_V = 210 * K, CHIPS_U = 0, CHIPS_LIT_U = 20 * K, TOOLBOX_SEL_U = 40 * K, SCHEMATIC_U = 66 * K;
+    static final int IPLATE_U = 86 * K, IPLATE_W = 24 * K, IPLATE_H = 9 * K, CLOCK_U = 112 * K, COMPASS_U = 122 * K, DIAL = 9 * K;
     // Pressed-in fillers: the gear row (centre (46, 196), drawn as a 32x12 cell), an empty groove, the dash's cog.
     static final int GEARS_U = 30 * K, GEARS_V = 190 * K, GEARS_W = 32 * K, GEARS_H = 12 * K;
     static final int GROOVE_U = 80 * K, GROOVE_V = 190 * K;

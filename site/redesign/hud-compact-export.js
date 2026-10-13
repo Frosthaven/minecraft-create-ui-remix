@@ -10,13 +10,13 @@
 //     casings (empty meters): wing (0, 50) 32x4, extension (40, 50) 32x3.25, XP (0, 56) 157x3.25.
 //     full meters per liquid (the game crops their inner 0.5-inset area): wing (0, 62 + 5 k), extension
 //     (40, 62 + 4 k), XP (0, 130 + 4 k).
-//     digits "0123456789/:+smh" at 0.625 size, 2.5 apart, rows 170 + 4 r: white, dim, level green, shadow black, red.
+//     digits "0123456789/:+smh" at 0.625 size, 3.5 apart (m is 5 wide), rows 170 + 4 r: white, dim, level green, shadow black, red.
 //     ghost plate (0, 190) 24x9 (the follower count's digits are drawn after the ghost); fillers: gear row centred
 //     at (46, 196), groove (80, 190) 32x4, dash cog centred at (129, 199); effect frames 10x10 at (140|152|164, 190)
 //     (buff, debuff, ambient).
 const CCX = {
   wingIcons: ['heart', 'heart_poison', 'heart_wither', 'heart_frozen', 'drumstick', 'horse', 'camel', 'flask', 'gem'],
-  extIcons: ['armor', 'air', 'air_burst', 'backtank', 'bolt'],
+  extIcons: ['armor', 'air', 'air_burst', 'backtank', 'bolt', 'plane', 'flamingo'],
   winIcons: ['flask', 'horse', 'camel', 'train', 'engine'],
   wingLiquids: ['blood', 'poison', 'wither', 'frozen', 'absorb', 'broth', 'hunger', 'gilded', 'saturation', 'irons', 'ars', 'mount'],
   extLiquids: ['armor', 'air', 'tank', 'meka', 'flamingo', 'hull'],
@@ -46,7 +46,7 @@ function ccxIcon(name) {
     case 'air': return air(false);
     case 'air_burst': return air(true);
     case 'backtank': return ccBacktank();
-    default: return ccModIcon(name);   // bolt, train, engine
+    default: return ccModIcon(name);   // bolt, train, engine, plane, flamingo
   }
 }
 /** [[file name, canvas]] for the pack. */
@@ -75,7 +75,7 @@ function compactExports() {
   CCX.wingLiquids.forEach((n, k) => ccMeter(g, 0, 62 + 5 * k, MW, 4, 1, CCX_LIQ[n], 10));
   CCX.extLiquids.forEach((n, k) => ccMeter(g, 40, 62 + 4 * k, MW, 3.25, 1, CCX_LIQ[n], 10));
   CCX.xpLiquids.forEach((n, k) => ccMeter(g, 0, 130 + 4 * k, 157, 3.25, 1, CCX_LIQ[n], 18));
-  CCX.digitRows.forEach((col, r) => [...CCX.digits].forEach((ch, k) => ccNumber(g, ch, 2.5 * k, 170 + 4 * r, col, null, 0.625)));
+  CCX.digitRows.forEach((col, r) => [...CCX.digits].forEach((ch, k) => ccNumber(g, ch, 3.5 * k, 170 + 4 * r, col, null, 0.625)));
   // The follower plate: the bar's plate style, a ghost at its left.
   const plate = () => rrect(g, 0, 190, 24, 9, CC.plate.r);
   plate(); g.fillStyle = iron(g, 190, 199); g.fill(); ironSurface(g, plate); rim(g, plate, 190, 199, P.brassHi, 0.35);
@@ -91,6 +91,15 @@ function compactExports() {
     g.save(); g.translate(ux, 190); g.scale(10 / 24, 10 / 24); ccEffect(g, 0, 0, kind, null, 1, amb, true); g.restore();
   }
 
+  // Overlays and pieces for the mods' extras (y 210): toolbox chips on a socket (0, 210) and lit (20, 210), each 18x18;
+  // the toolbox slot's red selection snug on a socket at (43, 213) (a 24x23 cell at (40, 210)); the schematic slot's
+  // frame (66, 210) 18x18; a blank instrument plate (86, 210) 24x9 (sliced 4 | middle | 4); clock and compass faces
+  // (112 | 122, 210) 9x9 (the game draws the hands).
+  ccToolboxChips(g, 0, false, [0, 210]); ccToolboxChips(g, 0, true, [20, 210]);
+  ccSelection(g, 43, 213, true); ccToolboxChips(g, 0, true, [43, 213]);
+  rrect(g, 67, 211, 16, 16, 0.6); g.strokeStyle = 'rgba(110,220,255,0.9)'; g.lineWidth = 0.6; g.stroke();
+  { const ip = () => rrect(g, 86, 210, 24, 9, CC.plate.r); ip(); g.fillStyle = iron(g, 210, 219); g.fill(); ironSurface(g, ip); rim(g, ip, 210, 219, P.brassHi, 0.35); }
+  ccDial(g, 116.5, 214.5, 3.6, null, 'clock'); ccDial(g, 126.5, 214.5, 3.6, null, 'compass');
   files.push(['createhud: compact/parts', c]);
   return files;
 }

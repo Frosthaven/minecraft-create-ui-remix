@@ -85,5 +85,8 @@ not a spectator.
 - `HudLog`: logging in latest.log, all lines prefixed `[compact HUD]`, never per frame: once per event or when a value
   changes (activation and why, each hidden layer, mods found and their values, extensions, mode, vehicle, followers,
   the roll mixin), errors with stack traces once per kind; a failing frame is skipped, not crashed.
-- In the preview but not in game yet: comfort sheen, regen sweep, hardcore trim, AppleSkin previews,
-  Iron's cast takeover, MekaSuit, aircraft, train, Helium Flamingo, instruments plate, attack shade, Create slot marks.
+- Every preview feature is in game: `HudExtras` reads each mod the way its own HUD does (Iron's cast, MekaSuit energy,
+  Immersive Aircraft health and engine, Create train speed / toolbox slots / schematic slot, Artifacts Helium Flamingo
+  and cooldowns, Immersive Armors steampunk chestplate, AppleSkin food and health previews, vanilla attack indicator),
+  through `Reflect` (cached, absent mod = hidden, logged once). `HudEffects`: buffs and debuffs (replaces EFFECTS),
+  hover tooltip while a screen is open. The bar hides those mods' own layers (`REPLACED`).

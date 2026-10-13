@@ -49,6 +49,7 @@ function ccModIcon(kind) {
 function ccDial(g, cx, cy, r, a, kind) {
   circle(g, cx, cy, r); g.fillStyle = brass(g, cy - r, cy + r); g.fill();
   circle(g, cx, cy, r - 0.7); g.fillStyle = kind === 'clock' ? vgrad(g, cy - r, cy + r, [[0, '#2a3a5a'], [1, '#e8c070']]) : '#151210'; g.fill();
+  if (a == null) return;   // the face alone (the game draws the hand)
   g.strokeStyle = kind === 'clock' ? '#fff3c8' : '#d84030'; g.lineWidth = 0.6;
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(a) * (r - 1.2), cy - Math.cos(a) * (r - 1.2)); g.stroke();
   if (kind === 'compass') { g.strokeStyle = '#e8e8e8'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - Math.sin(a) * (r - 1.6), cy + Math.cos(a) * (r - 1.6)); g.stroke(); }
@@ -92,8 +93,8 @@ function ccSlotMarks(g, s) {
 /** A toolbox-linked slot's marks: triangular chips in the top-right and bottom-left corners, red liquid (the
  *  toolbox's red) in quiet bronze tucked inside the bezel's rounded corners. lit: the selected slot's, drawn over its
  *  selection ring with a brighter, glowing red. */
-function ccToolboxChips(g, i, lit) {
-  const [x, y] = CC.slot(i), L = 7, r = 0.8;
+function ccToolboxChips(g, i, lit, at) {
+  const [x, y] = at || CC.slot(i), L = 7, r = 0.8;   // at: a socket's top left instead of hotbar slot i
   const chip = (ax, ay, sx, sy, inset) => {   // right angle at (ax, ay), legs along +sx (x) and +sy (y)
     const a = [ax + sx * inset, ay + sy * inset], b = [ax + sx * (L - inset * 2.4), ay + sy * inset], c = [ax + sx * inset, ay + sy * (L - inset * 2.4)];
     g.beginPath(); g.moveTo(...a); g.arcTo(...b, ...c, r * (1 - inset)); g.arcTo(...c, ...a, r * (1 - inset)); g.arcTo(...a, ...b, r * (1 - inset)); g.closePath();

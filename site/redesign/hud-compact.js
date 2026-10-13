@@ -7,8 +7,7 @@
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
 const CX = 172, BOTTOM = 50, TOPM = 66;   // TOPM: room above the bar for the game's text (item name, action bar)
-// Three plates bolted together: the centre (hotbar and XP band, -91..91), a wing plate each side (±96..±165), the
-// 5 px gaps bridged by riveted steel straps. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
+// Three floating plates: the centre (hotbar and XP band, -91..91) and a wing plate each side (±96..±165), 5 px apart. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
 // socket / the dodge roll (18), 4, the plate's edge.
 const GAP = 4;
 const CC = {
@@ -193,18 +192,6 @@ function ccPlate(g, ears = {}) {
   if (ears.right) tab(right[0], E.r[1], inner, 1);
   const centre = plate([[-sec, sec, mid]]);
   for (const [path, top] of [left, right, centre]) rim(g, path, top, b, P.brassHi, 0.35);
-  // The joints: riveted steel straps across each gap (a third at band height where a raised tab meets the centre).
-  for (const dir of [-1, 1]) {
-    const xs = [dir * (sec - 2.5), dir * (inner + 2)], xa = Math.min(...xs), xb = Math.max(...xs);   // clear of the meters
-    const ys = [34, 43.5].concat((dir < 0 ? ears.left : ears.right) ? [22.6] : []);
-    for (const y of ys) {
-      rrect(g, xa, y + 0.4, xb - xa, 3, 0.8); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill();
-      const strap = () => rrect(g, xa, y, xb - xa, 3, 0.8);
-      strap(); g.fillStyle = vgrad(g, y, y + 3, [[0, '#8b9198'], [0.3, '#4a4f55'], [1, '#1c1e21']]); g.fill();
-      rim(g, strap, y, y + 3, '#d6dade', 0.25);
-      for (const bx of [xa + 1.5, xb - 1.5]) hexBolt(g, bx, y + 1.5, 0.95);
-    }
-  }
 }
 
 /** The whole action bar for a state; a canvas of logical 344 x 50. */
