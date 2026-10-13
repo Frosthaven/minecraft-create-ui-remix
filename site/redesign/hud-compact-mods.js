@@ -6,7 +6,7 @@
 //   Mekanism: the MekaSuit energy bar (above armor in vanilla's left column) joins the armor extension as a second pipe.
 //   Immersive Aircraft: the vehicle's health (a heart row on the air row) takes the right extension; the engine gauge
 //     (a dial over the XP bar) takes the XP pipe, an engine icon in the level window.
-//   Create: the train HUD's speed bar (over the XP bar) takes the XP pipe; toolbox-linked slots get red liquid tubes up both sides,
+//   Create: the train HUD's speed bar (over the XP bar) takes the XP pipe; toolbox-linked slots get red liquid corner chips (top right, bottom left),
 //     the schematic tool's slot a cyan frame (both draw over vanilla's slots, so our sockets keep vanilla's positions).
 //   Artifacts: Helium Flamingo charge (a row on the right column) takes the right extension; item cooldown icons (right
 //     of the hotbar in vanilla, over our wing) and Immersive Armors' steampunk clock and compass (either side of the
@@ -81,16 +81,21 @@ function ccInstruments(g, s) {
     g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(cx - 3.6, cy - 3.6, 7.2, 7.2 * it.left);
   });
 }
-/** Create's marks over hotbar slots: toolbox-linked slots (red liquid tubes up both sides), the schematic tool's slot (cyan). */
+/** Create's marks over hotbar slots: toolbox-linked slots (red liquid corner chips), the schematic tool's slot (cyan). */
 function ccSlotMarks(g, s) {
-  // Toolbox-linked: two glass tubes of red liquid (the toolbox's red) up both sides of the socket, over the bezel.
+  // Toolbox-linked: triangular chips in the top-right and bottom-left corners, red liquid (the toolbox's red) in a
+  // brass casing that grows out of the socket's bezel.
   for (const i of s.toolboxSlots || []) {
-    const [x, y] = CC.slot(i);
-    // Each tube sits in a brass casing that grows out of the socket's bezel (wider than the bezel, rounded ends).
-    for (const tx of [x - 0.2, x + 15.8]) {
-      rrect(g, tx, y + 1.8, 2.4, 14.4, 1.2); g.fillStyle = brass(g, y + 1.8, y + 16.2); g.fill();
-      rim(g, () => rrect(g, tx, y + 1.8, 2.4, 14.4, 1.2), y + 1.8, y + 16.2, P.brassHi, 0.2);
-      rrect(g, tx + 0.6, y + 2.6, 1.2, 12.8, 0.6); g.fillStyle = vgrad(g, y + 2.6, y + 15.4, [[0, '#ff8a7a'], [0.4, '#d0202a'], [1, '#4a0610']]); g.fill();
+    const [x, y] = CC.slot(i), L = 7, r = 0.8;
+    const chip = (ax, ay, sx, sy, inset) => {   // right angle at (ax, ay), legs along +sx (x) and +sy (y)
+      const a = [ax + sx * inset, ay + sy * inset], b = [ax + sx * (L - inset * 2.4), ay + sy * inset], c = [ax + sx * inset, ay + sy * (L - inset * 2.4)];
+      g.beginPath(); g.moveTo(...a); g.arcTo(...b, ...c, r * (1 - inset)); g.arcTo(...c, ...a, r * (1 - inset)); g.arcTo(...a, ...b, r * (1 - inset)); g.closePath();
+    };
+    for (const [ax, ay, sx, sy] of [[x + 18, y, -1, 1], [x, y + 18, 1, -1]]) {
+      // Both chips alike and quiet: bronze casing (no lit rim), a deep red with a soft core, not lit from above.
+      chip(ax, ay, sx, sy, 0.3); g.fillStyle = P.bronze; g.fill();
+      chip(ax, ay, sx, sy, 0.95);
+      g.fillStyle = radial(g, ax + sx * 2.2, ay + sy * 2.2, 4.5, [[0, '#b02028'], [1, '#4a0a10']]); g.fill();
     }
   }
   if (s.schematicSlot != null) {
