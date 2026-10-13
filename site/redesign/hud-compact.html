@@ -64,7 +64,7 @@
   <button id="artifactCd" title="Artifacts item cooldowns">Artifact cooldown</button>
   <button id="toolbox" aria-pressed="false" title="Create toolbox-linked hotbar slots">Toolbox slots</button>
   <button id="schematic" aria-pressed="false" title="Create schematic tool's slot">Schematic</button>
-  <button id="noMagic" aria-pressed="false" title="A pack without Iron's Spellbooks or Ars Nouveau">No mana mods</button>
+  <button id="manaMods" title="Which mana mods the pack has (cycles)">Mana mods: both</button>
   <button id="noRoll" aria-pressed="false" title="A pack without the dodge roll">No dodge roll</button>
   <button id="effectsBtn" aria-pressed="false" title="Buffs and debuffs above the bar, with their time left">Buffs and debuffs</button>
   <button id="manyEffects" aria-pressed="false" title="A long list: 13 buffs and 5 debuffs">Many effects</button>
@@ -168,7 +168,10 @@ tap('artifactCd', () => {
     render(); if (k < 1) setTimeout(step, 33); }; step();
 });
 tap('followers', () => { st.followers = (st.followers + 1) % 4; document.getElementById('followers').textContent = 'Web followers: ' + st.followers; });
-tap('noMagic', () => { const on = st.irons != null; st.irons = on ? null : 0.7; st.ars = on ? null : 0.55; press('noMagic', on); });
+const MANA_SETS = [['both', 0.7, 0.55], ["Iron's only", 0.7, null], ['Ars only', null, 0.55], ['none', null, null]];
+let manaSet = 0;
+tap('manaMods', () => { manaSet = (manaSet + 1) % MANA_SETS.length; const [name, i, a] = MANA_SETS[manaSet];
+  st.irons = i; st.ars = a; document.getElementById('manaMods').textContent = 'Mana mods: ' + name; });
 tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
 tap('dashBtn', () => { st.riding = 'camel'; document.getElementById('riding').textContent = 'Riding: camel'; ramp('dash', 2750, null); });
 /** Runs a 0..1 ramp on st[key] over ms, then sets it to end. */
