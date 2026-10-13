@@ -75,9 +75,13 @@ final class HudDraw {
      *  while ImmediatelyFast batches, a blend change first draws what is batched, and that draw ends by turning blending
      *  off, so a blendFunc after enableBlend left it off. */
     static void restoreBlend() {
-        RenderSystem.defaultBlendFunc();
+        if (screenBlend) RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR);
+        else RenderSystem.defaultBlendFunc();
         RenderSystem.enableBlend();
     }
+    /** Inside {@link #screen}: a flush in there (a kind change, a sector's) must restore the screen blend, not the
+     *  default one, or the glow pieces (drawn on black) come out as black shapes (the exhaustion crescent's wedge). */
+    private static boolean screenBlend;
     /** Logs once if blending is off when a frame starts drawing (the state every texture here needs). */
     static void checkBlend(String where) {
         if (!org.lwjgl.opengl.GL11.glIsEnabled(org.lwjgl.opengl.GL11.GL_BLEND))
@@ -101,9 +105,9 @@ final class HudDraw {
     }
     /** A screen-blended piece (glows on black: result = src + dst (1 - src)). */
     static void screen(Runnable draw) {
-        RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR);
-        RenderSystem.enableBlend();   // after the function: see restoreBlend
-        try { draw.run(); } finally { restoreBlend(); }
+        screenBlend = true;
+        restoreBlend();   // the screen function, then blending on (see restoreBlend)
+        try { draw.run(); } finally { screenBlend = false; restoreBlend(); }
     }
 
     /** A textured sector: the texture around (u, v) (texels) drawn around (cx, cy) out to radius r, from angle a0 to a1
