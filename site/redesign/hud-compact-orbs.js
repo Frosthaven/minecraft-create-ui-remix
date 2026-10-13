@@ -101,7 +101,15 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     g.save(); g.beginPath(); g.rect(x0, cy - r, w, 2 * r); g.clip();
     const top = level(f.frac);
     liquid(liq, top, cy + r, style);
-    if (overTo && overTo.to > overTo.from) liquid(overTo.liq, level(overTo.to), level(overTo.from));
+    if (overTo && overTo.to > overTo.from) {   // absorption: golden cloud with a few sparkles
+      const ya = level(overTo.to), yb = level(overTo.from);
+      liquid(overTo.liq, ya, yb, 'cloud');
+      for (let i = 0; i < 9; i++) {
+        const h = Math.sin((cx + i * 7.31) * 51.7) * 43758.5453, u = h - Math.floor(h), v = h * 3.7 - Math.floor(h * 3.7);
+        const x = x0 + u * w, y = ya + v * (yb - ya);
+        g.fillStyle = i % 3 ? 'rgba(255,250,210,0.8)' : 'rgba(255,255,255,0.95)'; g.fillRect(x, y, i % 3 ? 0.3 : 0.45, i % 3 ? 0.3 : 0.45);
+      }
+    }
     const surfaceY = overTo && overTo.to > overTo.from ? level(overTo.to) : top;
     g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, surfaceY, w, 0.4);   // the surface catching the light
     g.restore();
