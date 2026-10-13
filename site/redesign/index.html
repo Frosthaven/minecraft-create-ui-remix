@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HUD Redesign</title>
+<style>
+  :root { --bg: #15161a; --panel: #1d1f25; --raised: #262932; --text: #e6e6ea; --muted: #9aa0ad;
+          --accent: #e8a33d; --border: #30333d; --seam: rgba(255, 255, 255, 0.14); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, sans-serif; }
+  header { padding: 18px 24px 6px; }
+  header h1 { margin: 0; font-size: 21px; }
+  header p { margin: 4px 0 0; color: var(--muted); max-width: 980px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 24px; }
+  .bar button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised);
+                color: var(--text); font: inherit; cursor: pointer; }
+  .bar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 14px; margin: 6px 24px; }
+  .scene { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; position: relative;
+           background: linear-gradient(#7fb0ff 0%, #b8d4ff 46%, #6aa84f 46.2%, #4f8a37 100%); }
+  .scene .label { position: absolute; top: 8px; left: 10px; padding: 2px 8px; border-radius: 5px; font-size: 12px;
+                  font-weight: 600; background: rgba(0, 0, 0, 0.55); color: #fff; }
+  .scene .label.after { color: var(--accent); }
+  .scene canvas { display: block; margin: 0 auto; max-width: 100%; }
+  #before { image-rendering: pixelated; }
+  .pair { display: flex; gap: 10px; align-items: flex-end; }
+  .pair small { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; text-align: center; }
+  h2 { font-size: 16px; margin: 22px 24px 10px; }
+  #sheet { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 24px 40px; }
+  .sprite { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+  .sprite .stage { line-height: 0; background: repeating-conic-gradient(#202228 0 25%, #1a1b20 0 50%) 0 0 / 16px 16px; display: inline-block; }
+  .sprite .pair > div:first-child canvas { image-rendering: pixelated; }
+  .sprite .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .sprite .meta b { color: var(--text); }
+  .sprite a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>HUD Redesign: Create</h1>
+  <p>Create's andesite slate, polished brass and copper, Builder's Tea and liquid experience.
+     Vector art at 8x resolution: Minecraft draws GUI sprites at their logical size whatever the texture
+     resolution, so every sprite keeps vanilla's size and every item socket and icon cell sits where the
+     game puts it. It can ship as a resource pack (sprite names below are the vanilla paths).</p>
+</header>
+<div class="bar">
+  <button id="sockets" aria-pressed="false">Show sockets</button>
+  <button id="hurt">Damage</button>
+  <button id="eat">Eat</button>
+  <span style="color:var(--muted);align-self:center">Keys 1–9 select a slot</span>
+</div>
+<div class="compare">
+  <div class="scene" id="beforeScene"><span class="label">Before: current HUD (your packs)</span><canvas id="before"></canvas></div>
+  <div class="scene" id="afterScene"><span class="label after">After: Create redesign</span><canvas id="after"></canvas></div>
+</div>
+<h2>Sprites, before and after (vanilla names and sizes)</h2>
+<div id="sheet"></div>
+<script>
+// Sprites are vector art at R x vanilla resolution in Create's palette (hires()); "Before" uses the
+// almanac's extracted sprites (../manifest.json) as they look with the current packs.
+const SEAM = getComputedStyle(document.documentElement).getPropertyValue('--seam').trim();
+const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+
+function make(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  return [c, g];
+}
+// ---- Sprites: vector art at R x the vanilla size (Minecraft draws GUI sprites at their logical
+// size whatever the texture resolution, so the detail survives). Coordinates below are logical. ----
+const R = 8;
+
+/** A canvas for a sprite of logical size w x h, drawn at R x; g works in logical units. */
+function hires(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w * R; c.height = h * R;
+  c.lw = w; c.lh = h;
+  const g = c.getContext('2d');
+  g.scale(R, R);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  return [c, g];
+}
+function rrect(g, x, y, w, h, r) {
+  g.beginPath();
+  g.roundRect(x, y, w, h, r);
+}
+/** Polished brass: light top edge, warm body, dark lower band, a reflected glint. */
+function brass(g, x0, y0, x1, y1) {
+  const gr = g.createLinearGradient(x0, y0, x1, y1);
+  gr.addColorStop(0, '#fff4c2'); gr.addColorStop(0.18, '#f3c766'); gr.addColorStop(0.5, '#d29a3a');
+  gr.addColorStop(0.78, '#8d5d1d'); gr.addColorStop(1, '#e4b45a');
+  return gr;
+}
+function copperGrad(g, x0, y0, x1, y1) {
+  const gr = g.createLinearGradient(x0, y0, x1, y1);
+  gr.addColorStop(0, '#ffc2a4'); gr.addColorStop(0.3, '#e88a62'); gr.addColorStop(0.75, '#a64f33'); gr.addColorStop(1, '#d87a55');
+  return gr;
+}
+/** Andesite slate: cool grey stone with a soft top light. */
+function slate(g, y0, y1) {
+  const gr = g.createLinearGradient(0, y0, 0, y1);
+  gr.addColorStop(0, '#8b877c'); gr.addColorStop(0.45, '#625e56'); gr.addColorStop(1, '#3e3b35');
+  return gr;
+}
+function bolt(g, x, y, r) {
+  const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+  gr.addColorStop(0, '#fff6cf'); gr.addColorStop(0.5, '#d6a24a'); gr.addColorStop(1, '#6e4614');
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+}
+/** A cogwheel outline path: teeth around a rim (trapezoid teeth). */
+function cogPath(g, cx, cy, rOut, rIn, teeth) {
+  g.beginPath();
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2, step = Math.PI * 2 / teeth;
+    const pts = [[rIn, a - step * 0.5], [rIn, a - step * 0.22], [rOut, a - step * 0.14], [rOut, a + step * 0.14], [rIn, a + step * 0.22]];
+    pts.forEach(([r, t], k) => { const x = cx + Math.cos(t) * r, y = cy + Math.sin(t) * r; (i === 0 && k === 0) ? g.moveTo(x, y) : g.lineTo(x, y); });
+  }
+  g.closePath();
+}
+/** A socket: brass ring around a recessed dark well (item area 16 x 16 at x+1, y+1). */
+function socket(g, x, y) {
+  rrect(g, x - 0.2, y - 0.2, 18.4, 18.4, 3); g.fillStyle = brass(g, x, y, x + 6, y + 18); g.fill();
+  rrect(g, x + 1, y + 1, 16, 16, 2.2);
+  const well = g.createLinearGradient(0, y + 1, 0, y + 17);
+  well.addColorStop(0, '#15120f'); well.addColorStop(0.35, '#26211c'); well.addColorStop(1, '#3a332b');
+  g.fillStyle = well; g.fill();
+  g.save(); g.clip();
+  g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineWidth = 1.2; rrect(g, x + 0.6, y + 0.6, 16.8, 16.8, 2.4); g.stroke();
+  g.restore();
+  g.strokeStyle = 'rgba(255,240,190,0.5)'; g.lineWidth = 0.25; rrect(g, x + 0.1, y + 0.1, 17.8, 17.8, 2.9); g.stroke();
+}
+
+/** hud/hotbar 182x22: a slate andesite rail with brass trim, nine brass sockets, bolts between. */
+function hotbar() {
+  const [c, g] = hires(182, 22);
+  g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 1.5; g.shadowOffsetY = 0.5;
+  rrect(g, 0.5, 0.5, 181, 21, 4); g.fillStyle = slate(g, 0, 22); g.fill();
+  g.shadowColor = 'transparent';
+  // Brass trim along the top and bottom edges.
+  g.lineWidth = 0.9; g.strokeStyle = brass(g, 0, 0, 0, 22); rrect(g, 0.7, 0.7, 180.6, 20.6, 3.8); g.stroke();
+  // Fine machined grooves in the stone.
+  g.strokeStyle = 'rgba(255,255,255,0.05)'; g.lineWidth = 0.15;
+  for (let y = 3; y < 20; y += 1.5) { g.beginPath(); g.moveTo(2, y); g.lineTo(180, y); g.stroke(); }
+  for (let i = 0; i < 9; i++) {
+    socket(g, 2 + i * 20, 2);
+    if (i < 8) { bolt(g, 21 + i * 20, 5, 0.8); bolt(g, 21 + i * 20, 17, 0.8); }
+  }
+  return c;
+}
+
+/** hud/hotbar_selection 24x23: an orange value-box glow around the socket, brass corner brackets. */
+function selection() {
+  const [c, g] = hires(24, 23);
+  g.save();
+  g.shadowColor = 'rgba(255,170,60,0.95)'; g.shadowBlur = 2.2;
+  g.strokeStyle = '#ffb24a'; g.lineWidth = 1.1; rrect(g, 1.3, 1.3, 21.4, 20.4, 3.2); g.stroke();
+  g.restore();
+  g.strokeStyle = 'rgba(255,240,200,0.9)'; g.lineWidth = 0.3; rrect(g, 1.3, 1.3, 21.4, 20.4, 3.2); g.stroke();
+  g.lineWidth = 1.1; g.strokeStyle = brass(g, 0, 0, 24, 23);
+  for (const [x, y, dx, dy] of [[0.8, 0.8, 1, 1], [23.2, 0.8, -1, 1], [0.8, 22.2, 1, -1], [23.2, 22.2, -1, -1]]) {
+    g.beginPath(); g.moveTo(x, y + dy * 4.5); g.lineTo(x, y); g.lineTo(x + dx * 4.5, y); g.stroke();
+  }
+  // A small cog crowning the slot.
+  cogPath(g, 12, 1.6, 2.1, 1.5, 8); g.fillStyle = brass(g, 10, 0, 14, 4); g.fill();
+  g.fillStyle = '#5a3a12'; g.beginPath(); g.arc(12, 1.6, 0.55, 0, Math.PI * 2); g.fill();
+  return c;
+}
+
+/** hud/hotbar_offhand_left 29x24: a copper bracket holding a brass socket, a shaft into the bar. */
+function offhand() {
+  const [c, g] = hires(29, 24);
+  const sh = g.createLinearGradient(0, 9, 0, 15);
+  sh.addColorStop(0, '#c9c4b8'); sh.addColorStop(0.5, '#77736a'); sh.addColorStop(1, '#45423c');
+  g.fillStyle = sh; rrect(g, 21, 9.5, 8, 5, 1); g.fill();
+  g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 1.5; g.shadowOffsetY = 0.5;
+  rrect(g, 0.5, 1.5, 22, 21, 4); g.fillStyle = copperGrad(g, 0, 1, 0, 23); g.fill();
+  g.shadowColor = 'transparent';
+  socket(g, 2, 3);
+  for (const [x, y] of [[1.9, 2.9], [20.6, 2.9], [1.9, 21.1], [20.6, 21.1]]) bolt(g, x, y, 0.6);
+  return c;
+}
+
+/** hud/experience_bar_background 182x5: a brass pipe with a long glass window, couplings. */
+function xpBack() {
+  const [c, g] = hires(182, 5);
+  rrect(g, 0.2, 0.2, 181.6, 4.6, 2.3); g.fillStyle = brass(g, 0, 0, 0, 5); g.fill();
+  rrect(g, 2.2, 1.1, 177.6, 2.8, 1.4);
+  const gl = g.createLinearGradient(0, 1, 0, 4);
+  gl.addColorStop(0, '#0e1a12'); gl.addColorStop(1, '#22352a');
+  g.fillStyle = gl; g.fill();
+  couplings(g);
+  return c;
+}
+function couplings(g) {
+  for (let x = 30; x < 182; x += 30) {
+    rrect(g, x - 0.7, 0.2, 1.4, 4.6, 0.5); g.fillStyle = brass(g, x - 1, 0, x + 1, 5); g.fill();
+  }
+}
+/** hud/experience_bar_progress 182x5: glowing liquid experience behind the glass, with bubbles. */
+function xpFill() {
+  const [c, g] = hires(182, 5);
+  rrect(g, 2.2, 1.1, 177.6, 2.8, 1.4); g.save(); g.clip();
+  const lq = g.createLinearGradient(0, 1, 0, 4);
+  lq.addColorStop(0, '#e9ff9c'); lq.addColorStop(0.45, '#8ee64a'); lq.addColorStop(1, '#3c9b2b');
+  g.fillStyle = lq; g.fillRect(2, 1, 178, 3);
+  g.fillStyle = 'rgba(255,255,255,0.55)';
+  for (let x = 6; x < 180; x += 7.3) { g.beginPath(); g.arc(x, 2.2 + Math.sin(x) * 0.6, 0.35 + (x % 3) * 0.08, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(2, 1.2, 178, 0.5);
+  g.restore();
+  couplings(g);
+  return c;
+}
+
+/** A heart path within a 9 x 9 cell. */
+function heartPath(g) {
+  g.beginPath();
+  g.moveTo(4.5, 8.1);
+  g.bezierCurveTo(1.2, 5.9, 0.4, 4.1, 0.6, 2.9);
+  g.bezierCurveTo(0.8, 1.1, 3.4, 0.4, 4.5, 2.4);
+  g.bezierCurveTo(5.6, 0.4, 8.2, 1.1, 8.4, 2.9);
+  g.bezierCurveTo(8.6, 4.1, 7.8, 5.9, 4.5, 8.1);
+  g.closePath();
+}
+/** hud/heart/container 9x9: an empty heart vial: smoked glass, a thin brass rim. */
+function heartContainer() {
+  const [c, g] = hires(9, 9);
+  heartPath(g); g.fillStyle = 'rgba(20,14,14,0.55)'; g.fill();
+  g.lineWidth = 0.55; g.strokeStyle = brass(g, 0, 0, 9, 9); g.stroke();
+  glint(g);
+  return c;
+}
+function glint(g) {
+  g.fillStyle = 'rgba(255,255,255,0.7)';
+  g.beginPath(); g.ellipse(2.6, 2.7, 0.9, 0.45, -0.6, 0, Math.PI * 2); g.fill();
+}
+/** hud/heart/full and half 9x9: red fluid filling the vial (half: the left side). */
+function heart(half) {
+  const [c, g] = hires(9, 9);
+  g.save();
+  if (half) { g.beginPath(); g.rect(0, 0, 4.5, 9); g.clip(); }
+  heartPath(g);
+  const fl = g.createLinearGradient(0, 1, 0, 8.5);
+  fl.addColorStop(0, '#ff7b7b'); fl.addColorStop(0.5, '#e3232f'); fl.addColorStop(1, '#8e0f18');
+  g.fillStyle = fl; g.fill();
+  g.restore();
+  heartPath(g); g.lineWidth = 0.55; g.strokeStyle = brass(g, 0, 0, 9, 9); g.stroke();
+  glint(g);
+  return c;
+}
+
+/** A mug of Builder's Tea, 9 x 9: body, handle, liquid level (0..1), steam for a full mug. */
+function mug(level, steam) {
+  const [c, g] = hires(9, 9);
+  // Handle.
+  g.lineWidth = 0.75; g.strokeStyle = brass(g, 6, 3, 9, 7);
+  g.beginPath(); g.arc(6.7, 5, 1.45, -Math.PI / 2, Math.PI / 2); g.stroke();
+  // Body.
+  rrect(g, 1.1, 2.4, 5.8, 5.8, 1); g.fillStyle = level < 0 ? 'rgba(40,28,14,0.55)' : brass(g, 1, 2, 7, 8); g.fill();
+  if (level >= 0) {
+    rrect(g, 1.7, 3, 4.6, 4.7, 0.6); g.fillStyle = '#2a1a0d'; g.fill();
+    if (level > 0) {
+      const top = 3 + 4.7 * (1 - level);
+      g.save(); rrect(g, 1.7, 3, 4.6, 4.7, 0.6); g.clip();
+      const tea = g.createLinearGradient(0, top, 0, 7.7);
+      tea.addColorStop(0, '#d48a45'); tea.addColorStop(0.25, '#9c5424'); tea.addColorStop(1, '#5c2e12');
+      g.fillStyle = tea; g.fillRect(1.7, top, 4.6, 7.7 - top);
+      g.fillStyle = 'rgba(255,220,170,0.6)'; g.fillRect(1.7, top, 4.6, 0.3);
+      g.restore();
+    }
+  } else {
+    g.lineWidth = 0.4; g.strokeStyle = 'rgba(200,160,90,0.6)'; rrect(g, 1.1, 2.4, 5.8, 5.8, 1); g.stroke();
+  }
+  if (steam) {
+    g.strokeStyle = 'rgba(255,255,255,0.8)'; g.lineWidth = 0.45;
+    for (const x of [3, 5]) { g.beginPath(); g.moveTo(x, 2); g.bezierCurveTo(x - 0.8, 1.3, x + 0.8, 0.8, x, 0.1); g.stroke(); }
+  }
+  return c;
+}
+
+/** hud/armor_full, armor_half, armor_empty 9x9: brass cogwheels (half: left half, empty: shadow). */
+function armor(kind) {
+  const [c, g] = hires(9, 9);
+  const draw = (fill) => { cogPath(g, 4.5, 4.5, 4.3, 3.2, 10); g.fillStyle = fill; g.fill('evenodd'); };
+  draw('rgba(40,30,20,0.55)');
+  if (kind !== 'empty') {
+    g.save();
+    if (kind === 'half') { g.beginPath(); g.rect(0, 0, 4.5, 9); g.clip(); }
+    draw(brass(g, 1, 0, 8, 9));
+    g.fillStyle = 'rgba(255,250,220,0.35)'; g.beginPath(); g.arc(4.5, 4.5, 2.4, Math.PI, Math.PI * 1.6); g.lineTo(4.5, 4.5); g.fill();
+    g.restore();
+  }
+  g.fillStyle = kind === 'empty' ? 'rgba(20,14,10,0.6)' : '#4b300e';
+  g.beginPath(); g.arc(4.5, 4.5, 1.25, 0, Math.PI * 2); g.fill();
+  g.fillStyle = kind === 'empty' ? 'rgba(90,70,50,0.6)' : '#f3d27a';
+  g.beginPath(); g.arc(4.5, 4.5, 0.55, 0, Math.PI * 2); g.fill();
+  return c;
+}
+
+/** hud/air 9x9: a copper pressure gauge (cream face, ticks, red needle); bursting: a steam puff. */
+function air(burst) {
+  const [c, g] = hires(9, 9);
+  if (burst) {
+    for (const [x, y, r, a] of [[3.4, 5.2, 2.2, 0.85], [5.6, 4.2, 2, 0.75], [4.6, 2.8, 1.5, 0.6], [6.8, 6, 1.3, 0.5]]) {
+      const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+      gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(220,225,230,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    return c;
+  }
+  g.fillStyle = copperGrad(g, 0, 0, 9, 9); g.beginPath(); g.arc(4.5, 4.5, 4.2, 0, Math.PI * 2); g.fill();
+  const face = g.createRadialGradient(4, 3.8, 0.3, 4.5, 4.5, 3.4);
+  face.addColorStop(0, '#fffaf0'); face.addColorStop(1, '#e2d4b6');
+  g.fillStyle = face; g.beginPath(); g.arc(4.5, 4.5, 3.3, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = '#6b5a45'; g.lineWidth = 0.25;
+  for (let i = 0; i <= 6; i++) {
+    const t = Math.PI * 0.8 + (i / 6) * Math.PI * 1.4;
+    g.beginPath(); g.moveTo(4.5 + Math.cos(t) * 2.4, 4.5 + Math.sin(t) * 2.4); g.lineTo(4.5 + Math.cos(t) * 3, 4.5 + Math.sin(t) * 3); g.stroke();
+  }
+  g.strokeStyle = '#c4302b'; g.lineWidth = 0.45;
+  g.beginPath(); g.moveTo(4.5, 4.5); g.lineTo(4.5 + Math.cos(-0.7) * 2.6, 4.5 + Math.sin(-0.7) * 2.6); g.stroke();
+  g.fillStyle = '#3a2a1a'; g.beginPath(); g.arc(4.5, 4.5, 0.6, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.45)'; g.beginPath(); g.ellipse(3.3, 3, 1.2, 0.6, -0.6, 0, Math.PI * 2); g.fill();
+  return c;
+}
+
+// ---- Assembly -----------------------------------------------------------------------------------
+
+let state = { slot: 2, health: 15, food: 17, armor: 12, air: 7, xp: 0.6 };
+let showSockets = false, mine = {}, current = {};
+
+/** Places the HUD the way the game does (Gui.java 1.21), around center x, bottom y. */
+function compose(s, scale) {
+  const W = 260, H = 64, cx = 4 + 29 + 91 + 30, bottom = H - 3;
+  const [c, g] = make(W * scale, H * scale);
+  const sockets = [];
+  const put = (img, x, y, sw) => {
+    if (!img) return;
+    const lw = img.lw ?? img.width, lh = img.lh ?? img.height, k = img.width / lw;
+    const w = sw ?? lw;
+    g.imageSmoothingEnabled = !!img.lw; // vector sprites smooth, pixel sprites crisp
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, 0, 0, w * k, img.height, x * scale, y * scale, w * scale, lh * scale);
+  };
+  put(s.offhand, cx - 91 - 29, bottom - 23);
+  put(s.hotbar, cx - 91, bottom - 22);
+  put(s.selection, cx - 91 - 1 + state.slot * 20, bottom - 22 - 1);
+  put(s.xpBack, cx - 91, bottom - 29);
+  put(s.xpFill, cx - 91, bottom - 29, 182 * state.xp);
+  for (let i = 0; i < 9; i++) sockets.push([cx - 91 + 3 + i * 20, bottom - 19, 16, 16]);
+  sockets.push([cx - 91 - 26, bottom - 19, 16, 16]);
+  for (let i = 0; i < 10; i++) {
+    const hx = cx - 91 + i * 8, hy = bottom - 39, fx = cx + 91 - i * 8 - 9, ay = hy - 10;
+    put(s.heartContainer, hx, hy);
+    if (state.health >= (i + 1) * 2) put(s.heartFull, hx, hy); else if (state.health === i * 2 + 1) put(s.heartHalf, hx, hy);
+    put(state.armor >= (i + 1) * 2 ? s.armorFull : state.armor === i * 2 + 1 ? s.armorHalf : s.armorEmpty, hx, ay);
+    put(s.foodEmpty, fx, hy);
+    if (state.food >= (i + 1) * 2) put(s.foodFull, fx, hy); else if (state.food === i * 2 + 1) put(s.foodHalf, fx, hy);
+    if (i < state.air) put(s.air, fx, ay); else if (i === state.air) put(s.airBurst, fx, ay);
+    sockets.push([hx, hy, 9, 9], [hx, ay, 9, 9], [fx, hy, 9, 9], [fx, ay, 9, 9]);
+  }
+  if (showSockets) {
+    g.save();
+    g.strokeStyle = 'rgba(255,255,255,0.55)'; g.setLineDash([3, 3]); g.lineWidth = 1;
+    for (const [x, y, w, h] of sockets) g.strokeRect(x * scale + 0.5, y * scale + 0.5, w * scale - 1, h * scale - 1);
+    g.restore();
+  }
+  return c;
+}
+
+function render() {
+  const scale = Math.max(2, Math.min(5, Math.floor((document.getElementById('afterScene').clientWidth - 20) / 260)));
+  for (const [id, set] of [['before', current], ['after', mine]]) {
+    const c = compose(set, scale);
+    c.id = id;
+    document.getElementById(id).replaceWith(c);
+  }
+}
+
+function sheet() {
+  const list = [
+    ['hud/hotbar', 'hotbar'], ['hud/hotbar_selection', 'selection'], ['hud/hotbar_offhand_left', 'offhand'],
+    ['hud/experience_bar_background', 'xpBack'], ['hud/experience_bar_progress', 'xpFill'],
+    ['hud/heart/container', 'heartContainer'], ['hud/heart/full', 'heartFull'], ['hud/heart/half', 'heartHalf'],
+    ['hud/food_empty', 'foodEmpty'], ['hud/food_full', 'foodFull'], ['hud/food_half', 'foodHalf'],
+    ['hud/armor_full', 'armorFull'], ['hud/armor_half', 'armorHalf'], ['hud/armor_empty', 'armorEmpty'],
+    ['hud/air', 'air'], ['hud/air_bursting', 'airBurst'],
+  ];
+  const el = document.getElementById('sheet');
+  const big = (img, scale) => {
+    const wrap = document.createElement('div');
+    const stage = document.createElement('div');
+    stage.className = 'stage';
+    if (img) {
+      const lw = img.lw ?? img.width, lh = img.lh ?? img.height;
+      const [c, g] = make(lw * scale, lh * scale);
+      g.imageSmoothingEnabled = !!img.lw; g.imageSmoothingQuality = 'high';
+      g.drawImage(img, 0, 0, c.width, c.height);
+      stage.appendChild(c);
+    }
+    wrap.appendChild(stage);
+    return wrap;
+  };
+  for (const [name, key] of list) {
+    const after = mine[key], before = current[key];
+    const scale = Math.max(2, Math.min(8, Math.floor(160 / Math.max(after.lw, after.lh))));
+    const box = document.createElement('div');
+    box.className = 'sprite';
+    const pair = document.createElement('div');
+    pair.className = 'pair';
+    const b = big(before, scale), a = big(after, scale);
+    b.insertAdjacentHTML('beforeend', '<small>before</small>');
+    a.insertAdjacentHTML('beforeend', '<small>after</small>');
+    pair.append(b, a);
+    box.appendChild(pair);
+    box.insertAdjacentHTML('beforeend', `<div class="meta"><b>${name}</b> ${after.lw}x${after.lh} (texture ${after.width}x${after.height}) ·
+      <a download="${name.split('/').pop()}.png" href="${after.toDataURL()}">PNG</a></div>`);
+    el.appendChild(box);
+  }
+}
+
+(async () => {
+  mine = {
+    hotbar: hotbar(), selection: selection(), offhand: offhand(), xpBack: xpBack(), xpFill: xpFill(),
+    heartContainer: heartContainer(), heartFull: heart(false), heartHalf: heart(true),
+    foodEmpty: mug(-1, false), foodFull: mug(1, true), foodHalf: mug(0.5, false),
+    armorFull: armor('full'), armorHalf: armor('half'), armorEmpty: armor('empty'), air: air(false), airBurst: air(true),
+  };
+  // The HUD as it looks now (the almanac's extracted sprites, packs applied), for comparison.
+  const manifest = await fetch('../manifest.json').then(r => r.json());
+  const tex = async p => { const e = manifest.find(m => m.ns === 'minecraft' && m.path === 'sprites/hud/' + p); return e ? load('../tex/' + e.file) : null; };
+  const pairs = { hotbar: 'hotbar', selection: 'hotbar_selection', offhand: 'hotbar_offhand_left', xpBack: 'experience_bar_background',
+    xpFill: 'experience_bar_progress', heartContainer: 'heart/container', heartFull: 'heart/full', heartHalf: 'heart/half',
+    foodEmpty: 'food_empty', foodFull: 'food_full', foodHalf: 'food_half', armorFull: 'armor_full', armorHalf: 'armor_half',
+    armorEmpty: 'armor_empty', air: 'air', airBurst: 'air_bursting' };
+  for (const [k, p] of Object.entries(pairs)) current[k] = await tex(p);
+  render();
+  sheet();
+})();
+
+const toggle = (id, fn) => document.getElementById(id).addEventListener('click', e => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  fn(on); render();
+});
+toggle('sockets', on => { showSockets = on; });
+document.getElementById('hurt').onclick = () => { state.health = state.health > 1 ? state.health - 3 : 20; state.armor = Math.max(0, state.armor - 1); state.air = (state.air + 9) % 11; render(); };
+document.getElementById('eat').onclick = () => { state.food = state.food < 20 ? Math.min(20, state.food + 3) : 5; state.xp = (state.xp + 0.15) % 1; render(); };
+addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { state.slot = +e.key - 1; render(); } });
+addEventListener('resize', render);
+</script>
+</body>
+</html>

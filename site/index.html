@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GUI Panel Preview</title>
+<style>
+  :root {
+    --bg: #15161a; --panel: #1d1f25; --raised: #262932; --text: #e6e6ea; --muted: #9aa0ad;
+    --accent: #7aa2f7; --pack: #e0af68; --border: #30333d; --seam: rgba(255, 255, 255, 0.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif;
+         display: grid; grid-template-columns: 260px 1fr; height: 100vh; overflow: hidden; }
+  aside { background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+  aside h1 { font-size: 15px; margin: 14px 14px 8px; }
+  aside input { margin: 0 14px 10px; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--border);
+                background: var(--bg); color: var(--text); font: inherit; }
+  #tabs { list-style: none; margin: 0; padding: 0 6px 12px; overflow-y: auto; flex: 1; }
+  #tabs button { width: 100%; display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 0;
+                 border-radius: 5px; background: none; color: var(--muted); font: inherit; text-align: left; cursor: pointer; }
+  #tabs button:hover { background: var(--raised); color: var(--text); }
+  #tabs button[aria-selected="true"] { background: var(--raised); color: var(--accent); }
+  #tabs .n { opacity: .7; font-variant-numeric: tabular-nums; }
+  main { overflow-y: auto; padding: 18px 22px 40px; }
+  main header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  main h2 { margin: 0; font-size: 20px; }
+  main header .muted { color: var(--muted); }
+  #grid { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; max-width: 100%; }
+  .card .stage { display: inline-block; position: relative; line-height: 0;
+                 background: repeating-conic-gradient(#202228 0 25%, #1a1b20 0 50%) 0 0 / 16px 16px; }
+  .card canvas { image-rendering: pixelated; max-width: 100%; }
+  .card .parts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .card .parts canvas { background: #202228; }
+  .card .meta { margin-top: 8px; font-size: 12px; color: var(--muted); max-width: 520px; overflow-wrap: anywhere; }
+  .card .meta b { color: var(--text); font-weight: 600; }
+  .tag { display: inline-block; padding: 0 6px; border-radius: 4px; border: 1px solid var(--border); margin-right: 4px; font-size: 11px; }
+  .tag.pack { color: var(--pack); border-color: var(--pack); }
+  .tag.kind { color: var(--accent); border-color: var(--accent); }
+  @media (max-width: 700px) { body { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr; } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>GUI panels by mod</h1>
+  <input id="search" placeholder="Filter mods or texture names" autocomplete="off">
+  <ul id="tabs" role="tablist"></ul>
+</aside>
+<main>
+  <header><h2 id="title"></h2><span class="muted" id="count"></span></header>
+  <div id="grid"></div>
+</main>
+<script>
+// Reconstructs each GUI texture the way the game would show it:
+//  - gui.scaling nine_slice: corners kept, edges and center tiled (as 1.21 draws them) at a larger size;
+//  - gui.scaling tile: repeated 3 x 2; stretch: scaled up;
+//  - sheets (a panel plus loose parts, transparent between): the panel is the outline that holds the
+//    first opaque pixel, cut out; the other parts are shown below it;
+// Seams (where pieces join) get faint dotted lines.
+const SEAM = getComputedStyle(document.documentElement).getPropertyValue('--seam').trim();
+let manifest = [], byMod = new Map(), current = null;
+
+const scaleFor = (w, h) => Math.max(1, Math.min(4, Math.floor(420 / Math.max(w, h))));
+
+function seams(ctx, lines, scale) {
+  ctx.save();
+  ctx.strokeStyle = SEAM;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 3]);
+  for (const [x1, y1, x2, y2] of lines) {
+    ctx.beginPath();
+    ctx.moveTo(Math.round(x1 * scale) + 0.5, Math.round(y1 * scale) + 0.5);
+    ctx.lineTo(Math.round(x2 * scale) + 0.5, Math.round(y2 * scale) + 0.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function canvasOf(w, h, scale) {
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * scale);
+  c.height = Math.round(h * scale);
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  return [c, ctx];
+}
+
+/** Nine-slice: corners as they are, edges and center tiled. Returns canvas with seams. */
+function nineSlice(img, s) {
+  const b = typeof s.border === 'number' ? { left: s.border, top: s.border, right: s.border, bottom: s.border } : s.border || {};
+  const L = b.left || 0, T = b.top || 0, R = b.right || 0, B = b.bottom || 0;
+  const sw = s.width || img.width, sh = s.height || img.height;
+  const W = Math.max(sw * 2, sw + 48), H = Math.max(sh * 2, sh + 24);
+  const scale = scaleFor(W, H);
+  const [c, ctx] = canvasOf(W, H, scale);
+  const midW = img.width - L - R, midH = img.height - T - B;
+  const lines = [];
+  const tile = (sx, sy, sw2, sh2, dx, dy, dw, dh, vertical, horizontal) => {
+    if (sw2 <= 0 || sh2 <= 0 || dw <= 0 || dh <= 0) return;
+    for (let y = 0; y < dh; y += sh2) {
+      for (let x = 0; x < dw; x += sw2) {
+        const w = Math.min(sw2, dw - x), h = Math.min(sh2, dh - y);
+        ctx.drawImage(img, sx, sy, w, h, (dx + x) * scale, (dy + y) * scale, w * scale, h * scale);
+        if (horizontal && x > 0) lines.push([dx + x, dy, dx + x, dy + dh]);
+        if (vertical && y > 0) lines.push([dx, dy + y, dx + dw, dy + y]);
+      }
+    }
+  };
+  const cw = W - L - R, ch = H - T - B;
+  tile(0, 0, L, T, 0, 0, L, T);
+  tile(img.width - R, 0, R, T, W - R, 0, R, T);
+  tile(0, img.height - B, L, B, 0, H - B, L, B);
+  tile(img.width - R, img.height - B, R, B, W - R, H - B, R, B);
+  tile(L, 0, midW, T, L, 0, cw, T, false, true);
+  tile(L, img.height - B, midW, B, L, H - B, cw, B, false, true);
+  tile(0, T, L, midH, 0, T, L, ch, true, false);
+  tile(img.width - R, T, R, midH, W - R, T, R, ch, true, false);
+  tile(L, T, midW, midH, L, T, cw, ch, true, true);
+  if (L) lines.push([L, 0, L, H]);
+  if (R) lines.push([W - R, 0, W - R, H]);
+  if (T) lines.push([0, T, W, T]);
+  if (B) lines.push([0, H - B, W, H - B]);
+  seams(ctx, lines, scale);
+  return [c, `nine-slice ${L}/${T}/${R}/${B}, shown ${W}x${H}`];
+}
+
+function tiled(img, s) {
+  const tw = s.width || img.width, th = s.height || img.height;
+  const W = tw * 3, H = th * 2, scale = scaleFor(W, H);
+  const [c, ctx] = canvasOf(W, H, scale);
+  const lines = [];
+  for (let y = 0; y < H; y += th) for (let x = 0; x < W; x += tw) ctx.drawImage(img, x * scale, y * scale, tw * scale, th * scale);
+  for (let x = tw; x < W; x += tw) lines.push([x, 0, x, H]);
+  for (let y = th; y < H; y += th) lines.push([0, y, W, y]);
+  seams(ctx, lines, scale);
+  return [c, 'tiled 3x2'];
+}
+
+/** Opaque outlines (8-connected) of an image; [{x, y, w, h, n}] largest first, capped. */
+function regions(img) {
+  const w = img.width, h = img.height;
+  const [c, ctx] = canvasOf(w, h, 1);
+  ctx.drawImage(img, 0, 0);
+  const a = ctx.getImageData(0, 0, w, h).data;
+  const seen = new Uint8Array(w * h), out = [], stack = new Int32Array(w * h);
+  let opaque = 0;
+  for (let i = 0; i < w * h; i++) {
+    if (a[i * 4 + 3] === 0) { seen[i] = 1; continue; }
+    opaque++;
+  }
+  if (opaque === w * h) return null; // no transparency: shown whole
+  for (let start = 0; start < w * h; start++) {
+    if (seen[start]) continue;
+    let top = 0, x0 = w, y0 = h, x1 = 0, y1 = 0, n = 0;
+    stack[top++] = start; seen[start] = 1;
+    while (top) {
+      const i = stack[--top], x = i % w, y = (i / w) | 0;
+      n++;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const j = ny * w + nx;
+        if (!seen[j]) { seen[j] = 1; stack[top++] = j; }
+      }
+    }
+    out.push({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1, n, first: out.length === 0 });
+    if (out.length > 60) break;
+  }
+  return out;
+}
+
+/** A sheet: the panel (outline with the first opaque pixel, if it is the big one) and its parts. */
+function sheet(img) {
+  const regs = img.width * img.height <= 1024 * 1024 ? regions(img) : null;
+  if (!regs || regs.length <= 1) {
+    const scale = scaleFor(img.width, img.height);
+    const [c, ctx] = canvasOf(img.width, img.height, scale);
+    ctx.drawImage(img, 0, 0, img.width * scale, img.height * scale);
+    return [c, regs ? 'single piece' : 'full image', []];
+  }
+  const biggest = regs.reduce((m, r) => (r.w * r.h > m.w * m.h ? r : m), regs[0]);
+  const main = regs[0].w * regs[0].h >= biggest.w * biggest.h * 0.5 ? regs[0] : biggest;
+  // Small sprites and drawings made of separate strokes are one picture, not a sheet: shown whole.
+  if (Math.max(img.width, img.height) < 64 || main.w * main.h < img.width * img.height * 0.12) {
+    const scale = scaleFor(img.width, img.height);
+    const [c, ctx] = canvasOf(img.width, img.height, scale);
+    ctx.drawImage(img, 0, 0, img.width * scale, img.height * scale);
+    return [c, 'full image', []];
+  }
+  const scale = scaleFor(main.w, main.h);
+  const [c, ctx] = canvasOf(main.w, main.h, scale);
+  ctx.drawImage(img, main.x, main.y, main.w, main.h, 0, 0, main.w * scale, main.h * scale);
+  const parts = regs.filter(r => r !== main && r.n > 4).slice(0, 24).map(r => {
+    const s = Math.max(1, Math.min(3, Math.floor(64 / Math.max(r.w, r.h))));
+    const [pc, pctx] = canvasOf(r.w, r.h, s);
+    pctx.drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w * s, r.h * s);
+    pc.title = `${r.w}x${r.h} at ${r.x},${r.y}`;
+    return pc;
+  });
+  return [c, `panel ${main.w}x${main.h} from ${img.width}x${img.height} sheet`, parts];
+}
+
+function card(entry) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  el.appendChild(stage);
+  const img = new Image();
+  img.onload = () => {
+    let canvas, kind, parts = [];
+    const s = entry.scaling;
+    if (s?.type === 'nine_slice') [canvas, kind] = nineSlice(img, s);
+    else if (s?.type === 'tile') [canvas, kind] = tiled(img, s);
+    else if (s?.type === 'stretch') {
+      const scale = scaleFor(img.width * 2, img.height * 2);
+      [canvas] = canvasOf(img.width * 2, img.height * 2, scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      kind = 'stretched 2x';
+    } else [canvas, kind, parts] = sheet(img);
+    stage.appendChild(canvas);
+    if (parts.length) {
+      const p = document.createElement('div');
+      p.className = 'parts';
+      parts.forEach(pc => p.appendChild(pc));
+      el.appendChild(p);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const src = entry.source.startsWith('pack:')
+      ? `<span class="tag pack">from ${entry.source.slice(5)}</span>` : `<span class="tag">${entry.ns}</span>`;
+    meta.innerHTML = `${src}<span class="tag kind">${kind}</span><br><b>${entry.path}</b> <span>${img.width}x${img.height}</span>`;
+    el.appendChild(meta);
+  };
+  img.src = 'tex/' + entry.file;
+  return el;
+}
+
+/**
+ * The in-game HUD assembled from its sprites, placed as the game places them (Gui.java, 1.21):
+ * hotbar at the bottom, XP bar above it, hearts and armor left, food and air right, offhand slot.
+ * Sample values: 15/20 health, 12/20 armor, 17/20 food, 7/10 air, XP 60 %, slot 3 selected.
+ */
+function hudCard() {
+  const sprite = name => manifest.find(e => e.ns === 'minecraft' && e.path === 'sprites/hud/' + name);
+  const names = ['hotbar', 'hotbar_selection', 'hotbar_offhand_left', 'experience_bar_background', 'experience_bar_progress',
+    'heart/container', 'heart/full', 'heart/half', 'armor_empty', 'armor_full', 'armor_half', 'food_empty', 'food_full',
+    'food_half', 'air', 'air_bursting'];
+  const el = document.createElement('div');
+  el.className = 'card';
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  el.appendChild(stage);
+  const imgs = {};
+  let left = names.length;
+  const done = () => {
+    const W = 29 + 182 + 8, H = 60, cx = 4 + 29 + 91, bottom = H - 2, scale = 3;
+    const [c, ctx] = canvasOf(W, H, scale);
+    const boxes = [];
+    const put = (name, x, y, w, h, sw) => {
+      const img = imgs[name];
+      if (!img) return;
+      w = w ?? img.width; h = h ?? img.height;
+      ctx.drawImage(img, 0, 0, sw ?? w, h, x * scale, y * scale, (sw ?? w) * scale, h * scale);
+      boxes.push([x, y, sw ?? w, h]);
+    };
+    put('hotbar_offhand_left', cx - 91 - 29, bottom - 23);
+    put('hotbar', cx - 91, bottom - 22);
+    put('hotbar_selection', cx - 91 - 1 + 2 * 20, bottom - 22 - 1);
+    put('experience_bar_background', cx - 91, bottom - 29);
+    const xp = imgs.experience_bar_progress;
+    if (xp) put('experience_bar_progress', cx - 91, bottom - 29, xp.width, xp.height, Math.round(xp.width * 0.6));
+    for (let i = 0; i < 10; i++) {
+      const hx = cx - 91 + i * 8, hy = bottom - 39;
+      put('heart/container', hx, hy);
+      if (i < 7) put('heart/full', hx, hy); else if (i === 7) put('heart/half', hx, hy);
+      const ay = hy - 10;
+      put(i < 6 ? 'armor_full' : 'armor_empty', hx, ay);
+      const fx = cx + 91 - i * 8 - 9;
+      put('food_empty', fx, hy);
+      if (i < 8) put('food_full', fx, hy); else if (i === 8) put('food_half', fx, hy);
+      if (i < 7) put('air', fx, ay); else if (i === 7) put('air_bursting', fx, ay);
+    }
+    seams(ctx, boxes.flatMap(([x, y, w, h]) => [[x, y, x + w, y], [x, y + h, x + w, y + h], [x, y, x, y + h], [x + w, y, x + w, y + h]]), scale);
+    stage.appendChild(c);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const packs = [...new Set(names.map(sprite).filter(e => e?.source.startsWith('pack:')).map(e => e.source.slice(5)))];
+    meta.innerHTML = (packs.length ? packs.map(p => `<span class="tag pack">from ${p}</span>`).join('') : '<span class="tag">minecraft</span>')
+      + '<span class="tag kind">assembled HUD</span><br><b>hotbar, offhand, XP, hearts, armor, food, air</b>';
+    el.appendChild(meta);
+  };
+  for (const name of names) {
+    const e = sprite(name);
+    if (!e) { if (--left === 0) done(); continue; }
+    const img = new Image();
+    img.onload = img.onerror = () => { if (img.width) imgs[name] = img; if (--left === 0) done(); };
+    img.src = 'tex/' + e.file;
+  }
+  return el;
+}
+
+function show(mod) {
+  current = mod;
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mod === mod)));
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const list = (byMod.get(mod) || []).filter(e => !q || mod.toLowerCase().includes(q) || e.path.toLowerCase().includes(q));
+  document.getElementById('title').textContent = mod;
+  document.getElementById('count').textContent = `${list.length} textures`;
+  const grid = document.getElementById('grid');
+  grid.replaceChildren();
+  if (mod === 'HUD') {
+    document.getElementById('count').textContent = 'assembled from the HUD sprites (see Minecraft for each one)';
+    grid.appendChild(hudCard());
+    try { localStorage.setItem('gui-preview-tab', mod); } catch (e) { /* storage blocked */ }
+    return;
+  }
+  // Panels and sheets first (the big ones), small sprites after.
+  list.sort((a, b) => (a.path.includes('sprites/') - b.path.includes('sprites/')) || a.path.localeCompare(b.path));
+  const io = new IntersectionObserver(items => items.forEach(it => {
+    if (!it.isIntersecting) return;
+    io.unobserve(it.target);
+    it.target.replaceWith(card(it.target.entry));
+  }), { rootMargin: '600px' });
+  for (const e of list) {
+    const ph = document.createElement('div');
+    ph.className = 'card';
+    ph.style.cssText = 'width:180px;height:120px';
+    ph.entry = e;
+    grid.appendChild(ph);
+    io.observe(ph);
+  }
+  try { localStorage.setItem('gui-preview-tab', mod); } catch (e) { /* storage blocked */ }
+}
+
+function tabs() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const ul = document.getElementById('tabs');
+  ul.replaceChildren();
+  const rank = m => (m === 'HUD' ? 0 : m === 'Minecraft' ? 1 : 2);
+  const mods = [...byMod.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  for (const mod of mods) {
+    const items = byMod.get(mod).filter(e => !q || mod.toLowerCase().includes(q) || e.path.toLowerCase().includes(q));
+    if (!items.length) continue;
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.setAttribute('role', 'tab');
+    b.dataset.mod = mod;
+    b.innerHTML = `<span>${mod}</span><span class="n">${items.length}</span>`;
+    b.onclick = () => show(mod);
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+}
+
+fetch('manifest.json').then(r => r.json()).then(m => {
+  manifest = m;
+  byMod.set('HUD', m.filter(e => e.ns === 'minecraft' && e.path.startsWith('sprites/hud/')));
+  for (const e of m) {
+    if (!byMod.has(e.mod)) byMod.set(e.mod, []);
+    byMod.get(e.mod).push(e);
+  }
+  tabs();
+  let start = null;
+  try { start = localStorage.getItem('gui-preview-tab'); } catch (e) { /* storage blocked */ }
+  show(byMod.has(start) ? start : 'HUD');
+  document.getElementById('search').addEventListener('input', () => { tabs(); if (current) show(current); });
+});
+</script>
+</body>
+</html>
