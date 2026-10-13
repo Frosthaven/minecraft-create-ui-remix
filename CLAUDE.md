@@ -123,6 +123,11 @@ One iron console instead of the floating rows: hotbar in the raised middle with 
 level badge; left wing offhand, health (absorption in gold) with armor plating on top, Iron's mana; right wing food
 with AppleSkin saturation on top, Ars mana, dodge roll charges; air rises out of the right wing under water. Shipping
 it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws this layout (sprites from the pack).
+- Meters: health, food, armor (left, vitals); Iron's mana, Ars mana, breath (right). Breath is Create's backtank while
+  it holds air under water (time left m:ss, like Create's `remaining_air` layer), else the vanilla bubbles.
+- Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
+  while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
+  screen is open.
 
 ## Inventory Redesign (`site/redesign/inventory.html`), work in progress
 

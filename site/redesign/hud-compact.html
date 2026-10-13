@@ -13,12 +13,12 @@
   <p>Everything the action bar shows, gathered into one blackened iron console instead of floating rows. The hotbar sits
      in the raised middle with experience as one glass pipe along its top edge, the level in a small window at its left end. The
      left wing is vitals: the offhand (a faint shield marks it when empty), then health (absorption in gold), food and
-     armor. The right wing is magic: Iron's mana and Ars mana, then air (full above water, draining under it); our dash icon
+     armor. The right wing is magic: Iron's mana and Ars mana, then breath: bubbles (full above water, draining under it), or Create's backtank with its time left while diving; our dash icon
      and count sit at its end. Every meter is the same size, in ten segments, with the HUD's own icon; hover a meter for its value (current bright, max dim). Preview only: shipping it
      needs Create Dark Inventory to replace the HUD layers and draw this layout itself.</p>
 </header>
 <div class="bar">
-  <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button>
+  <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button><button id="dive" aria-pressed="false" title="Under water with a Create backtank and diving helmet">Diving (backtank)</button>
   <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
   <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
 </div>
@@ -33,7 +33,7 @@
 <script src="screen-page.js"></script>
 <script src="hud-compact.js"></script>
 <script>
-const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null };
+const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, tank: 0, tankMax: 900 };
 let font = null, waterTimer = null;
 function render() {
   const img = compactHud(st, font), out = document.getElementById('hud');
@@ -47,11 +47,20 @@ tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
 tap('roll', () => { st.rolls = st.rolls <= 0 ? 2 : Math.round((st.rolls - 0.5) * 10) / 10; });
 tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
-tap('water', () => {
-  const on = st.air === 1; document.getElementById('water').setAttribute('aria-pressed', String(on));
-  clearInterval(waterTimer); st.air = on ? 0.999 : 1;
-  if (on) waterTimer = setInterval(() => { st.air = st.air <= 0.05 ? 0.999 : st.air - 0.05; render(); }, 400);
-});
+/** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air. */
+function swim(on, diving) {
+  for (const id of ['water', 'dive']) document.getElementById(id).setAttribute('aria-pressed', 'false');
+  clearInterval(waterTimer); st.air = 1; st.diving = on && diving; st.tank = st.diving ? st.tankMax : 0;
+  if (!on) return;
+  document.getElementById(diving ? 'dive' : 'water').setAttribute('aria-pressed', 'true');
+  waterTimer = setInterval(() => {
+    if (st.diving && st.tank > 0) st.tank = Math.max(0, st.tank - 60);
+    else st.air = st.air <= 0.05 ? 0.999 : st.air - 0.05;
+    render();
+  }, 400);
+}
+tap('water', () => swim(!(st.air < 1 || st.tank > 0) || st.diving, false));
+tap('dive', () => swim(!st.diving, true));
 document.getElementById('hud').addEventListener('mousemove', e => {
   const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * 50;
   const id = Object.keys(CC.hit).find(k => { const [bx, by, bw, bh] = CC.hit[k]; return x >= bx - 9 && x <= bx + bw && y >= by - 1 && y <= by + bh + 1; }) || null;

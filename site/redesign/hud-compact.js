@@ -59,6 +59,17 @@ function ccGem(liq) {
   g.beginPath(); g.moveTo(4.5, 1.2); g.lineTo(4.5, 4.5); g.lineTo(1.6, 6.2); g.moveTo(4.5, 4.5); g.lineTo(7.4, 6.2); g.stroke();
   return c;
 }
+/** Create's copper backtank (the breath row while diving): a riveted copper cylinder with a valve. 9 x 9. */
+function ccBacktank() {
+  const [c, g] = hires(9, 9);
+  const body = () => rrect(g, 2.2, 2.4, 4.6, 6.2, 1.6);
+  body(); g.fillStyle = vgrad(g, 2.4, 8.6, [[0, P.copperHi], [0.35, P.copper], [1, '#3a1608']]); g.fill();
+  g.fillStyle = 'rgba(255,220,180,0.35)'; g.fillRect(3, 3.2, 0.5, 4.6);
+  g.fillStyle = 'rgba(40,14,4,0.8)'; g.fillRect(2.2, 5.2, 4.6, 0.4);
+  rrect(g, 3.7, 1.1, 1.6, 1.5, 0.3); g.fillStyle = steel(g, 1.1, 2.6); g.fill();
+  rrect(g, 2.9, 0.5, 3.2, 0.8, 0.3); g.fillStyle = brass(g, 0.5, 1.3); g.fill();
+  return c;
+}
 /** The compact drumstick: the HUD's roast with a bigger head and a short bone, so it reads at 6 px. 9 x 9. */
 function ccDrumstick() {
   const [c, g] = hires(9, 9);
@@ -75,13 +86,14 @@ function ccDrumstick() {
 const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001',
   '111100111001111', '111100111101111', '111001010010010', '111101111101111', '111101111001111'];
 CC_DIGITS['/'] = '001001010100100';
+CC_DIGITS[':'] = '000010000010000';
 const ccNumberWidth = (s, k = 1) => (s.length * 4 - 1) * k;
 /** s in the 3 x 5 digits at (x, y), each pixel k units; col a colour or a function of the character index (to colour
  *  parts); shadow: a dark copy offset by half a pixel first (readable over liquid). */
 function ccNumber(g, s, x, y, col, shadow, k = 1) {
   if (shadow) ccNumber(g, s, x + 0.5 * k, y + 0.5 * k, shadow, null, k);
   for (const [i, ch] of [...s].entries()) {
-    const bits = CC_DIGITS[ch === '/' ? '/' : +ch];
+    const bits = CC_DIGITS[ch in CC_DIGITS ? ch : +ch];
     g.fillStyle = typeof col === 'function' ? col(i) : col;
     for (let q = 0; q < 15; q++) if (bits[q] === '1') g.fillRect(x + (i * 4 + (q % 3)) * k, y + Math.floor(q / 3) * k, k, k);
   }
@@ -134,7 +146,9 @@ function compactHud(s, font) {
     ccMeter(g, side.x, y, mw, mh, frac, liq, segs);
     CC.hit[id] = [side.x, y, mw, mh];
     if ((s.numbers || s.hover === id) && value != null) {
-      const v = String(Math.round(value)), t = `${v}/${max}`;
+      // Dim the liquid behind the digits.
+      rrect(g, side.x + 0.5, y + 0.5, mw - 1, mh - 1, mh / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill();
+      const v = typeof value === 'string' ? value : String(Math.round(value)), t = max == null ? v : `${v}/${max}`;
       ccNumber(g, t, side.x + mw / 2 - ccNumberWidth(t, NK) / 2, y + mh / 2 - 2.5 * NK, i => i < v.length ? '#ffffff' : '#9aa3ad',
         'rgba(0,0,0,0.85)', NK);
     }
@@ -145,7 +159,12 @@ function compactHud(s, font) {
   row(L, 2, armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
-  row(Rt, 2, air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);   // always shown: full above water, draining under it (bubbles)
+  // Breath: Create's backtank while it holds air under water (the vanilla air stays full meanwhile), shown as the tank
+  // with its time left (m:ss, as Create's remaining_air layer); otherwise bubbles, full above water, draining under it.
+  if (s.diving && s.tank > 0) {
+    const sec = Math.ceil(s.tank), time = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+    row(Rt, 2, ccBacktank(), s.tank / s.tankMax, LIQUID.air, 10, time, null);
+  } else row(Rt, 2, air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
