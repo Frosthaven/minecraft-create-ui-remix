@@ -35,9 +35,15 @@ function ccHealthFx(g, s, [x, y, w, h]) {
   const since = s.t - (s.hurtAt || -1e9);
   if (since < 400) { g.fillStyle = `rgba(255,40,40,${0.55 * (1 - since / 400)})`; g.fillRect(x, y, w, h); }
   if (s.health <= 4) { g.fillStyle = `rgba(200,20,30,${ccWarn(s)})`; g.fillRect(x + 0.5 + fill, y, w - 1 - fill, h); }
-  if (s.regen && fill > 0) for (let i = 0; i < 6; i++) {
-    const hh = Math.sin((i + 1) * 91.7) * 43758.5453, u = hh - Math.floor(hh), k = ((s.t / 1600) * (0.6 + u * 0.6) + u * 3.7) % 1;
-    circle(g, x + 0.5 + k * fill, y + h * (0.3 + 0.4 * u), 0.3); g.fillStyle = `rgba(255,120,175,${Math.sin(Math.PI * k) * 0.9})`; g.fill();
+  if (s.regen && fill > 0) {   // Regeneration (the meter is too thin for the orb's motes): a bright pink band sweeping
+    // along the health toward its end, and a soft pink glow at the leading edge where health is added.
+    const bx = x + 0.5 + ((s.t / 1100) % 1) * (fill + 8) - 4;
+    const gr = g.createLinearGradient(bx - 4, 0, bx + 4, 0);
+    gr.addColorStop(0, 'rgba(255,120,175,0)'); gr.addColorStop(0.5, 'rgba(255,150,195,0.85)'); gr.addColorStop(1, 'rgba(255,120,175,0)');
+    g.save(); g.beginPath(); g.rect(x + 0.5, y, fill, h); g.clip(); g.fillStyle = gr; g.fillRect(bx - 4, y, 8, h); g.restore();
+    const ex = x + 0.5 + fill, eg = g.createRadialGradient(ex, y + h / 2, 0, ex, y + h / 2, 3);
+    eg.addColorStop(0, `rgba(255,140,190,${0.55 + 0.25 * Math.sin(s.t / 180)})`); eg.addColorStop(1, 'rgba(255,140,190,0)');
+    g.fillStyle = eg; g.fillRect(ex - 3, y, 6, h);
   }
   g.restore();
 }
