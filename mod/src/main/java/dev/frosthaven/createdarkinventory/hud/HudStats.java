@@ -23,6 +23,7 @@ final class HudStats {
         try {
             return new float[] {((Number) get.invoke(null)).floatValue(), (float) player.getAttributeValue(max.get())};
         } catch (ReflectiveOperationException | RuntimeException e) {
+            HudLog.error("irons", "reading Iron's Spellbooks mana failed (row hidden)", e);
             return null;
         }
     }
@@ -38,6 +39,7 @@ final class HudStats {
             int max = ((Number) cap.getClass().getMethod("getMaxMana").invoke(cap)).intValue();
             return max > 0 ? new float[] {(float) cur, max} : null;
         } catch (ReflectiveOperationException | RuntimeException e) {
+            HudLog.error("ars", "reading Ars Nouveau mana failed (row hidden)", e);
             return null;
         }
     }
@@ -54,6 +56,7 @@ final class HudStats {
             for (int i = 0; i < count; i++) ready += 1 - ((Number) cd.invoke(a, i)).floatValue();
             return new float[] {ready, count};
         } catch (ReflectiveOperationException | RuntimeException e) {
+            HudLog.error("roll", "reading the dodge roll failed (cog shown instead)", e);
             return null;
         }
     }
@@ -71,6 +74,7 @@ final class HudStats {
                 cap += ((Number) max.invoke(null, s)).intValue();
             }
         } catch (ReflectiveOperationException | RuntimeException e) {
+            HudLog.error("backtank", "reading Create's backtank capacity failed (time still shown)", e);
             cap = 0;
         }
         return new float[] {left, Math.max(cap, left)};
@@ -88,7 +92,7 @@ final class HudStats {
             try {
                 for (Method x : Class.forName(cls).getMethods()) if (x.getName().equals(name)) return x;
             } catch (ClassNotFoundException | LinkageError e) {
-                // the mod is not installed
+                HudLog.once("absent:" + cls, "{} not present ({}): its part of the bar is left out", cls, e.getClass().getSimpleName());
             }
             return NONE;
         });

@@ -14,6 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class RollHudMixin {
     @Inject(method = "renderGUI", at = @At("HEAD"), cancellable = true)
     private static void createdarkinventory$compactHud(CallbackInfo ci) {
-        if (CompactHud.active()) ci.cancel();
+        if (CompactHud.active()) {
+            ci.cancel();
+            dev.frosthaven.createdarkinventory.hud.HudLog.once("rollmixin", "Block Factory's Bosses' own roll icon suppressed (the bar draws the dash)");
+        }
     }
 }

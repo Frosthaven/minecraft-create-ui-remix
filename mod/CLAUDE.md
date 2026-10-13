@@ -80,5 +80,8 @@ not a spectator.
 - `RollHudMixin` (`createdarkinventory.bosses.mixins.json`, optional): cancels Block Factory's Bosses' own roll icon
   (`ClientEvents.renderGUI`, a RenderGuiEvent.Pre we cannot hide as a layer) while the bar is active.
 - `Followers`: Haven Link's web map followers from its chat lines; reset on logout.
+- `HudLog`: logging in latest.log, all lines prefixed `[compact HUD]`, never per frame: once per event or when a value
+  changes (activation and why, each hidden layer, mods found and their values, extensions, mode, vehicle, followers,
+  the roll mixin), errors with stack traces once per kind; a failing frame is skipped, not crashed.
 - In the preview but not in game yet: comfort sheen, regen sweep, hardcore trim, AppleSkin previews and exhaustion,
   Iron's cast takeover, MekaSuit, aircraft, train, Helium Flamingo, instruments plate, attack shade, Create slot marks.

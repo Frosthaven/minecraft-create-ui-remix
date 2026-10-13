@@ -28,9 +28,11 @@ public final class Followers {
         if (!m.matches()) return;
         if (m.group(2).startsWith("is")) NAMES.add(m.group(1));
         else NAMES.remove(m.group(1));
+        HudLog.LOG.info("[compact HUD] web follower {} {}; following now: {}", m.group(1), m.group(2).startsWith("is") ? "started" : "stopped", NAMES.size());
     }
 
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        if (!NAMES.isEmpty()) HudLog.LOG.info("[compact HUD] left the server: web follower count reset ({} were following)", NAMES.size());
         NAMES.clear();
     }
 }

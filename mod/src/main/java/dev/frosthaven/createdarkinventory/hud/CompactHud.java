@@ -52,22 +52,38 @@ public final class CompactHud {
 
     private static ResourceLocation id(String ns, String path) { return ResourceLocation.fromNamespaceAndPath(ns, path); }
 
-    public static void register(RegisterGuiLayersEvent event) { event.registerAbove(VanillaGuiLayers.HOTBAR, LAYER, CompactHud::render); }
-    public static void registerKeys(RegisterKeyMappingsEvent event) { event.register(NUMBERS); }
+    public static void register(RegisterGuiLayersEvent event) {
+        event.registerAbove(VanillaGuiLayers.HOTBAR, LAYER, CompactHud::render);
+        HudLog.once("registered", "layer {} registered above {}; replaces {} layers while active", LAYER, VanillaGuiLayers.HOTBAR, REPLACED.size());
+    }
+    public static void registerKeys(RegisterKeyMappingsEvent event) {
+        event.register(NUMBERS);
+        HudLog.once("key", "key '{}' registered (default Left Alt; Options > Controls > Create UI Remix)", NUMBERS.getName());
+    }
 
     public static void onLayerPre(RenderGuiLayerEvent.Pre event) {
-        if (REPLACED.contains(event.getName()) && active()) event.setCanceled(true);
+        if (REPLACED.contains(event.getName()) && active()) {
+            event.setCanceled(true);
+            HudLog.once("hide:" + event.getName(), "hiding layer {} (the bar draws it)", event.getName());
+        }
     }
 
     /** The bar draws (and hides what it replaces) while its textures are present, outside spectator mode. */
     public static boolean active() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.player.isSpectator()) return false;
+        if (mc.player == null) return false;
+        if (mc.player.isSpectator()) {
+            HudLog.changed("active", "spectator", "inactive: spectator mode (vanilla's spectator HUD shows)");
+            return false;
+        }
         List<String> ids = List.copyOf(mc.getResourcePackRepository().getSelectedIds());
         if (!ids.equals(packIds)) {
             present = mc.getResourceManager().getResource(PARTS).isPresent();
             packIds = ids;
+            HudLog.LOG.info("[compact HUD] resource packs changed ({} selected); {} {}", ids.size(), PARTS, present ? "found" : "MISSING");
         }
+        HudLog.changed("active", present, present ? "active: drawing the compact action bar"
+                : "inactive: {} not found (is the Create-HUD resource pack enabled?)", PARTS);
         return present;
     }
 
@@ -125,6 +141,18 @@ public final class CompactHud {
 
     private static void render(GuiGraphics g, DeltaTracker delta) {
         if (!active()) return;
+        var pose = g.pose();
+        pose.pushPose();
+        try {
+            draw(g);
+        } catch (Throwable t) {
+            HudLog.error("render:" + t, "drawing the bar failed (skipping this frame; logged once per kind)", t);
+        } finally {
+            pose.popPose();
+        }
+    }
+
+    private static void draw(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
         int cx = g.guiWidth() / 2, bottom = g.guiHeight();
@@ -136,6 +164,8 @@ public final class CompactHud {
         boolean showBreath = hurtable && (underwater || air < maxAir || tank != null);
         boolean lefty = p.getMainArm() == HumanoidArm.LEFT;
         boolean nums = NUMBERS.isDown() || mc.screen != null;
+        HudLog.changed("mode", (hurtable ? "survival" : "creative") + (lefty ? ", left-handed" : ""), "mode: {}{}", hurtable ? "survival" : "creative (vitals hidden)", lefty ? ", left-handed (offhand on the right)" : "");
+        HudLog.changed("ext", showArmor + "/" + showBreath + "/" + (tank != null), "extensions: armor {}, breath {}{}", showArmor ? "shown" : "hidden", showBreath ? "shown" : "hidden", tank != null ? " (Create backtank: " + (int) tank[0] + "s of " + (int) tank[1] + "s)" : "");
 
         var pose = g.pose();
         pose.pushPose();
@@ -155,6 +185,7 @@ public final class CompactHud {
         var jumpable = p.jumpableVehicle();
         String take = null, takeIcon = null;
         double takeFrac = 0;
+        HudLog.changed("mount", p.getVehicle() == null ? "none" : p.getVehicle().getType().toString(), "vehicle: {}", p.getVehicle() == null ? "none" : p.getVehicle().getType().toShortString() + (jumpable != null ? " (jump bar takes the XP pipe while charging)" : ""));
         if (jumpable != null) {
             String mount = p.getVehicle() instanceof Camel ? "camel" : "horse";
             if (jumpable.getJumpCooldown() > 0) { take = "cooldown"; takeIcon = mount; takeFrac = 1; }
@@ -202,6 +233,8 @@ public final class CompactHud {
 
         // Right wing: Iron's mana, Ars mana.
         float[] irons = HudStats.irons(p), ars = HudStats.ars(p);
+        HudLog.changed("mana", (irons != null) + "/" + (ars != null), "mana mods: Iron's Spellbooks {}, Ars Nouveau {}",
+                irons != null ? "found (" + (int) irons[0] + "/" + (int) irons[1] + ")" : "not found", ars != null ? "found (" + (int) ars[0] + "/" + (int) ars[1] + ")" : "not found");
         // No mana mod: gears pressed into the wing; one: the other row is an empty groove.
         if (irons == null && ars == null) gears(g, x(116), y(39));
         if (irons != null) {
@@ -240,6 +273,7 @@ public final class CompactHud {
 
         // The dodge roll: our dash icon by readiness (the mod's tiers), its count after it.
         float[] roll = HudStats.roll(p);
+        HudLog.changed("roll", roll == null ? "none" : String.valueOf((int) roll[1]), "dodge roll: {}", roll == null ? "not found (a pressed-in cog takes its place)" : "found, " + (int) roll[1] + " charges");
         int tier = -1;
         double rollX = lefty ? -164.5 : 139.5;
         if (roll != null && roll[1] > 0) {
