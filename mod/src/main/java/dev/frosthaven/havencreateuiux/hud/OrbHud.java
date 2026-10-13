@@ -181,6 +181,8 @@ final class OrbHud {
         if (!riding && f.food <= 6) discFill(g, cx, cy, r, tx(gm), tx(gr), ty(gt), ty(level(f.food / 20.0)), argb(warn, 0xDC7814));
         if (f.hp <= 4) discFill(g, cx, cy, r, tx(gl), tx(gm), ty(gt), ty(level(hp)), argb(warn, 0xC8141E));
         if (f.hurtSince < 400) discFill(g, cx, cy, r, tx(gl), tx(gm), ty(gt), ty(gb), argb(0.55 * (1 - f.hurtSince / 400.0), 0xFF2828));
+        double heal = f.healPulse();   // natural heal: a soft brightening of the health liquid
+        if (heal > 0 && hp > 0) discFill(g, cx, cy, r, tx(gl), tx(gm), ty(level(hp)), ty(gb), argb(heal, 0xFFD6DE));
         if (f.regen && hp > 0) {   // Regeneration: pink motes rising through the health liquid, fading at its surface
             double top = level(hp), depth = gb - top;
             for (int i = 0; i < 10; i++) {

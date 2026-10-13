@@ -262,6 +262,8 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
   }
   const since = s.t - (s.hurtAt || -1e9);
   if (since < 400) { g.fillStyle = `rgba(255,40,40,${0.55 * (1 - since / 400)})`; leftHalf(); g.fill(); }   // damage: a red flash
+  const heal = ccHealPulse(s);   // natural heal: a soft brightening of the health liquid (CC_HEAL)
+  if (heal > 0 && hp > 0) { g.fillStyle = `rgba(${CC_HEAL.rgb},${heal})`; g.fillRect(cx - r, level(hp), r, cy + r - level(hp)); }
   if (s.regen && hp > 0) {   // Regeneration: small bright motes rising through the health liquid, fading at its surface
     const top = level(hp), depth = cy + r - top;
     for (let i = 0; i < 10; i++) {

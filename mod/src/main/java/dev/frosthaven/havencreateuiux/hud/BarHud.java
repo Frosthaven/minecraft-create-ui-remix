@@ -52,6 +52,8 @@ final class BarHud {
             inner(g, LEFT_X, y0, ix + fill, ix + iw * clamp((f.hp + f.apple[1]) / max), argb(0.3 + 0.25 * Math.sin(t / 160.0), 0xFFC8C8));
         if (f.hurtSince < 400) inner(g, LEFT_X, y0, LEFT_X, LEFT_X + MW, argb(0.55 * (1 - f.hurtSince / 400.0), 0xFF2828));
         if (f.hp <= 4) inner(g, LEFT_X, y0, ix + fill, ix + iw, argb(warn(t), 0xC8141E));
+        double heal = f.healPulse();
+        if (heal > 0 && fill > 0) inner(g, LEFT_X, y0, ix, ix + fill, argb(heal, 0xFFD6DE));   // natural heal: a soft brightening
         if (f.regen && fill > 0) {   // Regeneration: pink motes drifting along the health liquid
             for (int i = 0; i < 9; i++) {
                 double hh = Math.sin((i + 1) * 91.7) * 43758.5453, u = hh - Math.floor(hh), k = ((t / 1500.0) * (0.6 + u * 0.6) + u * 3.7) % 1;

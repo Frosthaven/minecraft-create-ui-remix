@@ -17,6 +17,12 @@ final class HudFrame {
     private static final ResourceLocation COMFORT = ResourceLocation.fromNamespaceAndPath("farmersdelight", "comfort");
     private static final ResourceLocation NOURISHMENT = ResourceLocation.fromNamespaceAndPath("farmersdelight", "nourishment");
     private static final Smooth AIR = new Smooth(), TANK = new Smooth(), EXHAUSTION = new Smooth();
+    /** Natural healing (food, not the Regeneration effect): the health seen at the last tick and when it last rose. */
+    private static int healTick = -1;
+    private static float healLast;
+    private static long healAt = Long.MIN_VALUE / 2;
+    static final int HEAL_MS = 350;
+    static final double HEAL_ALPHA = 0.22;
 
     /** A mana pool: its atlas name, value and maximum. */
     record Pool(String name, float cur, float max) {
@@ -29,7 +35,7 @@ final class HudFrame {
     final boolean orbs, hurtable, lefty, nums, underwater, showArmor, showBreath, hardcore, regen, comfort, nourished, hunger;
     final float hp, maxHp, absorb, saturation, exhaustion;
     final int armor, food;
-    final long hurtSince;
+    final long hurtSince, healSince;
     final double exhaustShown;   // 0..1 (exhaustion / 4), eased between ticks and back to 0 when a point is taken
     final String healthLiquid;
     final float[] tank, apple, irons, ars, roll;
@@ -70,6 +76,7 @@ final class HudFrame {
         healthLiquid = p.hasEffect(MobEffects.POISON) ? "poison" : p.hasEffect(MobEffects.WITHER) ? "wither" : p.isFullyFrozen() ? "frozen" : "blood";
         hurtSince = p.hurtTime > 0 ? (long) ((p.hurtDuration - p.hurtTime + partial) * 50) : Long.MAX_VALUE / 2;
         regen = p.hasEffect(MobEffects.REGENERATION);
+        healSince = healSince(p, hp, regen, now);
         comfort = p.getActiveEffects().stream().anyMatch(e -> e.getEffect().is(COMFORT));
         nourished = p.getActiveEffects().stream().anyMatch(e -> e.getEffect().is(NOURISHMENT));
         hunger = p.hasEffect(MobEffects.HUNGER);
@@ -98,6 +105,25 @@ final class HudFrame {
         if (ars != null) l.add(new Pool("ars", ars[0], ars[1]));
         if (primaryArs && l.size() == 2) l.add(l.remove(0));
         return l;
+    }
+
+    /** Milliseconds since the last natural heal: per tick, any rise in health while not under Regeneration. A new player
+     *  entity (respawn, dimension change) only resets the baseline. */
+    private static long healSince(LocalPlayer p, float hp, boolean regen, long now) {
+        if (p.tickCount != healTick) {
+            if (healTick >= 0 && p.tickCount > healTick && hp > healLast && !regen) {
+                HudLog.once("natural-heal", "natural heal cue active: a soft pulse on the health liquid when health rises without Regeneration");
+                healAt = now;
+            }
+            healTick = p.tickCount;
+            healLast = hp;
+        }
+        return now - healAt;
+    }
+
+    /** The natural heal pulse's alpha now: eased in and out over HEAL_MS (the page's ccHealPulse), 0 when idle. */
+    double healPulse() {
+        return healSince >= 0 && healSince < HEAL_MS ? Math.pow(Math.sin(Math.PI * healSince / HEAL_MS), 2) * HEAL_ALPHA : 0;
     }
 
     static String mmss(float secs) {

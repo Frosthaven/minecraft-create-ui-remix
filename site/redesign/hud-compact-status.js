@@ -26,6 +26,14 @@ function ccShake(s) {
   return [0, ((k * 7919) % 3) - 1];
 }
 /** Effects over the health meter at box: damage flash, low-health pulse, regeneration motes. */
+/** Natural healing (food regeneration, not the Regeneration effect): each heal a short soft brightening of the health
+ *  liquid, eased in and out over CC_HEAL.ms, warm pink-white at a low alpha (quieter than Regeneration's motes). The
+ *  game: HudFrame.healAt, a rise in health without Regeneration. Returns the alpha now (0 when idle). */
+const CC_HEAL = { ms: 350, alpha: 0.22, rgb: '255,214,222' };
+function ccHealPulse(s) {
+  const since = s.t - (s.healAt ?? -1e9);
+  return since >= 0 && since < CC_HEAL.ms ? Math.sin(Math.PI * since / CC_HEAL.ms) ** 2 * CC_HEAL.alpha : 0;
+}
 function ccHealthFx(g, s, [x, y, w, h]) {
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
   // The orbs' effects, laid along the meter: the damage flash red, Regeneration's pink motes drifting along the
@@ -34,6 +42,8 @@ function ccHealthFx(g, s, [x, y, w, h]) {
   const since = s.t - (s.hurtAt || -1e9);
   if (since < 400) { g.fillStyle = `rgba(255,40,40,${0.55 * (1 - since / 400)})`; g.fillRect(x, y, w, h); }
   if (s.health <= 4) { g.fillStyle = `rgba(200,20,30,${ccWarn(s)})`; g.fillRect(x + 0.5 + fill, y, w - 1 - fill, h); }
+  const heal = ccHealPulse(s);
+  if (heal > 0 && fill > 0) { g.fillStyle = `rgba(${CC_HEAL.rgb},${heal})`; g.fillRect(x + 0.5, y, fill, h); }   // natural heal
   if (s.regen && fill > 0) {   // Regeneration: the orb's pink particles, drifting left to right along the health liquid
     // and fading as they reach its end; a few more and a little larger than the orb's, so they read on the thin meter.
     for (let i = 0; i < 9; i++) {

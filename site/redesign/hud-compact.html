@@ -49,7 +49,7 @@
 </div>
 <div class="bar">
   <button id="effect" title="Cycle the heart effect">Effect: none</button><button id="hardcore" aria-pressed="false">Hardcore</button>
-  <button id="regen" aria-pressed="false">Regeneration</button><button id="hunger" aria-pressed="false">Hunger effect</button>
+  <button id="regen" aria-pressed="false">Regeneration</button><button id="naturalHeal" title="Natural healing (food): health +1 with a soft pulse on the health liquid">Natural heal</button><button id="hunger" aria-pressed="false">Hunger effect</button>
   <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button><button id="exhaust" title="Exhaustion +1 (0 to 4; at 4 a point is taken: orb mode fills a crescent on the food half, easing back to empty)">Exhaustion: 2.4</button>
   <button id="riding" title="Cycle: on foot, horse, camel">Riding: no</button><button id="dashBtn" title="Camel dash (rides a camel)">Camel dash</button><button id="jump" title="Charge a mount jump (rides a horse if on foot)">Jump</button>
   <button id="castBtn" title="Iron's: charge a spell">Cast spell</button><button id="attack" title="Attack cooldown, hotbar mode">Attack</button>
@@ -120,6 +120,7 @@ function render() {
   const g = out.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, out.width, out.height);
 }
 const tap = (id, f) => document.getElementById(id).addEventListener('click', () => { f(); render(); });
+tap('naturalHeal', () => { const max = st.maxHealth || 20; if (st.health >= max) st.health = max - 6; st.health = Math.min(max, st.health + 1); st.healAt = performance.now(); });
 tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; st.hurtAt = performance.now(); });
 tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.saturation = Math.min(st.food, st.saturation + 3); });
 tap('cast', () => { if (st.irons != null) st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; if (st.ars != null) st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
@@ -271,7 +272,7 @@ tap('castBtn', () => ramp('cast', 1500, null, () => { if (st.irons != null) st.i
 tap('attack', () => ramp('attack', 625, null));
 // Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
 setInterval(() => {
-  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.exhAt ?? -1e9) < 500 || st.jump != null || st.cast != null || st.attack != null;
+  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.healAt ?? -1e9) < 400 || performance.now() - (st.exhAt ?? -1e9) < 500 || st.jump != null || st.cast != null || st.attack != null;
   if (moving) render();
 }, 60);
 addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; st.itemName = ITEMS[st.slot]; st.nameAt = performance.now(); render(); } });
