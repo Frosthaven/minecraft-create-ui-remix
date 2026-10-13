@@ -34,4 +34,4 @@ No player config edits needed; the instance config stays at DME's defaults.
 - IMC `dme-shaderblacklist` -> `StockKeeperRequestScreen:drawItemCount`: the Stock Keeper's item
   counts blit directly, so DME inverted them on Create's light panel.
 - DME's inventory button (60x20 "Dark Mode", default X 32) overlapped the bottom-left icon
-  buttons; the mod moves it to X 56 on container screens, only while it is at the default.
+  buttons; the mod raises it 22 px (above them) on container screens, only while it is at the default X and Y.

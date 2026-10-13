@@ -16,15 +16,16 @@ import net.neoforged.neoforge.common.NeoForge;
  * this pack needs, so they travel with the jar instead of each player's config:
  *  - the Stock Keeper's item counts are blacklisted (they blit directly; DME inverted them on
  *    Create's light panel);
- *  - DME's inventory button moves right of the bottom-left icon buttons it overlapped, only
- *    while it sits at DME's default spot (a player's own X wins).
+ *  - DME's inventory button moves up above the bottom-left icon buttons it overlapped, only
+ *    while it sits at DME's default spot (a player's own X and Y win).
  */
 @Mod(value = CreateDarkInventory.ID, dist = Dist.CLIENT)
 public final class CreateDarkInventory {
     public static final String ID = "createdarkinventory";
     private static final String DME = "darkmodeeverywhere";
     private static final int DME_DEFAULT_X = 32;
-    private static final int BUTTON_X = 56;
+    private static final int DME_DEFAULT_BOTTOM = 21; // DME: y = height - 19 - Y, default Y 2
+    private static final int RAISE = 22; // one button height and a gap
 
     public CreateDarkInventory(IEventBus modBus) {
         modBus.addListener(InterModEnqueueEvent.class, event ->
@@ -33,12 +34,13 @@ public final class CreateDarkInventory {
     }
 
     private static void moveDarkModeButton(ScreenEvent.Init.Post event) {
-        if (!(event.getScreen() instanceof AbstractContainerScreen<?>)) return;
+        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
         for (var child : event.getListenersList()) {
             if (child instanceof Button button && button.getX() == DME_DEFAULT_X
+                    && button.getY() == screen.height - DME_DEFAULT_BOTTOM
                     && button.getMessage().getContents() instanceof TranslatableContents text
                     && text.getKey().equals("gui.darkmodeeverywhere.dark_mode")) {
-                button.setX(BUTTON_X);
+                button.setY(button.getY() - RAISE);
             }
         }
     }
