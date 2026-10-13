@@ -276,11 +276,11 @@ function compactHud(s, font) {
   // Health against the real maximum (Health Boost and gear raise it; each segment is a tenth of it); absorption in
   // gold continues past the health, AppleSkin's regeneration preview (held food) pulses past that.
   const maxH = s.maxHealth || 20, hpNum = s.absorb ? `${Math.round(s.health)}+${Math.round(s.absorb)}` : s.health;
-  row(L, 0, ccHeartIcon(s), s.health / maxH, ccHealthLiquid(s), 10, hpNum, maxH, { shake: ccShake(s),
+  row(L, 0, ccHeartIcon(s), s.health / maxH, ccHealthLiquid(s), 10, hpNum, maxH, {
     after: (g2, s2, box) => { ccAbsorb(g2, s2, box, maxH); ccHealthPreview(g2, s2, box, maxH); ccHealthFx(g2, s2, box); ccComfortFx(g2, s2, box); } });
   if (s.riding) row(L, 1, s.riding === 'camel' ? ccCamel() : ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
-  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth, 10, s.food, 20,
-    { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
+  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20,
+    { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodFx(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
   }
   // Armor: the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
   // With a MekaSuit the extension holds two half-height pipes: armor above, suit energy below (Mekanism's bar).
@@ -296,8 +296,10 @@ function compactHud(s, font) {
   const hasIrons = s.irons != null, hasArs = s.ars != null;
   if (!hasIrons && !hasArs) ccGearRow(g, (Rt.x + Rt.iconC + 3) / 2, 39);   // centred on the wing's meter + icon span
   else {
-    if (hasIrons) row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200); else ccGroove(g, Rt.x, rows[0], mw, mh);
-    if (hasArs) row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150); else ccGroove(g, Rt.x, rows[1], mw, mh);
+    // The primary pool (the setting) takes the top row, the other the bottom.
+    const [ri, ra] = s.manaPrimary === 'ars' ? [1, 0] : [0, 1];
+    if (hasIrons) row(Rt, ri, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200); else ccGroove(g, Rt.x, rows[ri], mw, mh);
+    if (hasArs) row(Rt, ra, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150); else ccGroove(g, Rt.x, rows[ra], mw, mh);
   }
   // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
   // with its time left (m:ss, as Create's counter) always on it; the vanilla air stays full meanwhile. When the tank

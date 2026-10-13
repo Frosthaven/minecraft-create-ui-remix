@@ -29,13 +29,33 @@ function ccShake(s) {
 function ccHealthFx(g, s, [x, y, w, h]) {
   if (s.hardcore) { rrect(g, x - 0.3, y - 0.3, w + 0.6, h + 0.6, h / 2 + 0.3); g.strokeStyle = '#8a1018'; g.lineWidth = 0.6; g.stroke(); }
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
+  // The orbs' effects, laid along the meter: the damage flash red, Regeneration's pink motes drifting along the
+  // liquid, and at 4 health or less the empty glass pulsing red (in sync with low food) instead of a shake.
+  const fill = (w - 1) * Math.max(0, Math.min(1, s.health / (s.maxHealth || 20)));
   const since = s.t - (s.hurtAt || -1e9);
-  if (since < 400) { g.fillStyle = `rgba(255,255,255,${0.7 * (1 - since / 400)})`; g.fillRect(x, y, w, h); }
-  if (s.regen) {
-    const p = ((s.t / 1400) % 1) * (w + 8) - 4;
-    g.fillStyle = g.createLinearGradient(x + p - 4, 0, x + p + 4, 0);
-    g.fillStyle.addColorStop(0, 'rgba(255,255,255,0)'); g.fillStyle.addColorStop(0.5, 'rgba(255,230,220,0.6)'); g.fillStyle.addColorStop(1, 'rgba(255,255,255,0)');
-    g.fillRect(x + p - 4, y, 8, h);
+  if (since < 400) { g.fillStyle = `rgba(255,40,40,${0.55 * (1 - since / 400)})`; g.fillRect(x, y, w, h); }
+  if (s.health <= 4) { g.fillStyle = `rgba(200,20,30,${ccWarn(s)})`; g.fillRect(x + 0.5 + fill, y, w - 1 - fill, h); }
+  if (s.regen && fill > 0) for (let i = 0; i < 6; i++) {
+    const hh = Math.sin((i + 1) * 91.7) * 43758.5453, u = hh - Math.floor(hh), k = ((s.t / 1600) * (0.6 + u * 0.6) + u * 3.7) % 1;
+    circle(g, x + 0.5 + k * fill, y + h * (0.3 + 0.4 * u), 0.3); g.fillStyle = `rgba(255,120,175,${Math.sin(Math.PI * k) * 0.9})`; g.fill();
+  }
+  g.restore();
+}
+/** The shared warning pulse (low health, low food): one timing so they flash in sync. */
+function ccWarn(s) { return 0.12 + 0.12 * Math.sin(s.t / 220); }
+/** The food meter's effects, as on the orb: Nourishment's gold glaze, surface line and sparkles over the broth, and at
+ *  6 food or less the empty glass pulsing amber. */
+function ccFoodFx(g, s, [x, y, w, h]) {
+  const fill = (w - 1) * Math.max(0, Math.min(1, s.food / 20));
+  g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
+  if (s.food <= 6) { g.fillStyle = `rgba(220,120,20,${ccWarn(s)})`; g.fillRect(x + 0.5 + fill, y, w - 1 - fill, h); }
+  if (s.nourished && fill > 0) {
+    g.fillStyle = 'rgba(255,215,90,0.28)'; g.fillRect(x + 0.5, y, fill, h);
+    for (let i = 0; i < 6; i++) {
+      const hh = Math.sin((i + 3) * 47.3) * 43758.5453, u = hh - Math.floor(hh);
+      g.fillStyle = `rgba(255,240,160,${0.45 + 0.45 * Math.sin(s.t / 260 + i * 1.7)})`; g.fillRect(x + 0.5 + u * (fill - 0.4), y + h * (0.25 + 0.5 * ((i * 0.37) % 1)), 0.4, 0.4);
+    }
+    g.fillStyle = 'rgba(255,220,110,0.95)'; g.fillRect(x + 0.5 + fill - 0.25, y, 0.5, h);   // the gold surface edge
   }
   g.restore();
 }

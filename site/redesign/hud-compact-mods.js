@@ -109,10 +109,10 @@ function ccToolboxChips(g, i, lit, at) {
 }
 /** Farmer's Delight Comfort: a slow warm sheen along the health meter (Comfort, saturation 0, hurt, no Regeneration). */
 function ccComfortFx(g, s, [x, y, w, h]) {
-  if (!s.comfort || s.saturation > 0 || s.regen || s.health >= (s.maxHealth || 20)) return;
+  if (!s.comfort || s.saturation > 0 || s.health >= (s.maxHealth || 20)) return;   // shows alongside Regeneration
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
   const p = ((s.t / 2600) % 1) * (w + 12) - 6, gr = g.createLinearGradient(x + p - 6, 0, x + p + 6, 0);
-  gr.addColorStop(0, 'rgba(255,240,200,0)'); gr.addColorStop(0.5, 'rgba(255,236,190,0.45)'); gr.addColorStop(1, 'rgba(255,240,200,0)');
+  gr.addColorStop(0, 'rgba(255,158,196,0)'); gr.addColorStop(0.5, 'rgba(255,158,196,0.55)'); gr.addColorStop(1, 'rgba(255,158,196,0)');   // pink, the whole glass
   g.fillStyle = gr; g.fillRect(x + p - 6, y, 12, h);
   g.restore();
 }
