@@ -14,16 +14,29 @@
      the raised middle with experience as one glass pipe along its top edge, the level in a small window at its left end.
      The left wing is vitals: the offhand (a faint shield marks it when empty), health (absorption in gold) and food. The
      right wing is magic: Iron's mana and Ars mana, then our dash icon and count. Armor and breath appear only when the
-     game would show them, extending the raised band sideways over their wing in a darker tone: armor while you wear some, breath under water. With a
-     Create backtank the breath segment is the tank alone, a darker copper meter with its time left always shown (as
-     Create's counter does); when it empties, the bubbles take over. Every meter is the same size, in ten segments, with the HUD's own icon; hover a meter for
-     its value (current bright, max dim). Preview only: shipping it needs Create Dark Inventory to replace the HUD layers
-     and draw this layout itself.</p>
+     game would show them, extending the raised band sideways over their wing in a darker tone. Every meter is the same
+     size, in ten segments, with the HUD's own icon; hover a meter for its value (current bright, max dim).</p>
+  <p>Every status the game shows here has a place (second row of buttons): heart effects recolour the health liquid
+     (poison, wither, frozen), hardcore trims it in crimson, it shakes at 4 health or less, flashes on damage and carries
+     a light sweep under Regeneration. The Hunger effect spoils the broth; holding food shows what it would restore
+     (AppleSkin). Riding swaps food for the mount's health and a charging jump turns the XP pipe into the jump gauge,
+     as vanilla swaps them. A charging spell (Iron's) runs a thin pipe over the sockets; the attack cooldown shades the
+     selected socket; creative hides the vitals. A Create backtank shows alone in the breath segment, a darker copper
+     meter with its time left always on it. Preview only: shipping it needs Create Dark Inventory to replace the HUD
+     layers and draw this layout itself.</p>
 </header>
 <div class="bar">
   <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button><button id="dive" aria-pressed="false" title="Under water with a Create backtank and diving helmet">Diving (backtank)</button>
   <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="armorBtn" aria-pressed="true" title="Armor worn: its meter extends the raised band over the left wing">Armor</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
   <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
+</div>
+<div class="bar">
+  <button id="effect" title="Cycle the heart effect">Effect: none</button><button id="hardcore" aria-pressed="false">Hardcore</button>
+  <button id="regen" aria-pressed="false">Regeneration</button><button id="hunger" aria-pressed="false">Hunger effect</button>
+  <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button>
+  <button id="riding" aria-pressed="false">Riding</button><button id="jump" title="Charge a mount jump (while riding)">Jump</button>
+  <button id="castBtn" title="Iron's: charge a spell">Cast spell</button><button id="attack" title="Attack cooldown, hotbar mode">Attack</button>
+  <button id="creative" aria-pressed="false">Creative</button>
 </div>
 <div class="compare">
   <div class="scene" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
@@ -35,16 +48,20 @@
 <script src="mcfont.js"></script>
 <script src="screen-page.js"></script>
 <script src="hud-compact.js"></script>
+<script src="hud-compact-status.js"></script>
 <script>
-const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, underwater: false, tank: 0, tankMax: 900 };
+const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, underwater: false, tank: 0, tankMax: 900,
+  effect: '', hardcore: false, regen: false, hurtAt: -1e9, hunger: false, holdFood: 0, riding: false, mount: 22, mountMax: 30,
+  jump: null, cast: null, attack: null, creative: false, t: 0 };
 let font = null, waterTimer = null;
 function render() {
+  st.t = performance.now();
   const img = compactHud(st, font), out = document.getElementById('hud');
   out.width = img.width / 2; out.height = img.height / 2;   // 4 px per GUI px
   const g = out.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, out.width, out.height);
 }
 const tap = (id, f) => document.getElementById(id).addEventListener('click', () => { f(); render(); });
-tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; });
+tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; st.hurtAt = performance.now(); });
 tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); });
 tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
@@ -71,6 +88,26 @@ document.getElementById('hud').addEventListener('mousemove', e => {
   if (id !== st.hover) { st.hover = id; render(); }
 });
 document.getElementById('hud').addEventListener('mouseleave', () => { st.hover = null; render(); });
+const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', String(on));
+const flag = (id, key, on = v => !v) => tap(id, () => { st[key] = on(st[key]); press(id, !!st[key]); });
+const EFFECTS = ['', 'poison', 'wither', 'frozen'];
+tap('effect', () => { st.effect = EFFECTS[(EFFECTS.indexOf(st.effect) + 1) % EFFECTS.length]; document.getElementById('effect').textContent = 'Effect: ' + (st.effect || 'none'); });
+flag('hardcore', 'hardcore'); flag('regen', 'regen'); flag('hunger', 'hunger'); flag('creative', 'creative');
+flag('holdFood', 'holdFood', v => v ? 0 : 6); flag('riding', 'riding');
+/** Runs a 0..1 ramp on st[key] over ms, then sets it to end. */
+function ramp(key, ms, end, then) {
+  const t0 = performance.now();
+  const step = () => { const k = (performance.now() - t0) / ms; if (k >= 1) { st[key] = end; then && then(); render(); return; } st[key] = k; requestAnimationFrame(step); };
+  step();
+}
+tap('jump', () => { if (st.riding) ramp('jump', 1000, null); });
+tap('castBtn', () => ramp('cast', 1500, null, () => { st.irons = Math.max(0, st.irons - 0.15); }));
+tap('attack', () => ramp('attack', 625, null));
+// Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
+setInterval(() => {
+  const moving = st.health <= 4 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || st.jump != null || st.cast != null || st.attack != null;
+  if (moving) render();
+}, 60);
 addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; render(); } });
 (async () => { try { await packTextures(); font = SCREEN.font; } catch (e) {} render(); })();
 render();

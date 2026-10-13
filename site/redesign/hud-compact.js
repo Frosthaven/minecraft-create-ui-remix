@@ -154,7 +154,7 @@ function compactHud(s, font) {
   // Breath shows as the game's air row does: while under water (eyes in water) or while air is still below full
   // (catching your breath after surfacing). Not from the tank or air values alone: when the backtank empties the air
   // is still full for a moment, and the segment must not blink out.
-  const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = s.armor > 0, showBreath = s.underwater || s.air < 1;
+  const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
   ccPlate(g, { left: showArmor, right: showBreath });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
@@ -166,7 +166,9 @@ function compactHud(s, font) {
   // its left end: the meters' small digits, a rounded rectangle like the plate (not a pill), inside the section's edge.
   const X = CC.xp, LK = 0.6, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 3, 8);
   const wh = 5, wy = X.y + X.h / 2 - wh / 2;
-  ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08'], 18);
+  // Riding and charging a jump: the pipe is the jump gauge (vanilla swaps the XP bar for the jump bar).
+  const jumping = s.riding && s.jump != null;
+  ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, jumping ? s.jump : s.xp, jumping ? CC_JUMP : ['#d8ff9a', '#5fd02a', '#1d5a08'], 18);
   rrect(g, X.x0, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
   rrect(g, X.x0 + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
   ccNumber(g, txt, X.x0 + ww / 2 - tw / 2, wy + wh / 2 - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', null, LK);
@@ -177,9 +179,11 @@ function compactHud(s, font) {
   // the meter under the pointer (s.hover = 'L0', 'L1', 'Lear', 'R0', 'R1', 'Rear'), or all with s.numbers.
   const NK = 0.6;
   // A meter with its icon: box [x, y, w, h], icon centred at ix (height ih). The band extensions use slim pipes.
-  const meterAt = (id, ix, ih, [x, y, w, h], img, frac, liq, segs, value, max) => {
+  const meterAt = (id, ix, ih, [x, y0, w, h], img, frac, liq, segs, value, max, opt = {}) => {
+    const y = y0 + (opt.shake ? opt.shake[1] : 0);
     ccIcon(g, img, ix, y + h / 2, ih);
     ccMeter(g, x, y, w, h, frac, liq, segs);
+    if (opt.after) opt.after(g, s, [x, y, w, h]);
     CC.hit[id] = [x, y, w, h];
     if ((s.numbers || s.hover === id) && value != null) {
       // Dim the liquid behind the digits.
@@ -192,14 +196,18 @@ function compactHud(s, font) {
   // Extension pipes match the wing meters below them (same x, width, icon centre); the section's S divider runs
   // between their inner ends (±93 at the wing's level) and the XP band (±85).
   const E = CC.ext, extL = [L.x, E.y, mw, E.h], extR = [Rt.x, E.y, mw, E.h];
-  const row = (side, k, img, frac, liq, segs, value, max) => {
+  const row = (side, k, img, frac, liq, segs, value, max, opt) => {
     const id = (side === L ? 'L' : 'R') + k;
-    if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max);
-    meterAt(id, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max);
+    if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max, opt);
+    meterAt(id, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max, opt);
   };
-  row(L, 0, heart(false), s.health / 20, LIQUID.blood, 10, s.health, 20);
+  // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
+  if (!s.creative) {
+  row(L, 0, heart(false), s.health / 20, ccHealthLiquid(s), 10, s.health, 20, { shake: ccShake(s), after: ccHealthFx });
   if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
-  row(L, 1, ccDrumstick(), s.food / 20, LIQUID.broth, 10, s.food, 20);
+  if (s.riding) row(L, 1, ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
+  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20, { after: ccFoodPreview });
+  }
   if (showArmor) row(L, 'ear', armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
@@ -222,7 +230,9 @@ function compactHud(s, font) {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) mcText(g, font, t, tx + dx, ty + dy, 1, '#000000');
     mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
   }
+  ccCastPipe(g, s);
   const [sx, sy] = CC.slot(s.slot);
+  ccAttackShade(g, s, [sx, sy]);
   g.drawImage(selection(), sx - 3, sy - 3, 24, 23);
   return c;
 }
