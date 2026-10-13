@@ -25,7 +25,8 @@ import java.util.List;
  *  - no DME button on the title screen, where dark mode is off ({@code DarkModeClientProxyMixin});
  *  - DME's button lets go of focus after a click: a focused widget keeps Create's "hold W to
  *    ponder" from working on that screen;
- *  - with a Create HUD pack on, no dark mode on the main HUD ({@link HudLayers}).
+ *  - with a Create HUD pack on, no dark mode on the main HUD ({@link HudLayers}), Sophisticated
+ *    Backpacks screens and the inventory ({@link PackScreens}).
  */
 @Mod(value = CreateDarkInventory.ID, dist = Dist.CLIENT)
 public final class CreateDarkInventory {

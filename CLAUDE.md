@@ -60,3 +60,6 @@ No player config edits needed; the instance config stays at DME's defaults.
   `tryForceDrawHudBuffers` (AppleSkin and minimap compat flush mid-HUD); DME callers starting with
   `BatchingRenderLayers` (ImmediatelyFast's HUD render types, seen with `METHOD_SHADER_DUMP` in
   debug.log as "Considering ...") are skipped too. With the pack on, DME skips the whole batched HUD.
+- Also with the pack on: Sophisticated Backpacks screens and the inventory (`PackScreens`), by DME
+  caller: `net.p3pp3rf1y.sophisticated*` (backpack screens only) and vanilla
+  `gui.screens.inventory.*` / `gui.components.*`; JEI and other side panels stay dark.
