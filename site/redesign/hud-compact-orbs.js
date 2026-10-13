@@ -195,7 +195,7 @@ function ccOrbs(g, s) {
   if (!s.creative) {
     const max = s.maxHealth || 20, hp = s.health / max, liq = ccHealthLiquid(s);
     const riding = !!s.riding;
-    const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT }
+    const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT, style: 'cloud' }
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth };
     ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud' }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,

@@ -12,7 +12,7 @@
 //   over the selected socket that lifts as the swing recharges. Creative: health, food, armor and air hide.
 
 const CC_JUMP = ['#fff2a8', '#e0a020', '#5a3808'];
-const CC_MOUNT = ['#f0c890', '#a8682e', '#3e200a'];
+const CC_MOUNT = ['#b8ffe0', '#2fbf8a', '#0b4a34'];   // the mount's health: emerald, clearly apart from food's orange
 const CC_COOLDOWN = ['#b8bcc2', '#6a6e74', '#26282b'];
 
 /** The health liquid for the current effect. */
