@@ -15,7 +15,6 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   // The brass bezel; a ring (armor, breath) takes it over where its segments are lit: ten segments clockwise from the
   // top, the unlit ones staying plain brass.
   const B = ORB.bezel, R1 = r + B;
-  circle(g, cx, cy + 0.6, R1); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill();
   circle(g, cx, cy, R1); g.fillStyle = brass(g, cy - R1, cy + R1); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08);   // a light brushed finish
   if (ring) {
@@ -85,6 +84,25 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, P.brassHi, 0.3);
 }
 
+/** The orb's housing, part of its wing plate: the plate rises into a round iron boss around the orb (the plate's own
+ *  iron and texture, so they read as one casting), its brass rim continuing over the top where it rises above the
+ *  plate, and a dark seat line where the orb sits recessed. Drawn after the plate, before the orb. */
+function ccHousing(g, cx, cy) {
+  const R = ORB.r + ORB.bezel + 2.4, wing = CC.plate.wing, b = BOTTOM;
+  const boss = () => circle(g, cx, cy, R);
+  g.save(); g.beginPath(); g.rect(cx - R - 2, cy - R - 2, 2 * R + 4, wing - (cy - R - 2)); g.clip();   // shadow above the plate only
+  g.save(); g.translate(0, -0.6); boss(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
+  g.restore();
+  boss(); g.fillStyle = iron(g, wing, b); g.fill(); ironSurface(g, boss);
+  // The rim over the boss's top, joining the plate's rim where the boss meets the plate's top edge.
+  g.save(); g.beginPath(); g.rect(cx - R - 2, cy - R - 2, 2 * R + 4, wing + 0.2 - (cy - R - 2)); g.clip();
+  rim(g, boss, cy - R, cy + R, P.brassHi, 0.35);
+  g.restore();
+  // The seat: a recessed groove the orb's bezel drops into.
+  circle(g, cx, cy, ORB.r + ORB.bezel + 0.55); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.9; g.stroke();
+  g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 1.05); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
+}
+
 /** Value / max centred on an orb (two lines when a secondary shows), the bar's small digits. */
 function ccOrbNumbers(g, cx, cy, lines) {
   const k = 0.6;
@@ -97,6 +115,7 @@ function ccOrbNumbers(g, cx, cy, lines) {
 /** Both orbs for a state (in place of the wing meters and the armor / breath tabs). */
 function ccOrbs(g, s) {
   const showNums = s.numbers || s.hover === 'orbL' || s.hover === 'orbR';
+  ccHousing(g, ORB.lx, ORB.y); ccHousing(g, ORB.rx, ORB.y);
   // Left: health, food (or the mount), armor.
   if (!s.creative) {
     const max = s.maxHealth || 20, hp = s.health / max, liq = ccHealthLiquid(s);
