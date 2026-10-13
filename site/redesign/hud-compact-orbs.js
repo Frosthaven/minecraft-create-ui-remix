@@ -345,7 +345,7 @@ function ccOrbs(g, s) {
   else ccHousingCog(g, ORB.rx, ORB.y);                 // no mana mod: a cog pressed into the housing's face
   // MekaSuit energy: a slim upright gauge between the offhand slot and the health orb, filling from the bottom.
   if (!s.creative && s.mekasuit) {
-    const gx = ORB.lx - ORB.housing - 3.4 - 1.2, gy = 30, gh = 18;   // left of the health orb's housing
+    const gx = CC.lay.meka - 1.2, gy = 30, gh = 18;   // in its slot beside the health orb's housing (ccEnds)
     rrect(g, gx, gy, 2.4, gh, 1.2); g.fillStyle = vgrad(g, gy, gy + gh, [[0, '#9ea4aa'], [1, '#141619']]); g.fill();
     rrect(g, gx + 0.4, gy + 0.4, 1.6, gh - 0.8, 0.8); g.fillStyle = '#060708'; g.fill();
     const fh = (gh - 0.8) * s.mekasuit;

@@ -17,7 +17,7 @@ const CC = {
   rows: [33.5, 40.5], meterH: 4, meterW: 32, icon: 5.6,   // centred on the sockets' middle (y 39)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 99 },           // magic: Iron's mana, Ars mana (breath extends the band above)
-  ext: { l: [-140, -96], r: [96, 140], y: 25, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
+  ext: { l: [-133, -96], r: [96, 133], y: 25, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
   xp: { y: 25, h: 3.2, x0: -88.5, x1: 88.5 },   // the level window, then the pipe: nearly the centre plate's full width (±91)
@@ -157,10 +157,27 @@ function ccDashFiller(g, cx, cy) {
   ccEngrave(g, () => cogPath(g, cx, cy, 6.2, 4.8, 10));
   ccEngrave(g, () => { g.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; g.lineTo(cx + 2 * Math.cos(a), cy + 2 * Math.sin(a)); } g.closePath(); });
 }
+/** Where each wing ends: out from the orb's housing (or the meter icons) a 4 px gap, the end item (the offhand slot, 18
+ *  wide, or the dash dial / its cog, 14.6), then 4 px of plate. The MekaSuit gauge, when worn, takes its own slot in the
+ *  gap next to the health orb. Left-handed mirrors which end holds which. Returns { x0, x1, offhand (slot's left x),
+ *  dash (dial centre x), meka (gauge centre x) }. */
+function ccEnds(s) {
+  const G = 4, inner = s.orbs ? ORB.rx + ORB.housing : 131, dialW = 14.6, slotW = 18;   // meter mode: the meters' outer ends
+  const meka = !s.creative && s.mekasuit;
+  const left = inner + G + (meka ? 3.4 : 0), right = inner + G;   // the vitals (left) side holds the gauge
+  const leftW = s.leftHanded ? dialW : slotW, rightW = s.leftHanded ? slotW : dialW;
+  const leftItem = -(left + leftW / 2), rightItem = right + rightW / 2;
+  return {
+    x0: -(left + leftW + G), x1: right + rightW + G,
+    offhand: (s.leftHanded ? rightItem : leftItem) - slotW / 2,
+    dash: s.leftHanded ? leftItem : rightItem,
+    meka: -(inner + G / 2 + 1.7),
+  };
+}
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
-  const pull = ears.pull || 0, x0 = CC.plate.x0 + pull, x1 = CC.plate.x1 - pull;   // pull: wings moved toward the centre
+  const x0 = ears.x0 ?? CC.plate.x0, x1 = ears.x1 ?? CC.plate.x1;   // the wings' outer ends (ccEnds)
   const { wing, mid, step, r, sec } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
   const inner = ears.inner || CC.plate.inner;   // the wings' inner ends (with orbs: just past the orb housings)
   // One plate: a top edge of level runs [x from, x to, y] joined by S curves, rounded corners, its shadow, iron, a
@@ -212,12 +229,12 @@ function compactHud(s, font) {
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
   const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
-  ccPlate(g, { left: leftExt && !s.orbs, right: !!rightExt && !s.orbs, inner: s.orbs ? ORB.innerEnd : 0, pull: s.orbs ? ORB.pull : 0, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
+  const ends = CC.lay = ccEnds(s);
+  ccPlate(g, { left: leftExt && !s.orbs, right: !!rightExt && !s.orbs, inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
-  const pull = s.orbs ? ORB.pull : 0;   // with orbs the wings sit closer to the centre
-  const [ox, oy] = s.leftHanded ? [143 - pull, CC.offhand[1]] : [CC.offhand[0] + pull, CC.offhand[1]];
+  const [ox, oy] = [ends.offhand, CC.offhand[1]];
   socket(g, ox, oy);
   g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
@@ -248,7 +265,7 @@ function compactHud(s, font) {
   // A meter with its icon: box [x, y, w, h], icon centred at ix (height ih). The band extensions use slim pipes.
   const meterAt = (id, ix, ih, [x, y0, w, h], img, frac, liq, segs, value, max, opt = {}) => {
     const y = y0 + (opt.shake ? opt.shake[1] : 0);
-    ccIcon(g, img, ix, y + h / 2, ih);
+    // Meter mode carries no icons (space): the meters' colours and their order say what they are.
     ccMeter(g, x, y, w, h, frac, liq, segs);
     if (opt.after) opt.after(g, s, [x, y, w, h]);
     CC.hit[id] = [x, y, w, h];
@@ -286,7 +303,6 @@ function compactHud(s, font) {
   // With a MekaSuit the extension holds two half-height pipes: armor above, suit energy below (Mekanism's bar).
   if (leftExt && s.mekasuit) {
     const [ex, ey, ew, eh] = extL, hh = (eh - 0.4) / 2;
-    ccIcon(g, armor('full'), L.iconC, ey + hh / 2, hh + 0.6); ccIcon(g, ccModIcon('bolt'), L.iconC, ey + eh - hh / 2, hh + 0.6);
     ccMeter(g, ex, ey, ew, hh, Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10);
     ccMeter(g, ex, ey + hh + 0.4, ew, hh, s.mekasuit, CC_MEKA, 10);
     CC.hit.Lear = [ex, ey, ew, eh];
@@ -307,7 +323,6 @@ function compactHud(s, font) {
   const mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
   if (showBreath && tank > 0) {
     const [ex, ey, ew, eh] = extR, tankTime = mmss(Math.ceil(tank));
-    ccIcon(g, ccBacktank(), Rt.iconC, ey + eh / 2, E.icon);
     ccMeter(g, ex, ey, ew, eh, tank / s.tankMax, ['#c98a5a', '#7a3e1c', '#2e1206'], 10);
     CC.hit.Rear = [ex, ey, ew, eh];
     ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, ccTint('#d9874a'), 'rgba(0,0,0,0.9)', NK);
@@ -318,9 +333,8 @@ function compactHud(s, font) {
   // Dodge roll: a small dial like the orbs (stone rim, dark rivets, glass) with the dash chevrons behind the glass in
   // the tier colour and a ring segment per charge, lit as charges are ready. Centred in its space at the wing's end.
   // No dodge roll mod: a pressed-in cog there instead.
-  const dashC = s.orbs ? (ORB.rx + ORB.housing + CC.plate.x1 - ORB.pull) / 2 : 152;
-  if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -dashC : dashC, 39);
-  else ccDashDial(g, s.leftHanded ? -dashC : dashC, 39, s.rolls, s.rollCount || 2);
+  if (s.rolls == null) ccDashFiller(g, ends.dash, 39);
+  else ccDashDial(g, ends.dash, 39, s.rolls, s.rollCount || 2);
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);
   ccAttackShade(g, s, [sx, sy]);
