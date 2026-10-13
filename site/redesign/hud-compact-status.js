@@ -122,6 +122,7 @@ function ccAbsorb(g, s, [x, y, w, h], max) {
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
   g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, LIQUID.absorb[0]], [0.45, LIQUID.absorb[1]], [1, LIQUID.absorb[2]]]);
   g.fillRect(x + 0.5 + a0, y, a1 - a0, h);
+  ccMeterTexture(g, x + 0.5 + a0, y, a1 - a0, h, LIQUID.absorb, 'cloud');
   g.fillStyle = 'rgba(0,0,0,0.55)';
   for (let k = 1; k < 10; k++) g.fillRect(x + 0.5 + (w - 1) * k / 10 - 0.15, y, 0.3, h);
   g.restore();

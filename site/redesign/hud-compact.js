@@ -14,7 +14,8 @@ const CC = {
   plate: { x0: -165, x1: 165, wing: 28, mid: 23.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
   slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
   offhand: [-161, 30],
-  rows: [33.5, 40.5], meterH: 4, meterW: 32, icon: 5.6,   // centred on the sockets' middle (y 39)
+  rows: [31.4, 37.2, 43.4], meterH: 4, meterW: 32, icon: 5.6,   // three rows a wing, centred on the sockets' middle (y 39);
+  // the gap under food holds AppleSkin's exhaustion line
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 99 },           // magic: Iron's mana, Ars mana (breath extends the band above)
   ext: { l: [-133, -96], r: [96, 133], y: 25, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
@@ -24,7 +25,7 @@ const CC = {
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
-function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left') {
+function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left', style) {
   const r = h / 2;
   // Satin, not chrome: a darker steel casing, and the liquid's highlight halfway to its body colour.
   rrect(g, x, y, w, h, r); g.fillStyle = vgrad(g, y, y + h, [[0, '#9ea4aa'], [0.25, '#6c7278'], [0.65, '#3a3e43'], [1, '#141619']]); g.fill();
@@ -32,8 +33,32 @@ function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left') {
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5); g.clip();
   const fw = (w - 1) * Math.max(0, Math.min(1, frac)), fx = from === 'left' ? x + 0.5 : x + w - 0.5 - fw;
   g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, mixHex(liq[0], liq[1], 0.5)], [0.45, liq[1]], [1, liq[2]]]); g.fillRect(fx, y, fw, h);
+  if (style && fw > 0) ccMeterTexture(g, fx, y, fw, h, liq, style);   // the orbs' liquid looks (cloud, broth, galaxy)
   g.fillStyle = 'rgba(0,0,0,0.55)';
   for (let k = 1; k < segs; k++) g.fillRect(x + 0.5 + (w - 1) * k / segs - 0.15, y, 0.3, h);
+  g.restore();
+}
+/** The orbs' liquid looks on a meter's fill (x, y, w, h): 'cloud' billows (health, absorption, the mount), 'broth' the
+ *  same with a few bubbles (food), 'mana' a galaxy (nebula mask and stars). */
+function ccMeterTexture(g, x, y, w, h, liq, style) {
+  const area = () => { g.beginPath(); g.rect(x, y, w, h); };
+  g.save(); area(); g.clip();
+  if (style === 'mana') {
+    g.globalCompositeOperation = 'multiply';
+    const pat = g.createPattern(ccNebula(), 'repeat');
+    pat.setTransform(new DOMMatrix().translateSelf(x * 3, y * 5).rotateSelf(60).scaleSelf(0.05, 0.05)); g.fillStyle = pat; area(); g.fill();
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < Math.round(w / 3); i++) {
+      const hh = Math.sin((x + i * 12.9898) * 78.233) * 43758.5453, u = hh - Math.floor(hh), v = hh * 7.13 - Math.floor(hh * 7.13);
+      g.fillStyle = i % 5 ? 'rgba(220,230,255,0.7)' : 'rgba(255,255,255,0.95)'; g.fillRect(x + u * w, y + v * h, 0.25, 0.25);
+    }
+  } else {
+    surface(g, area, TEX.blotch, 0.45 * ORB.tex, 'overlay'); surface(g, area, TEX.rock, 0.25 * ORB.tex, 'soft-light');
+    if (style === 'broth') for (let i = 0; i < Math.round(w / 5); i++) {
+      const hh = Math.sin((x + i * 9.17) * 33.1) * 43758.5453, u = hh - Math.floor(hh);
+      circle(g, x + u * w, y + h / 2, 0.35); g.strokeStyle = 'rgba(255,230,190,0.55)'; g.lineWidth = 0.15; g.stroke();
+    }
+  }
   g.restore();
 }
 /** Draws a sprite canvas trimmed to its visible pixels, scaled to height h and centred on (cx, cy). */
@@ -167,11 +192,14 @@ function ccEnds(s) {
   const meka = !s.creative && s.mekasuit;
   const left = inner + G + (meka ? 3.4 : 0), right = inner + G;   // meka: its gauge's slot   // the vitals (left) side holds the gauge
   const leftW = s.leftHanded ? dialW : slotW, rightW = s.leftHanded ? slotW : dialW;
+  const span = Math.max(left + leftW, right + rightW);   // each wing's extent (the wider one's): the dial centres in its space
   const leftItem = -(left + leftW / 2), rightItem = right + rightW / 2;
+  const dialC = s.leftHanded ? -(left + span) / 2 : (right + span) / 2;
   return {
-    x0: -(left + leftW + E), x1: right + rightW + E,
+    // Both wings the same width (the wider one's), so the bar reads symmetric about the hotbar.
+    x0: -span - E, x1: span + E,
     offhand: (s.leftHanded ? rightItem : leftItem) - slotW / 2,
-    dash: s.leftHanded ? leftItem : rightItem,
+    dash: dialC,
     meka: -(inner + G + 1.7),
   };
 }
@@ -231,7 +259,8 @@ function compactHud(s, font) {
   const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
   const ends = CC.lay = ccEnds(s);
-  ccPlate(g, { left: leftExt && !s.orbs, right: !!rightExt && !s.orbs, inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
+  ccPlate(g, { left: false, right: false,   // no raised tabs: bar mode puts armor and breath in a third row
+    inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
@@ -267,7 +296,7 @@ function compactHud(s, font) {
   const meterAt = (id, ix, ih, [x, y0, w, h], img, frac, liq, segs, value, max, opt = {}) => {
     const y = y0 + (opt.shake ? opt.shake[1] : 0);
     // Meter mode carries no icons (space): the meters' colours and their order say what they are.
-    ccMeter(g, x, y, w, h, frac, liq, segs);
+    ccMeter(g, x, y, w, h, frac, liq, segs, 'left', opt.style);
     if (opt.after) opt.after(g, s, [x, y, w, h]);
     CC.hit[id] = [x, y, w, h];
     if ((s.numbers || s.hover === id) && value != null) {
@@ -280,7 +309,8 @@ function compactHud(s, font) {
   };
   // Extension pipes match the wing meters below them (same x, width, icon centre); the section's S divider runs
   // between their inner ends (±93 at the wing's level) and the XP band (±85).
-  const E = CC.ext, extL = [L.x, E.y, mw, E.h], extR = [Rt.x, E.y, mw, E.h];
+  // Armor (left) and breath (right) take each wing's third row.
+  const E = CC.ext, extL = [L.x, rows[2], mw, mh], extR = [Rt.x, rows[2], mw, mh];
   const row = (side, k, img, frac, liq, segs, value, max, opt) => {
     const id = (side === L ? 'L' : 'R') + k;
     if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max, opt);
@@ -294,11 +324,11 @@ function compactHud(s, font) {
   // Health against the real maximum (Health Boost and gear raise it; each segment is a tenth of it); absorption in
   // gold continues past the health, AppleSkin's regeneration preview (held food) pulses past that.
   const maxH = s.maxHealth || 20, hpNum = s.absorb ? `${Math.round(s.health)}+${Math.round(s.absorb)}` : s.health;
-  row(L, 0, ccHeartIcon(s), s.health / maxH, ccHealthLiquid(s), 10, hpNum, maxH, {
+  row(L, 0, ccHeartIcon(s), s.health / maxH, ccHealthLiquid(s), 10, hpNum, maxH, { style: 'cloud',
     after: (g2, s2, box) => { ccAbsorb(g2, s2, box, maxH); ccHealthPreview(g2, s2, box, maxH); ccHealthFx(g2, s2, box); ccComfortFx(g2, s2, box); } });
-  if (s.riding) row(L, 1, s.riding === 'camel' ? ccCamel() : ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
+  if (s.riding) row(L, 1, s.riding === 'camel' ? ccCamel() : ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax, { style: 'cloud' });
   else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20,
-    { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodFx(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
+    { style: 'broth', after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodFx(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
   }
   // Armor: the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
   // With a MekaSuit the extension holds two half-height pipes: armor above, suit energy below (Mekanism's bar).
@@ -315,8 +345,8 @@ function compactHud(s, font) {
   else {
     // The primary pool (the setting) takes the top row, the other the bottom.
     const [ri, ra] = s.manaPrimary === 'ars' ? [1, 0] : [0, 1];
-    if (hasIrons) row(Rt, ri, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200); else ccGroove(g, Rt.x, rows[ri], mw, mh);
-    if (hasArs) row(Rt, ra, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150); else ccGroove(g, Rt.x, rows[ra], mw, mh);
+    if (hasIrons) row(Rt, ri, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200, { style: 'mana' }); else ccGroove(g, Rt.x, rows[ri], mw, mh);
+    if (hasArs) row(Rt, ra, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150, { style: 'mana' }); else ccGroove(g, Rt.x, rows[ra], mw, mh);
   }
   // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
   // with its time left (m:ss, as Create's counter) always on it; the vanilla air stays full meanwhile. When the tank
