@@ -6,6 +6,11 @@
 // border drawn as fills).
 
 // Buffs read green, debuffs red: the draining border (and its glow) in that colour, on a brass or rust bezel.
+/** Outlined effect numbers (CC_EFFECT_INK, hud-compact.js): a solid 1 font px black outline, then the tint. */
+function ccOutlinedNumber(g, t, x, y, col, k) {
+  for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) ccNumber(g, t, x + dx * k, y + dy * k, '#000000', null, k);
+  ccNumber(g, t, x, y, col, null, k);
+}
 const CC_EFFECT = {
   buff: { bezel: ['#f4d898', '#b8893f', '#6e4f22'], track: 'rgba(20,60,26,0.95)', glow: '#62e07a' },
   debuff: { bezel: ['#e8a080', '#9a4a28', '#4a1c0a'], track: 'rgba(70,14,12,0.95)', glow: '#ff4e44' },
@@ -124,18 +129,18 @@ function ccEffectsRail(g, s, icons) {
     CC.hit['effect:' + e.id] = [x, y, sz, sz];
     if (e.gear) {   // the amount left (percent, no sign), cyan as the MekaSuit's
       const t = String(Math.round(e.frac * 100));
-      ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint('#3fe0ff'), 'rgba(0,0,0,0.95)', kk);
+      ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, CC_EFFECT_INK.gear, kk);
       return;
     }
     if (e.suit) {   // the energy left (percent), always cyan
       const t = String(Math.round(e.suit * 100));   // percent, no sign
-      ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint('#3fe0ff'), 'rgba(0,0,0,0.95)', kk);
+      ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, CC_EFFECT_INK.gear, kk);
       return;
     }
     if (!e.total) return;
     const t = ccEffectTime(e.secs);
     // The kind's tint all the way down: the colour does not change as the time runs out.
-    ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, ccTint(e.kind === 'buff' ? '#3fd060' : '#ff5a4a'), 'rgba(0,0,0,0.95)', kk);
+    ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, e.kind === 'buff' ? CC_EFFECT_INK.buff : CC_EFFECT_INK.debuff, kk);
   };
   let top = ccSideY(s.orbs ? ORB.y - ORB_H() : CC_WING.top - (s.hardcore ? CC_SKULL_PLATE.h + CC_SKULL_PLATE.lift + 1 : 0), ccSideK(s)) - 2;   // above the domes / the wings (and the skull), at the side size
   for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top

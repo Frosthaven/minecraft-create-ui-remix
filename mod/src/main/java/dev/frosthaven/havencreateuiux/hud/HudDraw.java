@@ -201,17 +201,19 @@ final class HudDraw {
 
     // ---- Digits ----
 
-    /** The 0.625 set (effects): colour row per character (value bright, the rest dim), a shadow under them. */
+    /** The 0.625 set (effects): colour row per character (value bright, the rest dim), inside a solid black outline one
+     *  font pixel (5 texels) wide, so they read on any background (a shadow down-right blurred them together). */
     static void digits(GuiGraphics g, String s, int x, int y, int brightChars, int bright, int rest) {
-        for (int pass = 0; pass < 2; pass++) {
+        for (int dy = -5; dy <= 5; dy += 5) for (int dx = -5; dx <= 5; dx += 5) {
+            if (dx == 0 && dy == 0) continue;
             int cx = x;
-            for (int i = 0; i < s.length(); i++) {
-                char c = s.charAt(i);
-                int row = pass == 0 ? BLACK : i < brightChars ? bright : rest;
-                // The shadow a full font pixel (5 texels) down-right: half a pixel let it eat the white strokes in game.
-                part(g, digitU(c), digitV(row), digitW(c), DIGIT_H, cx + (pass == 0 ? 5 : 0), y + (pass == 0 ? 5 : 0));
-                cx += digitAdv(c);
-            }
+            for (int i = 0; i < s.length(); i++) { char c = s.charAt(i); part(g, digitU(c), digitV(BLACK), digitW(c), DIGIT_H, cx + dx, y + dy); cx += digitAdv(c); }
+        }
+        int cx = x;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            part(g, digitU(c), digitV(i < brightChars ? bright : rest), digitW(c), DIGIT_H, cx, y);
+            cx += digitAdv(c);
         }
     }
     static int digitsWidth(String s) {

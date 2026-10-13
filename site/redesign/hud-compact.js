@@ -7,6 +7,9 @@
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
 const CX = 222, BOTTOM = 50, TOPM = 90;
+/** The effects' numbers: clear light tints (buff green, debuff warm red, gear cyan), drawn inside a solid black
+ *  outline so they read on any background (a coloured shadow blurred them together in game). The export's digit rows. */
+const CC_EFFECT_INK = { buff: '#8ef08a', debuff: '#ff8a80', gear: '#7fe8ff' };
 /** The liquids a step brighter, to sit with Minecraft's lighter look: the mid tone toward white, the dark tone toward
  *  the mid (hue and the light-to-dark depth kept). The mana pools more, up to the cast bar's overall value. */
 const ccLift = (liq, mid = 0.1, dark = 0.3) => [liq[0], mixHex(liq[1], '#ffffff', mid), mixHex(liq[2], liq[1], dark)];

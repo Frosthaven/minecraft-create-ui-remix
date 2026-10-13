@@ -26,7 +26,7 @@ const CCX = {
   wingLiquids: ['blood', 'poison', 'wither', 'frozen', 'absorb', 'broth', 'hunger', 'saturation', 'mount', 'irons', 'ars',
     'armor', 'air', 'tank', 'flamingo', 'hull'],
   xpLiquids: ['xp', 'jump', 'cooldown', 'cast', 'train', 'engine'],
-  digits: '0123456789/:+smh', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0', ccTint('#3fe0ff'), ccTint('#3fd060'), ccTint('#ff5a4a')],
+  digits: '0123456789/:+smh', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0', CC_EFFECT_INK.gear, CC_EFFECT_INK.buff, CC_EFFECT_INK.debuff],
   glyphs: '0123456789/:+',
   tints: ['blood', 'poison', 'wither', 'frozen', 'broth', 'hunger', 'mount', 'irons', 'ars', 'armor', 'air', 'tank', 'flamingo', 'hull', 'black'],
   levelRows: ['#80ff20', '#3a5a2a', '#000000'],
