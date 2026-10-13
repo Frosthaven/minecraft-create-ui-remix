@@ -32,7 +32,9 @@ public final class MobBars {
     // Sizes in model pixels (16 = a block), as on the page.
     private static final float W = 14, H = 1.4f, EDGE = 0.15f, LIFT = 0.5f, NAME_LIFT = 0.3f;
     private static final int BACK = argb(158, 10, 11, 14), EDGE_COL = argb(179, 0, 0, 0);
-    private static final int HOSTILE = 0xa83a3a, NOT_HOSTILE = 0x5c9a46, PLAYER = 0x4a76b8;
+    private static final int HOSTILE = 0xa83a3a, NOT_HOSTILE = 0x5c9a46, PLAYER = 0x4a76b8, ATTACKER = 0xa8409a;
+    private static final long ATTACKER_MS = 30_000;   // a player who hit any player stays magenta this long
+    private static final Map<Player, Long> ATTACKERS = new WeakHashMap<>();
     private static final long TRAIL_WAIT = 400, TRAIL_DRAIN = 600;   // ms
     private static final Map<LivingEntity, Trail> TRAILS = new WeakHashMap<>();
     private static Method shadowPass;   // Iris: IrisApi.getInstance().isRenderingShadowPass(), when Iris is installed
@@ -59,9 +61,9 @@ public final class MobBars {
         Minecraft mc = Minecraft.getInstance();
         LivingEntity e = event.getEntity();
         boolean on = UiConfig.MOB_BARS.get();
-        LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {}, players {})",
+        LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {}, players {}, recently aggressive players {})",
                 on ? "on" : "off", UiConfig.MOB_BAR_RANGE.get(), UiConfig.MOB_BARS_HOSTILE.get(),
-                UiConfig.MOB_BARS_NOT_HOSTILE.get(), UiConfig.MOB_BARS_PLAYERS.get());
+                UiConfig.MOB_BARS_NOT_HOSTILE.get(), UiConfig.MOB_BARS_PLAYERS.get(), UiConfig.MOB_BARS_AGGRESSIVE.get());
         if (!on || mc.player == null || mc.options.hideGui || e == mc.player || e instanceof ArmorStand) return;
         if (e.isInvisibleTo(mc.player) || e.isDeadOrDying() || inShadowPass()) return;
         int range = UiConfig.MOB_BAR_RANGE.get();
@@ -69,7 +71,8 @@ public final class MobBars {
         int col;
         if (e instanceof Player) {
             if (!UiConfig.MOB_BARS_PLAYERS.get()) return;
-            col = PLAYER;
+            Long hit = ATTACKERS.get(e);
+            col = UiConfig.MOB_BARS_AGGRESSIVE.get() && hit != null && System.currentTimeMillis() - hit < ATTACKER_MS ? ATTACKER : PLAYER;
         } else if (e instanceof Enemy) {
             if (!UiConfig.MOB_BARS_HOSTILE.get()) return;
             col = HOSTILE;
@@ -108,6 +111,11 @@ public final class MobBars {
     }
 
     /** The trail's current end: on damage it holds the health before the hit, waits, then drains to the health. */
+    /** A player hit a player (RecentAttackerMixin, any PvP): their bar is magenta for {@link #ATTACKER_MS}. */
+    public static void attackedBy(Player attacker) {
+        if (ATTACKERS.put(attacker, System.currentTimeMillis()) == null) LOG.once("attacker:" + attacker.getUUID(), "recently aggressive: " + attacker.getName().getString());
+    }
+
     private static float trail(LivingEntity e, float hp) {
         long now = Util.getMillis();
         Trail t = TRAILS.computeIfAbsent(e, k -> {

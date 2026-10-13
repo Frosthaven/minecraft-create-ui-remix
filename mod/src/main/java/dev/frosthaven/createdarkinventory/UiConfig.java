@@ -19,6 +19,7 @@ public final class UiConfig {
     public static final ModConfigSpec.BooleanValue MOB_BARS_HOSTILE;
     public static final ModConfigSpec.BooleanValue MOB_BARS_NOT_HOSTILE;
     public static final ModConfigSpec.BooleanValue MOB_BARS_PLAYERS;
+    public static final ModConfigSpec.BooleanValue MOB_BARS_AGGRESSIVE;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -41,6 +42,8 @@ public final class UiConfig {
                 .translation("createdarkinventory.config.mob_bars_not_hostile").define("notHostile", true);
         MOB_BARS_PLAYERS = b.comment("Bars on other players (blue).")
                 .translation("createdarkinventory.config.mob_bars_players").define("players", true);
+        MOB_BARS_AGGRESSIVE = b.comment("A player who hit any player in the last 30 seconds gets a magenta bar.")
+                .translation("createdarkinventory.config.mob_bars_aggressive").define("recentlyAggressivePlayers", true);
         b.pop();
         SPEC = b.build();
     }

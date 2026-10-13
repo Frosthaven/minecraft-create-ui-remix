@@ -8,6 +8,7 @@ const MOB_KINDS = {
   hostile: { name: 'Hostile', col: '#a83a3a', on: true, test: 'Enemy', ex: 'zombies, skeletons, creepers, slimes, bosses' },
   friendly: { name: 'Not hostile', col: '#5c9a46', on: true, test: 'every other mob', ex: 'animals, villagers, pets, golems, wolves, endermen' },
   player: { name: 'Players', col: '#4a76b8', on: true, test: 'Player', ex: 'other players' },
+  attacker: { name: 'Recently aggressive players', col: '#a8409a', on: true, test: 'hit any player in the last 30 s', ex: 'any PvP, you or anyone near' },
 };
 const MOB_BAR = { w: 14, h: 1.4, lift: 6, back: 'rgba(10,11,14,0.62)', edge: 'rgba(0,0,0,0.7)' };   // model px (16 = a block)
 
