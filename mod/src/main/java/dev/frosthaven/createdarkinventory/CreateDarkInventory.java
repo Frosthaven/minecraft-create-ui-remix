@@ -9,6 +9,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.InterModComms;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.InterModEnqueueEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -23,7 +24,8 @@ import java.util.List;
  *    while it sits at DME's default spot (a player's own X and Y win);
  *  - no DME button on the title screen, where dark mode is off ({@code DarkModeClientProxyMixin});
  *  - DME's button lets go of focus after a click: a focused widget keeps Create's "hold W to
- *    ponder" from working on that screen.
+ *    ponder" from working on that screen;
+ *  - with a Create HUD pack on, no dark mode on the main HUD ({@link HudLayers}).
  */
 @Mod(value = CreateDarkInventory.ID, dist = Dist.CLIENT)
 public final class CreateDarkInventory {
@@ -37,6 +39,8 @@ public final class CreateDarkInventory {
         modBus.addListener(InterModEnqueueEvent.class, event ->
                 InterModComms.sendTo(DME, "dme-shaderblacklist", () -> "StockKeeperRequestScreen:drawItemCount"));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, CreateDarkInventory::moveDarkModeButton);
+        NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, HudLayers::pre);
+        NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Post.class, HudLayers::post);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.MouseButtonReleased.Post.class, event -> {
             if (isDarkModeButton(event.getScreen().getFocused())) event.getScreen().setFocused(null);
         });

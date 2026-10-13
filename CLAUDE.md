@@ -42,3 +42,6 @@ No player config edits needed; the instance config stays at DME's defaults.
   with true while `TitleScreen` is open; the mod removes DME's title button there.
 - DME's button kept focus after a click, and a focused widget stops Create's "hold W to ponder";
   the mod clears that focus on mouse release.
+- Main HUD with a Create HUD pack: while a selected pack id contains "create-hud" (`file/Create-HUD`),
+  `HudLayers` flags NeoForge's hotbar, health, armor, food, air, experience bar/level, action bar
+  layers and Create's `remaining_air`; `DarkModeClientProxyMixin` skips DME while one draws.
