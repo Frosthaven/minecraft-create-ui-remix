@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compact HUD</title>
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+<nav><a href="./">HUD</a><a href="hud-compact.html" aria-current="page">Compact HUD</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="../">Almanac</a></nav>
+<header>
+  <h1>Compact HUD: one console (concept)</h1>
+  <p>Everything the action bar shows, gathered into one blackened iron console instead of floating rows. The hotbar sits
+     in the raised middle with experience as a glass pipe along its top edge and the level on a brass badge. The left
+     wing holds the offhand, health (absorption in gold) with armor plating along its top, and Iron's mana. The right
+     wing mirrors it: food with AppleSkin saturation on top, Ars mana, and the two dodge roll charges. Air rises out of
+     the right wing only under water. Preview only: shipping it needs Create Dark Inventory to replace the HUD layers
+     and draw this layout itself.</p>
+</header>
+<div class="bar">
+  <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button>
+  <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button>
+  <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
+</div>
+<div class="compare">
+  <div class="scene" style="grid-column:1/-1"><span class="label after">Compact console (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
+</div>
+<script src="material.js"></script>
+<script src="sprites.js"></script>
+<script src="meters.js"></script>
+<script src="modhud.js"></script>
+<script src="mcfont.js"></script>
+<script src="screen-page.js"></script>
+<script src="hud-compact.js"></script>
+<script>
+const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2 };
+let font = null, waterTimer = null;
+function render() {
+  const img = compactHud(st, font), out = document.getElementById('hud');
+  out.width = img.width / 2; out.height = img.height / 2;   // 4 px per GUI px
+  const g = out.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, out.width, out.height);
+}
+const tap = (id, f) => document.getElementById(id).addEventListener('click', () => { f(); render(); });
+tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; });
+tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.saturation = Math.min(st.food, st.saturation + 4); });
+tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
+tap('roll', () => { st.rolls = (st.rolls + 2) % 3; });
+tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
+tap('water', () => {
+  const on = st.air === 1; document.getElementById('water').setAttribute('aria-pressed', String(on));
+  clearInterval(waterTimer); st.air = on ? 0.999 : 1;
+  if (on) waterTimer = setInterval(() => { st.air = st.air <= 0.05 ? 0.999 : st.air - 0.05; render(); }, 400);
+});
+addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; render(); } });
+(async () => { try { await packTextures(); font = SCREEN.font; } catch (e) {} render(); })();
+render();
+</script>
+<script src="../live.js"></script>
+</body>
+</html>

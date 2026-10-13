@@ -117,6 +117,13 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 | Food | `(cx + 91 - 8 i - 9, bottom - 39)`, right to left |
 | Air | one row above the food |
 
+## Compact HUD concept (`site/redesign/hud-compact.html`, `hud-compact.js`): preview only, not packed
+
+One iron console instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
+level badge; left wing offhand, health (absorption in gold) with armor plating on top, Iron's mana; right wing food
+with AppleSkin saturation on top, Ars mana, dodge roll charges; air rises out of the right wing under water. Shipping
+it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws this layout (sprites from the pack).
+
 ## Inventory Redesign (`site/redesign/inventory.html`), work in progress
 
 - Before (Colourful Containers' `container/inventory`, its slot icons and the mod buttons) and after, side
