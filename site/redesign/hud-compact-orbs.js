@@ -29,8 +29,9 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     circle(g, x - 0.1, y - 0.12, 0.16); g.fillStyle = 'rgba(160,165,170,0.5)'; g.fill();
   }
   if (ring) {
-    // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim.
-    const n = 10, gap = 0.07;
+    // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim. A smooth ring
+    // (breath, the tank, Helium Flamingo, aircraft) is one continuous arc instead.
+    const n = ring.smooth ? 1 : 10, gap = ring.smooth ? 0 : 0.07;
     for (let k = 0; k < n; k++) {
       const lit = ring.frac * n - k;   // >= 1 full, 0..1 partial
       if (lit <= 0) break;
@@ -208,9 +209,9 @@ function ccOrbs(g, s) {
   if (s.manaPrimary === 'ars') pools.reverse();
   const tank = s.diving ? Math.max(0, s.tank) : 0, breath = !s.creative && (s.underwater || s.air < 1);
   // The right ring shows one thing: breath (or the backtank), else the Helium Flamingo's charge, else an aircraft's health.
-  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: ['#ffd9b0', '#c98a5a', '#5a2814'] } : { frac: s.air, on: LIQUID.air })
-    : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO }
-    : s.aircraft ? { frac: s.hull, on: CC_HULL } : null;
+  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: ['#ffd9b0', '#c98a5a', '#5a2814'], smooth: true } : { frac: s.air, on: LIQUID.air, smooth: true })
+    : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO, smooth: true }
+    : s.aircraft ? { frac: s.hull, on: CC_HULL, smooth: true } : null;
   if (pools.length) {
     ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring });
     CC.hit.orbR = [ORB.rx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
