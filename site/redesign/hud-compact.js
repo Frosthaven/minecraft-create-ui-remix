@@ -161,11 +161,14 @@ function compactHud(s, font) {
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
   // Breath: the bubbles (full above water, draining under it). A Create backtank adds its air on top, like absorption
   // on health: a copper layer from the left over tank / capacity, drained first (the vanilla air stays full meanwhile),
-  // then the bubbles drain. Its numbers are the total time left, tank plus air (m:ss).
+  // then the bubbles drain. The tank's time left (m:ss, as Create shows it) is always on the meter while it has air.
   const tank = s.diving ? Math.max(0, s.tank) : 0, mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-  const breathNum = tank > 0 ? mmss(Math.ceil(tank + s.air * 15)) : Math.ceil(s.air * 10);
-  row(Rt, 2, tank > 0 ? ccBacktank() : air(s.air < 0.15), s.air, LIQUID.air, 10, breathNum, tank > 0 ? null : 10);
-  if (tank > 0 && !(s.numbers || s.hover === 'R2')) ccMeter(g, Rt.x, rows[2], mw * tank / s.tankMax, mh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
+  const tankTime = mmss(Math.ceil(tank)), hovered = s.numbers || s.hover === 'R2';
+  row(Rt, 2, tank > 0 ? ccBacktank() : air(s.air < 0.15), s.air, LIQUID.air, 10, tank > 0 ? tankTime : Math.ceil(s.air * 10), tank > 0 ? null : 10);
+  if (tank > 0 && !hovered) {
+    ccMeter(g, Rt.x, rows[2], mw * tank / s.tankMax, mh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
+    ccNumber(g, tankTime, Rt.x + mw / 2 - ccNumberWidth(tankTime, NK) / 2, rows[2] + mh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
+  }
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
