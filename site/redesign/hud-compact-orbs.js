@@ -207,7 +207,7 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
     const ys = level(Math.min(s.saturation, s.food) / 20);
     // A solid layer (its edge is just where it stops), a little lighter and paler than the broth (low contrast: it reads as richer broth).
     const sl = LIQUID.broth.map(c => mixHex(c, '#ffe6c0', 0.16));
-    g.save(); g.beginPath(); g.rect(cx, ys, r, cy + r - ys); g.clip();
+    g.save(); g.beginPath(); g.rect(cx, ys, r, cy + r - ys); g.clip(); g.globalAlpha = 0.82;   // the broth shows through a little
     g.fillStyle = vgrad(g, cy - r, cy + r, [[0, sl[0]], [0.45, sl[1]], [1, sl[2]]]); g.fillRect(cx, ys, r, cy + r - ys);
     surface(g, () => { g.beginPath(); g.rect(cx, ys, r, cy + r - ys); }, TEX.blotch, 0.4 * ORB.tex, 'overlay');
     g.fillStyle = vgrad(g, ys, cy + r, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); g.fillRect(cx, ys, r, cy + r - ys);
