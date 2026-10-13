@@ -166,12 +166,13 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
   const r = ORB.r, level = f => cy + r - 2 * r * Math.max(0, Math.min(1, f));
   g.save(); circle(g, cx, cy, r); g.clip();
   const leftHalf = () => { g.beginPath(); g.rect(cx - r, cy - r, r, 2 * r); };
+  const warn = 0.12 + 0.12 * Math.sin(s.t / 220);   // one pulse for both warnings, so they flash in sync
   if (!riding && s.food <= 6) {   // low food: the empty glass above the broth pulses a faint amber
-    const a = 0.12 + 0.12 * Math.sin(s.t / 240 + 1);
+    const a = warn;
     g.fillStyle = `rgba(220,120,20,${a})`; g.fillRect(cx, cy - r, r, level(s.food / 20) - (cy - r));
   }
   if (s.health <= 4) {   // low health: the empty glass above the liquid pulses a faint red
-    const a = 0.12 + 0.12 * Math.sin(s.t / 220);
+    const a = warn;
     g.fillStyle = `rgba(200,20,30,${a})`; g.fillRect(cx - r, cy - r, r, level(hp) - (cy - r));
   }
   const since = s.t - (s.hurtAt || -1e9);
@@ -271,7 +272,7 @@ function ccOrbs(g, s) {
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT, style: 'cloud' }
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth, style: 'broth',
-          wave: s.food <= 6 ? 0.35 : 0, t: s.t + 400 };   // low food (no sprinting): the broth sloshes too
+          wave: s.food <= 6 ? 0.35 : 0, t: s.t };   // low food (no sprinting): the broth sloshes too
     const low = s.health <= 4;   // vanilla shakes the hearts here; the orb's liquid sloshes instead
     ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.35 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
