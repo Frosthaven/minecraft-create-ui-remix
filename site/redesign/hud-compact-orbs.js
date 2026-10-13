@@ -186,6 +186,12 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
       circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,120,175,${a})`; g.fill();   // pink
     }
   }
+  if (!riding && s.saturation > 0 && s.food > 0) {   // saturation: a lighter cream broth at the bottom of the food half,
+    // up to its level (never past the food), as the bar's cream segments
+    const ys = level(Math.min(s.saturation, s.food) / 20);
+    // A soft, mostly see-through cream tint over the broth below that level (no hard line), so it reads as part of it.
+    g.fillStyle = vgrad(g, ys - 1.5, ys + 2, [[0, 'rgba(255,240,215,0)'], [1, 'rgba(255,240,215,0.22)']]); g.fillRect(cx, ys - 1.5, r, cy + r - ys + 1.5);
+  }
   if (!riding && s.nourished && s.food > 0) {   // Nourishment: the broth keeps its level, glazed gold with slow sparkles
     const top = level(s.food / 20);
     g.save(); g.beginPath(); g.rect(cx, top, r, cy + r - top); g.clip();
