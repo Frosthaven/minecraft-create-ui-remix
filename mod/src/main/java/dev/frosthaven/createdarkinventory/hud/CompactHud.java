@@ -117,7 +117,8 @@ public final class CompactHud {
             int cx = x;
             for (int i = 0; i < s.length(); i++) {
                 int row = pass == 0 ? BLACK : i < brightChars ? bright : rest;
-                part(g, digitU(s.charAt(i)), digitV(row), DIGIT_W, DIGIT_H, cx + (pass == 0 ? 3 : 0), y + (pass == 0 ? 3 : 0));
+                // The shadow a full font pixel (5 texels) down-right: half a pixel let it eat the white strokes in game.
+                part(g, digitU(s.charAt(i)), digitV(row), DIGIT_W, DIGIT_H, cx + (pass == 0 ? 5 : 0), y + (pass == 0 ? 5 : 0));
                 cx += DIGIT_ADV;
             }
         }
@@ -127,7 +128,7 @@ public final class CompactHud {
     /** Value / max centred on a meter box, the liquid dimmed behind. */
     private static void numbers(GuiGraphics g, int x, int y, boolean ext, String value, String max) {
         int w = ext ? EXT_W : WING_W, h = ext ? EXT_H : WING_H;
-        g.fill(x + INSET, y + INSET, x + w - INSET, y + h - INSET, 0x99040506);
+        if (!ext) g.fill(x + INSET, y + INSET, x + w - INSET, y + h - INSET, 0x99040506);   // not on slim pipes: the shadow does
         String t = max == null ? value : value + "/" + max;
         digits(g, t, x + w / 2 - digitsWidth(t) / 2, y + h / 2 - DIGIT_H / 2, value.length(), WHITE, DIM);
     }

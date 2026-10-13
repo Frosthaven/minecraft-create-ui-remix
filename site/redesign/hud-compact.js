@@ -102,9 +102,9 @@ const CC_GLYPH_W = { m: 5 };
 const ccGlyphW = ch => CC_GLYPH_W[ch] || 3;
 const ccNumberWidth = (s, k = 1) => ([...s].reduce((a, ch) => a + ccGlyphW(ch) + 1, 0) - 1) * k;
 /** s in the small font at (x, y) (glyphs 5 tall, 3 wide but m 5, 1 apart), each pixel k units; col a colour or a
- *  function of the character index (to colour parts); shadow: a dark copy offset by half a pixel first. */
+ *  function of the character index (to colour parts); shadow: a dark copy one font pixel down-right, first. */
 function ccNumber(g, s, x, y, col, shadow, k = 1) {
-  if (shadow) ccNumber(g, s, x + 0.5 * k, y + 0.5 * k, shadow, null, k);
+  if (shadow) ccNumber(g, s, x + k, y + k, shadow, null, k);   // a full font pixel down-right (half a pixel ate the strokes)
   let cx = 0;
   for (const [i, ch] of [...s].entries()) {
     const bits = CC_DIGITS[ch in CC_DIGITS ? ch : +ch], w = ccGlyphW(ch);
@@ -249,8 +249,8 @@ function compactHud(s, font) {
     if (opt.after) opt.after(g, s, [x, y, w, h]);
     CC.hit[id] = [x, y, w, h];
     if ((s.numbers || s.hover === id) && value != null) {
-      // Dim the liquid behind the digits.
-      rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill();
+      // Dim the liquid behind the digits; not on the slim extension pipes (thinner than the digits: the shadow does).
+      if (h >= 4) { rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill(); }
       const v = typeof value === 'string' ? value : String(Math.round(value)), t = max == null ? v : `${v}/${max}`;
       ccNumber(g, t, x + w / 2 - ccNumberWidth(t, NK) / 2, y + h / 2 - 2.5 * NK, i => i < v.length ? '#ffffff' : '#9aa3ad',
         'rgba(0,0,0,0.85)', NK);
