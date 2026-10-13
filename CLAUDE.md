@@ -124,7 +124,8 @@ level badge; left wing offhand, health (absorption in gold) with armor plating o
 with AppleSkin saturation on top, Ars mana, dodge roll charges; air rises out of the right wing under water. Shipping
 it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws this layout (sprites from the pack).
 - Meters: health, food (left wing, vitals); Iron's mana, Ars mana (right wing, magic). Armor and breath show only when
-  the game shows them (armor worn; under water), as raised ears above the left and right wing. Breath is the vanilla bubbles;
+  the game shows them (armor worn; under water), extending the raised hotbar band
+  sideways over the left and right wing (same height, darker iron), as slim pipes level with the XP pipe. Breath is the vanilla bubbles;
   a Create backtank adds its air on top in copper (like absorption on health), drained first, with the tank's time left
   (m:ss, as Create's `remaining_air` layer) always on the meter while it has air: players rely on it.
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):

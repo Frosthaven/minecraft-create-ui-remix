@@ -3,20 +3,24 @@
 // Logical units, x centred on the screen (0), the action bar's bottom at y 50. Every meter is the same size, with the
 // HUD's own sprite as its icon (heart, drumstick, shield, porthole bubble). The always-on meters sit in the wings
 // (health and food left, the two manas right); armor and breath, which the game shows only when they apply (armor
-// worn; under water), rise as "ears" above their wing only then. Uses sprites.js, meters.js (LIQUID),
+// worn; under water), extend the raised hotbar band sideways over their wing only then, in a darker iron, as slim
+// pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
 const CX = 172, BOTTOM = 50;
+// Horizontal rhythm: one gap (GAP) between every group, out from the centred hotbar (sockets x -89..89): meters
+// (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
+const GAP = 4;
 const CC = {
-  plate: { x0: -172, x1: 172, wing: 26, mid: 21, step: 8, r: 2.5 },
-  slot: i => [-90 + 20 * i, 29],          // socket top left (item at +1)
-  offhand: [-168, 29],
-  rows: [30.5, 39.5], meterH: 6, meterW: 38, icon: 6,
-  left: { icon: -147, x: -138 },          // vitals: health, food (armor in the left ear)
-  right: { icon: 140, x: 100 },           // magic: Iron's mana, Ars mana (breath in the right ear)
-  ear: { top: 17, row: 18.5, l: [-150, -98], r: [98, 150] },   // raised over a wing only while its meter applies
-  roll: [148, 29],
+  plate: { x0: -165, x1: 165, wing: 26, mid: 21, step: 8, r: 2.5 },
+  slot: i => [-89 + 20 * i, 29],          // socket top left (item at +1); centred on x 0
+  offhand: [-161, 29],
+  rows: [32.5, 39.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 38)
+  left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
+  right: { iconC: 136, x: 93 },           // magic: Iron's mana, Ars mana (breath extends the band above)
+  ext: { l: [-140, -92], r: [92, 140], y: 22.6, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
+  roll: [139.5, 29],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 22.6, h: 3.2, x0: -90, x1: 90 },   // the level window, then the pipe
+  xp: { y: 22.6, h: 3.2, x0: -89, x1: 89 },   // the level window, then the pipe
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
@@ -105,11 +109,11 @@ function ccNumber(g, s, x, y, col, shadow, k = 1) {
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
-  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM, E = CC.ear;
-  // The top edge as level runs [x from, x to, y], joined by S curves; ears add raised runs over the wings.
-  const runs = ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], E.l[1], E.top]] : [[x0, -92 - step, wing]];
-  runs.push([-92, 92, mid]);
-  runs.push(...(ears.right ? [[E.r[0], E.r[1], E.top], [E.r[1] + step, x1, wing]] : [[92 + step, x1, wing]]));
+  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM;
+  // The top edge as level runs [x from, x to, y], joined by S curves: the raised band (the hotbar section, plus any
+  // extension over a wing) between the two wing runs.
+  const E = CC.ext, b0 = ears.left ? E.l[0] : -92, b1 = ears.right ? E.r[1] : 92;
+  const runs = [[x0, b0 - step, wing], [b0, b1, mid], [b1 + step, x1, wing]];
   const top = Math.min(...runs.map(q => q[2]));
   const path = () => {
     const [, , y0] = runs[0], yl = runs[runs.length - 1][2];
@@ -124,6 +128,21 @@ function ccPlate(g, ears = {}) {
   };
   g.save(); g.translate(0, -0.6); path(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
   path(); g.fillStyle = iron(g, top, b); g.fill(); ironSurface(g, path);
+  // Extensions in a darker tone, bounded on the inside by the hotbar section's own S step (kept as the divider
+  // leading into the experience band), on the outside by the extension's S down to the wing.
+  const k = step / 2, ext = (o0, i0, dir) => {   // o0: outer run end, i0: the section's edge (±92), dir: -1 left, 1 right
+    const oW = o0 + dir * step, iW = i0 + dir * step;
+    g.beginPath(); g.moveTo(oW, wing); g.bezierCurveTo(oW - dir * k, wing, o0 + dir * k, mid, o0, mid);
+    g.lineTo(i0, mid); g.bezierCurveTo(i0 + dir * k, mid, iW - dir * k, wing, iW, wing); g.closePath();
+    g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
+    g.beginPath(); g.moveTo(i0, mid); g.bezierCurveTo(i0 + dir * k, mid, iW - dir * k, wing, iW, wing);
+    g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.5; g.stroke();
+    g.save(); g.translate(-dir * 0.4, 0); g.strokeStyle = 'rgba(244,216,152,0.35)'; g.lineWidth = 0.25; g.stroke(); g.restore();
+  };
+  g.save(); path(); g.clip();
+  if (ears.left) ext(E.l[0], -92, -1);
+  if (ears.right) ext(E.r[1], 92, 1);
+  g.restore();
   rim(g, path, top, b, P.brassHi, 0.35);
 }
 
@@ -154,18 +173,26 @@ function compactHud(s, font) {
   // Numbers: value / max in the small digits at 0.6 size, centred in the glass; the value bright, "/max" dim. Shown for
   // the meter under the pointer (s.hover = 'L0', 'L1', 'Lear', 'R0', 'R1', 'Rear'), or all with s.numbers.
   const NK = 0.6;
-  const row = (side, k, img, frac, liq, segs, value, max) => {
-    const y = k === 'ear' ? CC.ear.row : rows[k], id = (side === L ? 'L' : 'R') + k;
-    ccIcon(g, img, side.icon + is / 2, y + mh / 2, is);
-    ccMeter(g, side.x, y, mw, mh, frac, liq, segs);
-    CC.hit[id] = [side.x, y, mw, mh];
+  // A meter with its icon: box [x, y, w, h], icon centred at ix (height ih). The band extensions use slim pipes.
+  const meterAt = (id, ix, ih, [x, y, w, h], img, frac, liq, segs, value, max) => {
+    ccIcon(g, img, ix, y + h / 2, ih);
+    ccMeter(g, x, y, w, h, frac, liq, segs);
+    CC.hit[id] = [x, y, w, h];
     if ((s.numbers || s.hover === id) && value != null) {
       // Dim the liquid behind the digits.
-      rrect(g, side.x + 0.5, y + 0.5, mw - 1, mh - 1, mh / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill();
+      rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill();
       const v = typeof value === 'string' ? value : String(Math.round(value)), t = max == null ? v : `${v}/${max}`;
-      ccNumber(g, t, side.x + mw / 2 - ccNumberWidth(t, NK) / 2, y + mh / 2 - 2.5 * NK, i => i < v.length ? '#ffffff' : '#9aa3ad',
+      ccNumber(g, t, x + w / 2 - ccNumberWidth(t, NK) / 2, y + h / 2 - 2.5 * NK, i => i < v.length ? '#ffffff' : '#9aa3ad',
         'rgba(0,0,0,0.85)', NK);
     }
+  };
+  // Extension pipes line up with the wing meters below them on the outside (icon centre, outer end) and stop short of
+  // the S divider on the inside (it spans the 8 px before the hotbar section).
+  const E = CC.ext, extW = mw - 10, extL = [L.x, E.y, extW, E.h], extR = [Rt.x + 10, E.y, extW, E.h];
+  const row = (side, k, img, frac, liq, segs, value, max) => {
+    const id = (side === L ? 'L' : 'R') + k;
+    if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max);
+    meterAt(id, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max);
   };
   row(L, 0, heart(false), s.health / 20, LIQUID.blood, 10, s.health, 20);
   if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
@@ -178,19 +205,19 @@ function compactHud(s, font) {
   // then the bubbles drain. The tank's time left (m:ss, as Create shows it) is always on the meter while it has air.
   // Shown (the right ear) only under water, as the game's air row.
   const mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-  const tankTime = mmss(Math.ceil(tank)), hovered = s.numbers || s.hover === 'Rear', ey = CC.ear.row;
+  const tankTime = mmss(Math.ceil(tank)), hovered = s.numbers || s.hover === 'Rear', [ex, ey, ew, eh] = extR;
   if (showBreath) {
     row(Rt, 'ear', tank > 0 ? ccBacktank() : air(s.air < 0.15), s.air, LIQUID.air, 10, tank > 0 ? tankTime : Math.ceil(s.air * 10), tank > 0 ? null : 10);
     if (tank > 0 && !hovered) {
-      ccMeter(g, Rt.x, ey, mw * tank / s.tankMax, mh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
-      ccNumber(g, tankTime, Rt.x + mw / 2 - ccNumberWidth(tankTime, NK) / 2, ey + mh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
+      ccMeter(g, ex, ey, ew * tank / s.tankMax, eh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
+      ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
     }
   }
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
   if (font) {
-    const t = String(Math.floor(s.rolls)), tx = rx + 16, ty = ry + 10;
+    const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) mcText(g, font, t, tx + dx, ty + dy, 1, '#000000');
     mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
   }
