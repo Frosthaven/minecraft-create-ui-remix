@@ -32,9 +32,15 @@ public final class HudLayers {
 
     private HudLayers() {}
 
-    /** True while a main HUD layer draws and a Create HUD pack is selected. */
-    public static boolean skipDarkMode() {
-        return drawing || (flushing && createHudPack());
+    private static final String BATCHING_LAYERS = "net.raphimc.immediatelyfast.feature.batching.BatchingRenderLayers";
+
+    /**
+     * True while a main HUD layer draws, or ImmediatelyFast draws the batched HUD, and a Create
+     * HUD pack is selected. {@code caller} is DME's element name: ImmediatelyFast's own HUD render
+     * types pick their shader there, which can happen outside the flagged draws.
+     */
+    public static boolean skipDarkMode(String caller) {
+        return drawing || ((flushing || caller.startsWith(BATCHING_LAYERS)) && createHudPack());
     }
 
     /** ImmediatelyFast is drawing the batched HUD. */

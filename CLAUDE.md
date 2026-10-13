@@ -56,5 +56,7 @@ No player config edits needed; the instance config stays at DME's defaults.
   ImmediatelyFast `hud_batching` (on in this pack) draws the whole HUD later in
   `BatchingBuffers.endHudBatching`, where DME sees ImmediatelyFast as the caller (so DME's own
   `net.minecraft.client.gui.Gui` blacklist never matched either). `BatchingBuffersMixin`
-  (`createdarkinventory.immediatelyfast.mixins.json`, optional) flags that flush; with the pack
-  on, DME skips the whole batched HUD.
+  (`createdarkinventory.immediatelyfast.mixins.json`, optional) flags that flush and
+  `tryForceDrawHudBuffers` (AppleSkin and minimap compat flush mid-HUD); DME callers starting with
+  `BatchingRenderLayers` (ImmediatelyFast's HUD render types, seen with `METHOD_SHADER_DUMP` in
+  debug.log as "Considering ...") are skipped too. With the pack on, DME skips the whole batched HUD.

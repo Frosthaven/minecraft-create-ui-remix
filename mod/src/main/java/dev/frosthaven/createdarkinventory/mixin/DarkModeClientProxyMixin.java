@@ -17,6 +17,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class DarkModeClientProxyMixin {
     @Inject(method = "isElementNameBlacklisted", at = @At("HEAD"), cancellable = true)
     private static void createdarkinventory$titleScreen(String name, CallbackInfoReturnable<Boolean> cir) {
-        if (Minecraft.getInstance().screen instanceof TitleScreen || HudLayers.skipDarkMode()) cir.setReturnValue(true);
+        if (Minecraft.getInstance().screen instanceof TitleScreen || HudLayers.skipDarkMode(name)) cir.setReturnValue(true);
     }
 }
