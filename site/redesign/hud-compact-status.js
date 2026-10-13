@@ -104,14 +104,16 @@ function ccHorse() {
   circle(g, 6.6, 3.2, 0.4); g.fillStyle = '#0a0604'; g.fill();
   return c;
 }
-/** Attack cooldown (hotbar mode): a shade over the selected socket's well, lifting as the swing recharges. */
+/** Attack cooldown: a translucent cool grey veil over the selected item (the game draws it after the items, so the held
+ *  weapon dims), hanging from the slot's top and shrinking upward as the swing recharges, a faint light line and the
+ *  amber edge at its bottom (game: CompactHud.attackVeil, 1 px lines). */
 function ccAttackShade(g, s, [sx, sy]) {
   if (s.attack == null || s.attack >= 1) return;
-  const h = 16 * (1 - s.attack);
-  g.save(); rrect(g, sx + 1, sy + 1, 16, 16, 0.6); g.clip();
-  g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(sx + 1, sy + 1, 16, h);
-  g.fillStyle = 'rgba(255,190,90,0.8)'; g.fillRect(sx + 1, sy + 1 + h - 0.3, 16, 0.3);
-  g.restore();
+  const h = Math.round(16 * (1 - s.attack)), x = sx + 1, y = sy + 1;
+  if (h <= 0) return;
+  g.fillStyle = 'rgba(20,22,28,0.6)'; g.fillRect(x, y, 16, h);
+  if (h >= 2) { g.fillStyle = 'rgba(220,230,240,0.2)'; g.fillRect(x, y + h - 2, 16, 1); }
+  g.fillStyle = 'rgba(255,190,90,0.8)'; g.fillRect(x, y + h - 1, 16, 1);
 }
 
 /** Absorption: gold segments from the health's end, as far as they fit (the number gives the rest). */

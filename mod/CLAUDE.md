@@ -137,7 +137,11 @@ not a spectator.
   the mod's amount text, the worn item rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in
   `BUFF` / `DEBUFF`). `GearStatus` reads (bytecode of the pack's jars): MekaSuit energy (`HudExtras.mekaSuit`); Mekanism
   jetpack / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through `Capabilities.CHEMICAL.item()`
-  (hydrogen); Ad Astra Jet Suit energy `getEnergy(stack, ModifyOnlyContext)` (full set; no separate fuel).
+  (hydrogen); Ad Astra Jet Suit energy `getEnergy(stack, ModifyOnlyContext)` (full set; no separate fuel); a Create
+  Jetpack in flight (`HudStats.jetpackFlight`: the tanks' air falling out of water, and 3 s after; the first tank as
+  the icon). The ring is breathing only (`HudStats.backtank`: under water or in lava).
+- Attack cooldown: `CompactHud.attackVeil`, after the items (z 250), a cool grey veil over the selected item hanging
+  from the slot's top, shrinking as the swing recharges, a light and an amber line at its bottom.
   `AirGear` puts breathing gear on the ring (the frame's `tank`, seconds {left, capacity}), shown while in use (under
   water, without breathable air, or its amount fell in the last 3 s), the one falling now first, else Create backtank >
   Creating Space > Mekanism scuba > Ad Astra (logged as "breathing ring: ..."): Create (`HudStats.backtank`); Creating

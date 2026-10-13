@@ -241,17 +241,11 @@ public final class CompactHud {
             part(g, SOCKET_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(oy));
             if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(oy));
         });
-        // Create's slot marks (toolbox chips, the schematic tool's frame), the attack cooldown shade, then the selection
-        // (a toolbox slot's in red, its chips lit over the ring).
+        // Create's slot marks (toolbox chips, the schematic tool's frame), then the selection (a toolbox slot's in red, its
+        // chips lit over the ring). The attack cooldown is a veil over the item, after the items.
         int sel = p.getInventory().selected;
         for (int i = 0; i < 9; i++) if (toolbox[i] && i != sel) part(g, CHIPS_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
         if (schematic >= 0) part(g, SCHEMATIC_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * schematic), y(30));
-        if (attack != null) {
-            int sx = x(-88 + 20 * sel), sy = y(31), h = (int) (16 * K * (1 - attack));
-            use(g, FILL);
-            g.fill(sx, sy, sx + 16 * K, sy + h, 0x8C000000);
-            g.fill(sx, sy + h - 3, sx + 16 * K, sy + h, 0xCCFFBE5A);
-        }
         if (toolbox[sel]) part(g, TOOLBOX_SEL_U, OVER_V, 24 * K, 23 * K, x(-92 + 20 * sel), y(27));
         else part(g, SELECTION_U, 0, 24 * K, 23 * K, x(-92 + 20 * sel), y(27));
 
@@ -268,6 +262,7 @@ public final class CompactHud {
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.
         for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
+        if (attack != null) attackVeil(g, cx - 88 + 20 * sel, bottom - 19, attack);
         pose.pushPose();
         // In its socket (bars: centred on the meter block), at the side bars' size.
         if (f.side != 1) {
@@ -357,6 +352,23 @@ public final class CompactHud {
             double a0 = top + k * step + gap, a1 = top + (k + 1) * step - gap;
             sector(g, ORBS, ORBS_W, ORBS_H, c[0], c[1], cx, cy, CELL_HALF, top + k * step, lit >= 1 ? top + (k + 1) * step : a0 + (a1 - a0) * lit);
         }
+    }
+
+    /** The attack cooldown (the page's ccAttackShade): a translucent cool grey veil over the selected item (so the held
+     *  weapon dims), hanging from the slot's top and shrinking upward as the attack recharges, a faint light line and the
+     *  amber edge at its bottom. Over the items (in front of their depth), with the HUD's blending. */
+    private static void attackVeil(GuiGraphics g, int x, int y, float charge) {
+        int h = Math.round(16 * (1 - charge));
+        if (h <= 0) return;
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(0, 0, 250);   // in front of the item models
+        use(g, FILL);
+        restoreBlend();
+        g.fill(x, y, x + 16, y + h, 0x9914161C);
+        g.fill(x, y + h - 1, x + 16, y + h, 0xCCFFBE5A);
+        if (h >= 2) g.fill(x, y + h - 2, x + 16, y + h - 1, 0x33DCE6F0);
+        pose.popPose();
     }
 
     private static void slotItem(GuiGraphics g, Minecraft mc, LocalPlayer p, ItemStack stack, int x, int y, int seed) {

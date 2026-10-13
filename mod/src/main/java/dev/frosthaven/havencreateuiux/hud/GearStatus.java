@@ -18,6 +18,7 @@ import net.neoforged.neoforge.capabilities.ItemCapability;
  *   <li>Mekanism jetpack: hydrogen, its chemical tank 0 (Capabilities.CHEMICAL's item capability; its HUD's rule).</li>
  *   <li>MekaSuit chestplate with the jetpack unit enabled: hydrogen, tank 0 (ModuleJetpackUnit's HUD element).</li>
  *   <li>Ad Astra Jet Suit (full set): its energy (JetSuitItem.getEnergy). The Jet Suit has no separate fuel.</li>
+ *   <li>Create Jetpack in flight: the backtank air it drains out of water ({@link HudStats#jetpackFlight}).</li>
  * </ul>
  * Breathing gear (the Mekanism scuba tank, Ad Astra space suit oxygen, Creating Space O2 backtanks) is not a status: it
  * takes the right orb's ring like the Create backtank ({@link AirGear}).
@@ -35,6 +36,11 @@ final class GearStatus {
         List<Gear> out = new ArrayList<>();
         HudExtras.Suit suit = HudExtras.mekaSuit(p);
         if (suit != null) out.add(new Gear("mekasuit", suit.frac(), Component.literal("MekaSuit energy"), suit.text(), suit.icon()));
+        // A Create Jetpack in flight: the backtank's air it drains (out of water; under water the tank is breathing, on
+        // the ring). Create's own counter reads seconds.
+        HudStats.Flight fl = HudStats.jetpackFlight(p, p.isEyeInFluid(net.minecraft.tags.FluidTags.WATER));
+        if (fl != null) out.add(new Gear("create_jetpack", fl.air() / fl.cap(), Component.literal("Jetpack air (backtank)"),
+                Component.literal((int) fl.air() + " s of " + (int) fl.cap() + " s"), fl.icon()));
         try {
             mekanism(p, out);
         } catch (RuntimeException | LinkageError e) {

@@ -375,19 +375,19 @@ function compactHud(s, font) {
   }));
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);
-  ccAttackShade(g, s, [sx, sy]);
   const toolboxSel = (s.toolboxSlots || []).includes(s.slot);
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
+  ccAttackShade(g, s, [sx, sy]);   // over the item (the game: after the items)
   ccInstruments(g, s);
   side(offSide, () => ccHardcore(g, s));
   if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit)) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }
 
-/** Create backtank air shown (seconds): while diving, or while a Create Jetpack drains it in flight (the game: tank air
- *  fell in the last 3 s), else 0. */
-function ccTankLeft(s) { return s.diving || s.jetpack ? Math.max(0, s.tank) : 0; }
-/** The breath / tank segment shows as the game's air row (under water, or air below full) and while a jetpack drains
- *  the backtank. */
-function ccBreathShown(s) { return !s.creative && (s.underwater || s.air < 1 || (s.jetpack && s.tank > 0)); }
+/** Breathing air shown on the ring (seconds): the Create backtank while diving, or another breathing gear in use
+ *  (s.airGear), else 0. A Create Jetpack in flight is not breathing: it is a cyan status (CC_GEAR.createJetpack). */
+function ccTankLeft(s) { return s.diving || s.airGear ? Math.max(0, s.tank) : 0; }
+/** The breath / tank segment shows as the game's air row (under water, or air below full) and while breathing gear is
+ *  in use. */
+function ccBreathShown(s) { return !s.creative && (s.underwater || s.air < 1 || (s.airGear && s.tank > 0)); }

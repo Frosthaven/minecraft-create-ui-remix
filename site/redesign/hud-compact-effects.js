@@ -21,6 +21,7 @@ const CC_EFFECT = {
  *  told apart by the worn item's icon (the game draws the item) and the tooltip's name. Units as each mod shows them. */
 const CC_GEAR = {
   mekJetpack: { name: 'Jetpack hydrogen', unit: 'mB', max: 24000, icon: 'jetpack' },
+  createJetpack: { name: 'Jetpack air', unit: 's', max: 900, icon: 'jetpack' },   // a Create Jetpack draining the backtank in flight
   jetSuitEnergy: { name: 'Jet Suit energy', unit: 'E', max: 1000000, icon: 'jetsuit' },
 };
 /** The preview's gear icons (the game draws the worn item): 16x16 pixel drawings. */

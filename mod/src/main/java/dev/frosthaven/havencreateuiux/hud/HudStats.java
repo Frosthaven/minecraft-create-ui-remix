@@ -67,38 +67,58 @@ final class HudStats {
     /** How long the tank stays shown after its air last fell out of the water (a jetpack flight, a pause between bursts). */
     private static final long TANK_DRAIN_SHOW = 3000;
 
-    /** Create backtank air in seconds: {left, capacity}, or null when none shows. Shown as Create's remaining_air does
-     *  (under water or in lava, its VisualBacktankAir), and also while the tanks' own air falls (a Create Jetpack drains
-     *  the same tanks in flight) and TANK_DRAIN_SHOW after; then the left value is the tanks' air (getAir over
-     *  getAllWithAir, which includes jetpacks). */
+    /** Create backtank air in seconds: {left, capacity}, or null when none shows on the breathing ring: under water or
+     *  in lava (its VisualBacktankAir), as Create's remaining_air layer. A Create Jetpack draining the tanks in flight is
+     *  not breathing: {@link #jetpackFlight} gives it as a cyan status. */
     static float[] backtank(Player player, boolean underwater) {
+        Tanks t = tanks(player);
+        if (t == null) return null;
+        boolean wet = (underwater || player.isInLava()) && player.getPersistentData().contains("VisualBacktankAir");
+        HudLog.changed("tank-source", wet ? "water" : t.draining() ? "flight" : "none", "backtank: {}",
+                wet ? "under water / in lava (Create's counter), on the breathing ring" : t.draining() ? "draining out of the water (a jetpack in flight): a gear status" : "hidden");
+        if (!wet) return null;
+        int left = player.getPersistentData().getInt("VisualBacktankAir");
+        return new float[] {left, Math.max(t.cap, left)};
+    }
+
+    /** A Create Jetpack in flight: the tanks' air falling out of the water (and TANK_DRAIN_SHOW after), as {air, capacity}
+     *  seconds and the first tank worn (its icon), or null. */
+    record Flight(float air, float cap, ItemStack icon) {}
+    static Flight jetpackFlight(Player player, boolean underwater) {
+        Tanks t = tanks(player);
+        boolean wet = (underwater || player.isInLava()) && player.getPersistentData().contains("VisualBacktankAir");
+        return t == null || wet || !t.draining() || t.total <= 0 ? null : new Flight(t.total, Math.max(t.cap, t.total), t.icon);
+    }
+
+    private record Tanks(int total, int cap, ItemStack icon, boolean draining) {}
+    private static long tanksAt = -1;
+    private static Tanks tanksLast;
+
+    /** The worn tanks' air (getAir over getAllWithAir, jetpacks included), read once a frame; null without Create. */
+    private static Tanks tanks(Player player) {
         if (player.isCreative()) return null;
+        long now = net.minecraft.Util.getMillis();
+        if (now == tanksAt) return tanksLast;
         int total = 0, cap = 0;
+        ItemStack icon = ItemStack.EMPTY;
         try {
             Class<?> util = Class.forName("com.simibubi.create.content.equipment.armor.BacktankUtil");
             Method max = util.getMethod("maxAir", ItemStack.class), air = util.getMethod("getAir", ItemStack.class);
             for (Object s : (List<?>) util.getMethod("getAllWithAir", net.minecraft.world.entity.LivingEntity.class).invoke(null, player)) {
+                if (icon.isEmpty() && s instanceof ItemStack st) icon = st;
                 cap += ((Number) max.invoke(null, s)).intValue();
                 total += ((Number) air.invoke(null, s)).intValue();
             }
         } catch (ClassNotFoundException | LinkageError e) {
-            HudLog.once("create-absent", "Create's BacktankUtil not present: no backtank segment");
+            HudLog.once("create-absent", "Create's BacktankUtil not present: no backtank");
             return null;
         } catch (ReflectiveOperationException | RuntimeException e) {
             HudLog.error("backtank", "reading Create's backtanks failed (Create's own counter value still used under water)", e);
         }
-        long now = net.minecraft.Util.getMillis();
         if (tankLast >= 0 && total < tankLast) tankDrainAt = now;
         tankLast = total;
-        boolean wet = (underwater || player.isInLava()) && player.getPersistentData().contains("VisualBacktankAir");
-        boolean draining = !wet && total > 0 && now - tankDrainAt < TANK_DRAIN_SHOW;
-        HudLog.changed("tank-source", wet ? "water" : draining ? "drain" : "none",
-                "backtank segment: {}", wet ? "under water / in lava (Create's counter)" : draining ? "draining out of the water (a jetpack in flight), shown for 3 s after the air last fell" : "hidden");
-        if (wet) {
-            int left = player.getPersistentData().getInt("VisualBacktankAir");
-            return new float[] {left, Math.max(cap, left)};
-        }
-        return draining ? new float[] {total, Math.max(cap, total)} : null;
+        tanksAt = now;
+        return tanksLast = new Tanks(total, cap, icon, now - tankDrainAt < TANK_DRAIN_SHOW);
     }
 
     /** The backtanks' air fell within TANK_DRAIN_SHOW (AirGear prefers a source whose air is falling). */

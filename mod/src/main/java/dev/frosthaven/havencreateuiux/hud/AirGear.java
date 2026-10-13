@@ -14,7 +14,8 @@ import net.minecraft.world.item.ItemStack;
  * without breathable air, or while its stored air falls (and {@link #DRAIN_SHOW} after). The drain rates, from the
  * 1.21.1 jars' bytecode, turn the amount into time:
  * <ul>
- *   <li>Create backtank: its air is seconds ({@link HudStats#backtank}; a Create Jetpack drains it too).</li>
+ *   <li>Create backtank under water: its air is seconds ({@link HudStats#backtank}). A Create Jetpack in flight is a
+ *       gear status, not breathing.</li>
  *   <li>Creating Space O2 backtank (copper, netherite) as the chestplate: 1 O2 a second (CSEventHandler, every 20 ticks;
  *       under water its helmet uses it as Create's backtank does).</li>
  *   <li>Mekanism scuba tank with the scuba mask on (CommonPlayerTickHandler.isScubaMaskOn): it refills the air the
