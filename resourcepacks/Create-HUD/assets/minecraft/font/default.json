@@ -1,0 +1,13 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "createhud:font/search.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "🔍"
+      ]
+    }
+  ]
+}

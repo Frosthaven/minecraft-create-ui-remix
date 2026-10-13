@@ -1,6 +1,6 @@
 {
   "pack": {
     "pack_format": 34,
-    "description": "Create HUD: dark steampunk hotbar, hearts, food, armor, air, XP"
+    "description": "Create GUI: dark steampunk HUD, inventory and backpacks"
   }
 }

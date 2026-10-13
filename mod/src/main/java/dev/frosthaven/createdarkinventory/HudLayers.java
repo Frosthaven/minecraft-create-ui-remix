@@ -59,9 +59,12 @@ public final class HudLayers {
     /** A selected resource pack named like "Create-HUD" / "Create HUD". */
     public static boolean createHudPack() {
         for (String id : Minecraft.getInstance().getResourcePackRepository().getSelectedIds()) {
-            String name = id.toLowerCase(Locale.ROOT).replace(' ', '-').replace('_', '-');
-            if (name.contains("create-hud")) return true;
+            if (isCreateHudPack(id)) return true;
         }
         return false;
+    }
+
+    public static boolean isCreateHudPack(String id) {
+        return id.toLowerCase(Locale.ROOT).replace(' ', '-').replace('_', '-').contains("create-hud");
     }
 }
