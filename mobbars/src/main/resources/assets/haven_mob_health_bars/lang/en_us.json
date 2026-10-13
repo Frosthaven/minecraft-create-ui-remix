@@ -1,0 +1,9 @@
+{
+  "haven_mob_health_bars.configuration.title": "Mob health bars",
+  "haven_mob_health_bars.config.enabled": "Show health bars",
+  "haven_mob_health_bars.config.range": "Range (blocks)",
+  "haven_mob_health_bars.config.hostile": "Hostile mobs",
+  "haven_mob_health_bars.config.not_hostile": "Other mobs",
+  "haven_mob_health_bars.config.friendly_players": "Friendly players",
+  "haven_mob_health_bars.config.hostile_players": "Hostile players"
+}

@@ -4,4 +4,7 @@ site/manifest.json
 mod/build/
 mod/.gradle/
 mod/run/
+mobbars/build/
+mobbars/.gradle/
+mobbars/run/
 dist/

@@ -15,12 +15,6 @@ public final class UiConfig {
     public static final ModConfigSpec.EnumValue<PrimaryMana> PRIMARY_MANA;
     public static final ModConfigSpec.DoubleValue HUD_SCALE;
     public static final ModConfigSpec.DoubleValue SIDE_SCALE;
-    public static final ModConfigSpec.BooleanValue MOB_BARS;
-    public static final ModConfigSpec.IntValue MOB_BAR_RANGE;
-    public static final ModConfigSpec.BooleanValue MOB_BARS_HOSTILE;
-    public static final ModConfigSpec.BooleanValue MOB_BARS_NOT_HOSTILE;
-    public static final ModConfigSpec.BooleanValue MOB_BARS_PLAYERS;
-    public static final ModConfigSpec.BooleanValue MOB_BARS_AGGRESSIVE;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -33,20 +27,6 @@ public final class UiConfig {
                 .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.0, 0.5, 2.0);
         SIDE_SCALE = b.comment("The side bars' size (orbs or meters, the offhand, the dash), relative to their design; they stay attached to the action bar.")
                 .translation("haven_create_ui_ux.config.side_scale").defineInRange("sideScale", 1.0, 0.5, 2.0);
-        b.pop();
-        b.push("mobBars");
-        MOB_BARS = b.comment("Floating health bars above nearby mobs.")
-                .translation("haven_create_ui_ux.config.mob_bars").define("enabled", true);
-        MOB_BAR_RANGE = b.comment("How far away (blocks) a mob still gets a bar.")
-                .translation("haven_create_ui_ux.config.mob_bar_range").defineInRange("range", 10, 2, 64);
-        MOB_BARS_HOSTILE = b.comment("Bars on hostile mobs (red).")
-                .translation("haven_create_ui_ux.config.mob_bars_hostile").define("hostile", true);
-        MOB_BARS_NOT_HOSTILE = b.comment("Bars on every other mob: animals, villagers, pets, golems, neutral mobs (green).")
-                .translation("haven_create_ui_ux.config.mob_bars_not_hostile").define("notHostile", true);
-        MOB_BARS_PLAYERS = b.comment("Bars on other players who have not hit a player in the last 30 seconds (blue).")
-                .translation("haven_create_ui_ux.config.mob_bars_players").define("friendlyPlayers", true);
-        MOB_BARS_AGGRESSIVE = b.comment("Bars on players who hit any player in the last 30 seconds (magenta), whatever the friendly players setting.")
-                .translation("haven_create_ui_ux.config.mob_bars_aggressive").define("hostilePlayers", true);
         b.pop();
         SPEC = b.build();
     }

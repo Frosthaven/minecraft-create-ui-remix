@@ -5,15 +5,8 @@
   "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml": "Create UI Remix",
   "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml.title": "Create UI Remix",
   "haven_create_ui_ux.configuration.hud": "Action bar",
-  "haven_create_ui_ux.configuration.mobBars": "Mob health bars",
   "haven_create_ui_ux.config.meter_display": "Meter display",
   "haven_create_ui_ux.config.primary_mana": "Primary mana pool",
   "haven_create_ui_ux.config.hud_scale": "Action bar size",
-  "haven_create_ui_ux.config.mob_bars": "Show mob health bars",
-  "haven_create_ui_ux.config.mob_bar_range": "Range (blocks)",
-  "haven_create_ui_ux.config.mob_bars_hostile": "Hostile mobs",
-  "haven_create_ui_ux.config.mob_bars_not_hostile": "Other mobs",
-  "haven_create_ui_ux.config.mob_bars_players": "Friendly players",
-  "haven_create_ui_ux.config.mob_bars_aggressive": "Hostile players",
   "haven_create_ui_ux.config.side_scale": "Side bars size"
 }

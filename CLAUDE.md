@@ -174,7 +174,7 @@ mods that reuse vanilla hearts look vanilla.
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
 
-## Mob health bars (`site/redesign/mob-bars.html`, `mob-bars.js`): in game via the mod (`mod/CLAUDE.md`, MobBars)
+## Mob health bars (`site/redesign/mob-bars.html`, `mob-bars.js`): in game via its own mod haven-mob-health-bars (`mobbars/CLAUDE.md`)
 
 A night scene (vanilla zombie skin, orthographic 3/4 view; `tools/extract.py` takes the zombie skin and grass top, and
 skips entity skins from packs because Fresh Animations remaps them) with a flat, dim bar half a block over the head.

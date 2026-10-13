@@ -1,6 +1,6 @@
-package dev.frosthaven.havencreateuiux.mixin;
+package dev.frosthaven.havenmobbars.mixin;
 
-import dev.frosthaven.havencreateuiux.hud.MobBars;
+import dev.frosthaven.havenmobbars.MobBars;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LivingEntity.class)
 public abstract class RecentAttackerMixin {
     @Inject(method = "handleDamageEvent", at = @At("HEAD"))
-    private void haven_create_ui_ux$attacker(DamageSource source, CallbackInfo ci) {
+    private void haven_mob_health_bars$attacker(DamageSource source, CallbackInfo ci) {
         if ((Object) this instanceof Player victim && victim.level().isClientSide
                 && source.getEntity() instanceof Player attacker && attacker != victim) {
             MobBars.attackedBy(attacker);
