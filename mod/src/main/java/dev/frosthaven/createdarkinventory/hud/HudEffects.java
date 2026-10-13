@@ -34,7 +34,8 @@ final class HudEffects {
 
     private HudEffects() {}
 
-    static void draw(GuiGraphics g, Player p, int cx, int bottom, float scale) {
+    /** left: the bar's left edge + 1, top: where the lines start (units; with orbs, clear of the housings). */
+    static void draw(GuiGraphics g, Player p, int cx, int bottom, float scale, double left, double startTop) {
         BOXES.clear();
         List<MobEffectInstance> all = new ArrayList<>();
         for (MobEffectInstance e : p.getActiveEffects()) if (e.showIcon()) all.add(e);
@@ -42,7 +43,7 @@ final class HudEffects {
         START.keySet().removeIf(h -> all.stream().noneMatch(e -> e.getEffect().equals(h)));
         List<MobEffectInstance> green = line(all, false), red = line(all, true);
         HudLog.changed("effects", green.size() + "/" + red.size(), "effects: {} buffs, {} debuffs", green.size(), red.size());
-        double top = 21.4 - 2;
+        double top = startTop;
         for (Object[] l : new Object[][] {{green, 1.0}, {red, 1.5}}) {
             @SuppressWarnings("unchecked") List<MobEffectInstance> list = (List<MobEffectInstance>) l[0];
             double m = (double) l[1];
@@ -51,7 +52,7 @@ final class HudEffects {
                 top -= ROW_H * m;
                 for (int i = 0; i < per && r * per + i < list.size(); i++) {
                     MobEffectInstance e = list.get(r * per + i);
-                    int x = -165 * K + K + (int) (CELL * m * i), y = (int) Math.round((top - 50) * K);
+                    int x = (int) Math.round(left * K) + (int) (CELL * m * i), y = (int) Math.round((top - 50) * K);
                     effect(g, e, x, y, m);
                     double s = scale / K;
                     BOXES.add(new Object[] {e, cx + x * s, bottom + y * s, SIZE * m * s});
@@ -88,7 +89,7 @@ final class HudEffects {
             if (dur >= 0) {
                 String t = time(dur / 20);
                 boolean hot = dur <= 200, unit = t.endsWith("m") || t.endsWith("h");
-                CompactHud.digits(g, t, SIZE / 2 - CompactHud.digitsWidth(t) / 2, SIZE + 8, t.length() - (unit ? 1 : 0), hot ? RED : WHITE, DIM);
+                HudDraw.digits(g, t, SIZE / 2 - HudDraw.digitsWidth(t) / 2, SIZE + 8, t.length() - (unit ? 1 : 0), hot ? RED : WHITE, DIM);
             }
         }
         pose.popPose();

@@ -81,8 +81,16 @@ not a spectator.
   centre, the bar's bottom at 50) times 8. Items at vanilla's exact spots (bottom - 19, centre - 88 + 20 i), so mods that
   mark hotbar slots line up. Sets `gui.leftHeight/rightHeight` to 33 for later layers. Key "Show HUD numbers (hold)",
   Left Alt by default (Controls); numbers also show while a screen is open. No dark mode on it (`HudLayers.MAIN`).
-- In game the whole bar (items included) is drawn at `CompactHud.SCALE` (1.1) around the screen's bottom centre.
-- Exhaustion: `FoodData.getExhaustionLevel()` (NeoForge), a hairline track under the food meter.
+- In game the whole bar (items included) is drawn at the config's size (`UiConfig.HUD_SCALE`, 1.1) around the screen's
+  bottom centre.
+- Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, MekaSuit gauge, floating plates,
+  items), `HudFrame` (one frame's state, the wing ends), `OrbHud` (orb mode), `BarHud` (bar mode), `HudDraw` (blits,
+  circle and pill clipped fills, textured sectors that reveal a ring by angle, the digit sets), `Smooth` (breath and the
+  backtank eased between the game's steps).
+- Glows are drawn on black in the atlas and added with a screen blend (`ONE, ONE_MINUS_SRC_COLOR`); ImmediatelyFast's
+  HUD batching keeps the blend state (`RenderSystemState`).
+- Exhaustion: `FoodData.getExhaustionLevel()` (NeoForge): bars a hairline under food; orbs cracks in the food half,
+  flakes when it drops (a point taken).
 - `CompactAtlas`: the textures' layout; KEEP IN STEP with `hud-compact-export.js`.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
   (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank

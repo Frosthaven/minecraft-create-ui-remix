@@ -11,175 +11,241 @@ const ORB = { tex: 0.67, housing: 15.5,   // housing: the housing's radius (r + 
   // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
   bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
-/** One orb at (cx, cy): fill {frac, liq}, over {from, to, liq} (absorption, above the fill), crescent {frac, liq,
- *  light: {frac, liq}} (the secondary layer), ring {frac, on, off} (segments around the bezel). */
-function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
-  const r = ORB.r;
-  cy += shake;
-  // The brass bezel; a ring (armor, breath) takes it over where its segments are lit: ten segments clockwise from the
-  // top, the unlit ones staying plain brass.
-  const B = ORB.bezel, R1 = r + B;
-  // The bezel: dark stone grey (not brass), a little lighter where the light falls.
+/** One orb at (cx, cy): fill {frac, liq, style, wave, t, sat} (sat: the saturation level, food only), over {from, to,
+ *  liq} (absorption, above the fill), crescent (the right half's pool, as fill), ring {frac, on, smooth}. Drawn from
+ *  pieces (the game draws the same pieces from the export, hud-compact-export.js): bezel, ring, glass, liquids, divider,
+ *  glass front, glow. */
+function ccOrb(g, cx, cy, { fill, over, crescent, ring }) {
+  const r = ORB.r, split = crescent != null;
+  ccOrbBezel(g, cx, cy);
+  if (ring) ccOrbRing(g, cx, cy, ring);
+  ccOrbGlassBack(g, cx, cy);
+  g.save(); circle(g, cx, cy, r); g.clip();
+  // With a secondary the orb splits down the middle (as Path of Exile does for life and mana): the primary fills the
+  // left half, the secondary the right, each rising from the bottom on its own, a thin dark divider between them.
+  ccOrbHalf(g, cx, cy, cx - r, split ? r : 2 * r, fill, over);
+  if (split) { ccOrbHalf(g, cx, cy, cx, r, crescent, null); ccOrbDivider(g, cx, cy); }
+  ccOrbGlassFront(g, cx, cy);
+  g.restore();
+  // The liquids cast a slight glow onto the stone rim and anything on it (armor plates, rings).
+  if (fill && fill.frac > 0) ccOrbGlow(g, cx, cy, cx - ORB.housing, split ? ORB.housing : 2 * ORB.housing, fill.liq, ccOrbLevel(cy, fill.frac));
+  if (split && crescent.frac > 0) ccOrbGlow(g, cx, cy, cx, ORB.housing, crescent.liq, ccOrbLevel(cy, crescent.frac));
+}
+/** The y of a liquid's surface at frac (0 empty .. 1 full). */
+const ccOrbLevel = (cy, f) => cy + ORB.r - 2 * ORB.r * Math.max(0, Math.min(1, f));
+/** The wave surface at x (low health or food): the liquid sloshes, the orb stays put. */
+const ccOrbWave = (top, A, t, x) => top + A * Math.sin(x * 0.9 + t / 180) + A * 0.5 * Math.sin(x * 2.1 - t / 180 * 1.7);
+
+/** The stone bezel: dark grey, a light brushed finish, its lit edge, and dark rivets at the ring's segment gaps. */
+function ccOrbBezel(g, cx, cy) {
+  const r = ORB.r, B = ORB.bezel, R1 = r + B;
   circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#55575b'], [0.35, '#36383c'], [1, '#1b1c1f']]); g.fill();
-  surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);   // a light brushed finish
-  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);   // its lit edge, under anything on the rim
-  // Dark rivets around the stone rim, at the gaps between the ring's segments.
+  surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);
+  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
   for (let k = 0; k < 10; k++) {
     const a = -Math.PI / 2 + k * Math.PI / 5, x = cx + Math.cos(a) * (r + B / 2), y = cy + Math.sin(a) * (r + B / 2);
     circle(g, x, y, 0.42); g.fillStyle = '#121315'; g.fill();
     circle(g, x - 0.1, y - 0.12, 0.16); g.fillStyle = 'rgba(160,165,170,0.5)'; g.fill();
   }
-  if (ring) {
-    // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim. A smooth ring
-    // (breath, the tank, Helium Flamingo, aircraft) is one continuous arc instead.
-    const n = ring.smooth ? 1 : 10, gap = ring.smooth ? 0 : 0.07;
-    for (let k = 0; k < n; k++) {
-      const lit = ring.frac * n - k;   // >= 1 full, 0..1 partial
-      if (lit <= 0) break;
-      const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
-      const a2 = a0 + (a1 - a0) * Math.min(1, lit);
-      // A lit segment stands proud of the rim (wider than the bezel, dark outline) and glows in its colour.
-      // Segmented (armor): thick iron plates reaching from the rim across the seat into the housing; smooth: on the rim.
-      const p0 = r - 0.35, p1 = ring.smooth ? R1 + 0.45 : ORB.housing - 0.35;   // armor plates stay on the housing (not past its dome)
-      const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
-      if (!ring.smooth) {   // a plate casts a soft shadow onto the housing it is bolted to
-        g.save(); g.translate(0.35, 0.55); seg(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
-      }
-      g.save(); g.shadowColor = ring.on[1]; g.shadowBlur = 2.2;
-      if (ring.smooth) { seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill(); }
-      else {   // a curved strap: a crest just outside the rim, bending back down onto the housing (shaded across its width)
-        const q = t => (p0 + (p1 - p0) * t) / p1;
-        seg(); g.fillStyle = radial(g, cx, cy, p1, [[q(0), ring.on[1]], [q(0.3), ring.on[0]], [q(0.55), ring.on[1]], [q(1), ring.on[2]]]); g.fill();
-        g.globalCompositeOperation = 'multiply';   // keep the top-lit feel: darker toward the bottom of the orb
-        seg(); g.fillStyle = vgrad(g, cy - p1, cy + p1, [[0, '#ffffff'], [1, '#8a8e94']]); g.fill();
-        g.globalCompositeOperation = 'source-over';
-      }
-      g.restore();
-      surface(g, seg, TEX.brushed, 0.15 * ORB.tex);
-      seg(); g.strokeStyle = 'rgba(0,0,0,0.85)'; g.lineWidth = 0.3; g.stroke();
-      const crest = ring.smooth ? p1 - 0.25 : p0 + (p1 - p0) * 0.3;   // the highlight along the crest
-      g.beginPath(); g.arc(cx, cy, crest, a0 + 0.02, a2 - 0.02); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.2; g.stroke();
-      if (!ring.smooth && lit >= 1) {   // two hex bolts holding the plate to the housing
-        const rb = (R1 + 0.6 + p1) / 2;
-        for (const t of [0.25, 0.75]) { const a = a0 + (a1 - a0) * t; hexBolt(g, cx + Math.cos(a) * rb, cy + Math.sin(a) * rb, 0.42); }
-      }
-    }
-  }
-  circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
-  surface(g, () => circle(g, cx, cy, r), TEX.rock, 0.12 * ORB.tex);   // the empty glass: smoky
-  g.save(); circle(g, cx, cy, r); g.clip();
-  const level = f => cy + r - 2 * r * Math.max(0, Math.min(1, f));
-  // A liquid: its gradient, then slow swirls (broad blotches) and a fine shimmer, clipped to its level.
-  // A liquid with depth: its gradient darkening toward the bottom, a soft inner glow, then its style: 'mana' a galaxy
-  // (deep space, nebula clouds in its colour, fine stars), 'cloud' billowing lighter and darker layers (health).
-  const liquid = (liq, y0, y1, style) => {
-    const area = () => { g.beginPath(); g.rect(cx - r, y0, 2 * r, y1 - y0); };
-    g.save(); area(); g.clip();
-    if (style === 'mana') {
-      // A galaxy: the pool's own colour where the nebula clouds are, darkening toward deep space everywhere else
-      // (a multiply mask from the cloud texture, at two scales).
-      g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
-      g.globalCompositeOperation = 'multiply';
-      const pat = g.createPattern(ccNebula(), 'repeat');
-      for (const k of [0.07, 0.16]) {
-        pat.setTransform(new DOMMatrix().translateSelf(cx * 3, cy * 5).rotateSelf(k * 900).scaleSelf(k, k));
-        g.fillStyle = pat; area(); g.fill();
-      }
-      g.globalCompositeOperation = 'screen';
-      // Stars: fixed points (seeded by the orb's position), a few brighter.
-      for (let i = 0; i < 26; i++) {
-        const h = Math.sin((cx + i * 12.9898) * 78.233) * 43758.5453, u = h - Math.floor(h), v = (h * 7.13) - Math.floor(h * 7.13);
-        const x = cx - r + u * 2 * r, y = cy - r + v * 2 * r, big = i % 7 === 0;
-        g.fillStyle = big ? 'rgba(255,255,255,0.95)' : 'rgba(220,230,255,0.7)';
-        g.fillRect(x, y, big ? 0.45 : 0.25, big ? 0.45 : 0.25);
-      }
+}
+/** The ring on the bezel: armor as ten bolted plates (only the full ones; a half one for an odd value), or one smooth
+ *  arc (breath, the backtank, Helium Flamingo, aircraft). half: every plate drawn half (the export's partial set). */
+function ccOrbRing(g, cx, cy, ring) {
+  const r = ORB.r, R1 = r + ORB.bezel, n = ring.smooth ? 1 : 10, gap = ring.smooth ? 0 : 0.07;
+  for (let k = 0; k < n; k++) {
+    const lit = ring.half ? 0.5 : ring.frac * n - k;   // >= 1 full, 0..1 partial
+    if (lit <= 0) break;
+    const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
+    const a2 = a0 + (a1 - a0) * Math.min(1, lit);
+    // Segmented (armor): thick iron plates reaching from the rim across the seat into the housing; smooth: on the rim.
+    const p0 = r - 0.35, p1 = ring.smooth ? R1 + 0.45 : ORB.housing - 0.35;
+    const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
+    if (!ring.smooth) { g.save(); g.translate(0.35, 0.55); seg(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore(); }
+    g.save(); g.shadowColor = ring.on[1]; g.shadowBlur = 2.2;
+    if (ring.smooth) { seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill(); }
+    else {   // a curved strap: a crest just outside the rim, bending back down onto the housing (shaded across its width)
+      const q = t => (p0 + (p1 - p0) * t) / p1;
+      seg(); g.fillStyle = radial(g, cx, cy, p1, [[q(0), ring.on[1]], [q(0.3), ring.on[0]], [q(0.55), ring.on[1]], [q(1), ring.on[2]]]); g.fill();
+      g.globalCompositeOperation = 'multiply';   // keep the top-lit feel: darker toward the bottom of the orb
+      seg(); g.fillStyle = vgrad(g, cy - p1, cy + p1, [[0, '#ffffff'], [1, '#8a8e94']]); g.fill();
       g.globalCompositeOperation = 'source-over';
-    } else {
-      g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
-      if (style === 'cloud' || style === 'broth') {   // billows: lighter clouds rising, darker ones settling, at two scales
-        g.save(); g.translate(cx, cy); g.scale(0.55, 0.55); g.translate(-cx, -cy);
-        surface(g, () => { g.beginPath(); g.rect(cx - 3 * r, cy - 3 * r, 6 * r, 6 * r); }, TEX.blotch, 0.55 * ORB.tex, 'soft-light');
-        g.restore();
-        surface(g, area, TEX.blotch, 0.45 * ORB.tex, 'overlay');
-        surface(g, area, TEX.rock, 0.25 * ORB.tex, 'soft-light');
-        if (style === 'broth') for (let i = 0; i < 7; i++) {   // a few rising bubbles
-          const h = Math.sin((cx + i * 9.17) * 33.1) * 43758.5453, u = h - Math.floor(h), v = h * 5.3 - Math.floor(h * 5.3);
-          const by = y0 + 1 + v * (y1 - y0 - 2);
-          circle(g, cx - r + u * 2 * r, by, 0.35 + (i % 3) * 0.15); g.strokeStyle = 'rgba(255,230,190,0.55)'; g.lineWidth = 0.15; g.stroke();
-        }
-      } else {
-        surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light');
-      }
     }
-    // Depth: darker toward the bottom and the sides, a little light from within.
-    g.fillStyle = vgrad(g, y0, cy + r, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.35)']]); area(); g.fill();
-    g.fillStyle = radial(g, cx, cy + r * 0.1, r, [[0, 'rgba(255,255,255,0.08)'], [0.6, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); area(); g.fill();
     g.restore();
-  };
-  // With a secondary the orb splits down the middle (as Path of Exile does for life and mana): the primary fills the
-  // left half, the secondary the right, each rising from the bottom on its own, a thin dark divider between them.
-  const half = (x0, w, f, liq, overTo, style) => {
-    if (!f || f.frac <= 0) return;
-    g.save(); g.beginPath(); g.rect(x0, cy - r, w, 2 * r); g.clip();
-    const top = level(f.frac);
-    if (f.wave) {   // low health: the surface sloshes in a rolling wave (the liquid clipped to it), the orb stays put
-      const A = f.wave, ph = (f.t || 0) / 180, surf = x => top + A * Math.sin(x * 0.9 + ph) + A * 0.5 * Math.sin(x * 2.1 - ph * 1.7);
-      g.save(); g.beginPath(); g.moveTo(x0, cy + r);
-      for (let x = x0; x <= x0 + w + 0.01; x += 0.5) g.lineTo(x, surf(x));
-      g.lineTo(x0 + w, cy + r); g.closePath(); g.clip();
-      liquid(liq, top - 2 * A, cy + r, style);
-      g.restore();
-      g.beginPath(); for (let x = x0; x <= x0 + w + 0.01; x += 0.5) x === x0 ? g.moveTo(x, surf(x)) : g.lineTo(x, surf(x));
-      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.4; g.stroke();   // the moving surface catching the light
-    } else liquid(liq, top, cy + r, style);
-    if (overTo && overTo.to > overTo.from) {   // absorption: golden cloud with a few sparkles
-      const ya = level(overTo.to), yb = level(overTo.from);
-      liquid(overTo.liq, ya, yb, 'cloud');
-      for (let i = 0; i < 9; i++) {
-        const h = Math.sin((cx + i * 7.31) * 51.7) * 43758.5453, u = h - Math.floor(h), v = h * 3.7 - Math.floor(h * 3.7);
-        const x = x0 + u * w, y = ya + v * (yb - ya);
-        g.fillStyle = i % 3 ? 'rgba(255,250,210,0.8)' : 'rgba(255,255,255,0.95)'; g.fillRect(x, y, i % 3 ? 0.3 : 0.45, i % 3 ? 0.3 : 0.45);
-      }
+    surface(g, seg, TEX.brushed, 0.15 * ORB.tex);
+    seg(); g.strokeStyle = 'rgba(0,0,0,0.85)'; g.lineWidth = 0.3; g.stroke();
+    const crest = ring.smooth ? p1 - 0.25 : p0 + (p1 - p0) * 0.3;   // the highlight along the crest
+    g.beginPath(); g.arc(cx, cy, crest, a0 + 0.02, a2 - 0.02); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.2; g.stroke();
+    if (!ring.smooth && lit >= 1) {   // two hex bolts holding the plate to the housing
+      const rb = (R1 + 0.6 + p1) / 2;
+      for (const t of [0.25, 0.75]) { const a = a0 + (a1 - a0) * t; hexBolt(g, cx + Math.cos(a) * rb, cy + Math.sin(a) * rb, 0.42); }
     }
-    const surfaceY = overTo && overTo.to > overTo.from ? level(overTo.to) : top;
-    if (!f.wave || (overTo && overTo.to > overTo.from)) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, surfaceY, w, 0.4); }   // the surface catching the light
-    g.restore();
-  };
-  const split = crescent != null;
-  half(cx - r, split ? r : 2 * r, fill, fill && fill.liq, over, fill && fill.style);
-  if (split) {
-    half(cx, r, crescent, crescent.liq, null, crescent.style);
-    g.fillStyle = vgrad(g, cy - r, cy + r, [[0, '#5a5c60'], [1, '#1c1d20']]); g.fillRect(cx - 0.35, cy - r, 0.7, 2 * r);
   }
-  // Glass: a soft dark rim and a highlight top-left.
+}
+/** The empty glass: smoky dark. */
+function ccOrbGlassBack(g, cx, cy) {
+  const r = ORB.r;
+  circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
+  surface(g, () => circle(g, cx, cy, r), TEX.rock, 0.12 * ORB.tex);
+}
+/** The glass over the liquids: a soft dark rim and a highlight top-left. */
+function ccOrbGlassFront(g, cx, cy) {
+  const r = ORB.r;
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy, r, [[0.7, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.55)']]); g.fill();
   g.beginPath(); g.ellipse(cx - r * 0.32, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
-  g.restore();
-  // The liquids cast a slight glow onto the stone rim and anything on it (armor plates, rings): each half's colour,
-  // below its level, fading outward across the rim.
-  const glowHalf = (x0, w, f, liq) => {
-    if (!f || f.frac <= 0) return;
-    g.save();
-    g.beginPath(); g.arc(cx, cy, ORB.housing, 0, Math.PI * 2); g.arc(cx, cy, r - 0.2, 0, Math.PI * 2, true); g.clip('evenodd');
-    g.beginPath(); g.rect(x0, level(f.frac) - 1.5, w, cy + r + 4 - level(f.frac)); g.clip();
+}
+/** The thin dark divider between the halves. */
+function ccOrbDivider(g, cx, cy) {
+  const r = ORB.r;
+  g.fillStyle = vgrad(g, cy - r, cy + r, [[0, '#5a5c60'], [1, '#1c1d20']]); g.fillRect(cx - 0.35, cy - r, 0.7, 2 * r);
+}
+/** A liquid over the whole disc (the caller clips it to its half and level): its gradient, its style ('mana' a galaxy:
+ *  nebula clouds in its colour and fixed stars; 'cloud' billows; 'broth' the same), and depth (darker toward the
+ *  bottom and the sides, a little light from within). */
+function ccOrbLiquid(g, cx, cy, liq, style) {
+  const r = ORB.r, area = () => { g.beginPath(); g.rect(cx - r, cy - r, 2 * r, 2 * r); };
+  g.save(); area(); g.clip();
+  g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
+  if (style === 'mana') {
+    g.globalCompositeOperation = 'multiply';
+    const pat = g.createPattern(ccNebula(), 'repeat');
+    for (const k of [0.07, 0.16]) {
+      pat.setTransform(new DOMMatrix().translateSelf(cx * 3, cy * 5).rotateSelf(k * 900).scaleSelf(k, k));
+      g.fillStyle = pat; area(); g.fill();
+    }
     g.globalCompositeOperation = 'screen';
-    // Only the rim's inner edge catches it: a faint band fading out within about a pixel.
-    // Equal strength for every colour: dimmer colours (red, orange) get more alpha than bright ones (blue), by luminance.
-    const [cr, cg, cb] = [1, 3, 5].map(i => parseInt(liq[1].slice(i, i + 2), 16) / 255);
-    const lum = 0.3 * cr + 0.59 * cg + 0.11 * cb, a = Math.max(0.2, Math.min(0.75, 0.16 / Math.max(lum, 0.05)));
-    const hex = Math.round(a * 255).toString(16).padStart(2, '0');
-    g.fillStyle = radial(g, cx, cy, r + 1.4, [[(r - 0.2) / (r + 1.4), liq[1] + hex], [1, liq[1] + '00']]);
-    g.fillRect(cx - ORB.housing, cy - ORB.housing, 2 * ORB.housing, 2 * ORB.housing);
+    for (let i = 0; i < 26; i++) {   // stars: fixed points (seeded by the orb's position), a few brighter
+      const h = Math.sin((cx + i * 12.9898) * 78.233) * 43758.5453, u = h - Math.floor(h), v = (h * 7.13) - Math.floor(h * 7.13);
+      const x = cx - r + u * 2 * r, y = cy - r + v * 2 * r, big = i % 7 === 0;
+      g.fillStyle = big ? 'rgba(255,255,255,0.95)' : 'rgba(220,230,255,0.7)';
+      g.fillRect(x, y, big ? 0.45 : 0.25, big ? 0.45 : 0.25);
+    }
+    g.globalCompositeOperation = 'source-over';
+  } else if (style === 'cloud' || style === 'broth') {   // billows: lighter clouds rising, darker ones settling
+    g.save(); g.translate(cx, cy); g.scale(0.55, 0.55); g.translate(-cx, -cy);
+    surface(g, () => { g.beginPath(); g.rect(cx - 3 * r, cy - 3 * r, 6 * r, 6 * r); }, TEX.blotch, 0.55 * ORB.tex, 'soft-light');
     g.restore();
-  };
-  const split2 = crescent != null;
-  glowHalf(cx - ORB.housing, split2 ? ORB.housing : 2 * ORB.housing, fill, fill && fill.liq);
-  if (split2) glowHalf(cx, ORB.housing, crescent, crescent.liq);
+    surface(g, area, TEX.blotch, 0.45 * ORB.tex, 'overlay');
+    surface(g, area, TEX.rock, 0.25 * ORB.tex, 'soft-light');
+  } else { surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light'); }
+  g.fillStyle = vgrad(g, cy - r, cy + r, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.35)']]); area(); g.fill();
+  g.fillStyle = radial(g, cx, cy + r * 0.1, r, [[0, 'rgba(255,255,255,0.08)'], [0.6, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); area(); g.fill();
+  g.restore();
+}
+/** Saturation over the broth: paler and creamier, its texture showing straight through (the caller clips it). */
+function ccOrbSatTint(g, cx, cy) {
+  const r = ORB.r;
+  g.save();
+  g.globalCompositeOperation = 'soft-light'; g.fillStyle = 'rgba(255,240,210,0.35)'; g.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+  g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(255,225,180,0.06)'; g.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+  g.restore();
+}
+/** The broth's rising bubbles, seeded by the orb's position, spread over the liquid from y0 to y1. */
+function ccOrbBubbles(cx, cy, y0, y1) {
+  const r = ORB.r, out = [];
+  for (let i = 0; i < 7; i++) {
+    const h = Math.sin((cx + i * 9.17) * 33.1) * 43758.5453, u = h - Math.floor(h), v = h * 5.3 - Math.floor(h * 5.3);
+    out.push([cx - r + u * 2 * r, y0 + 1 + v * (y1 - y0 - 2), 0.35 + (i % 3) * 0.15]);
+  }
+  return out;
+}
+/** Absorption's sparkles in its band (x0..x0 + w, ya..yb). */
+function ccOrbSparkles(cx, x0, w, ya, yb) {
+  const out = [];
+  for (let i = 0; i < 9; i++) {
+    const h = Math.sin((cx + i * 7.31) * 51.7) * 43758.5453, u = h - Math.floor(h), v = h * 3.7 - Math.floor(h * 3.7);
+    out.push([x0 + u * w, ya + v * (yb - ya), i % 3 ? 0.3 : 0.45, i % 3 ? 'rgba(255,250,210,0.8)' : 'rgba(255,255,255,0.95)']);
+  }
+  return out;
+}
+/** One half (x0, width w) of an orb, clipped to the glass by the caller: the liquid to its level (a rolling wave at low
+ *  health or food), saturation's tint, bubbles, absorption above it, the surface catching the light. */
+function ccOrbHalf(g, cx, cy, x0, w, f, over) {
+  if (!f || f.frac <= 0) return;
+  const r = ORB.r, top = ccOrbLevel(cy, f.frac);
+  g.save(); g.beginPath(); g.rect(x0, cy - r, w, 2 * r); g.clip();
+  const surf = x => f.wave ? ccOrbWave(top, f.wave, f.t || 0, x) : top;
+  g.save(); g.beginPath(); g.moveTo(x0, cy + r);
+  for (let x = x0; x <= x0 + w + 0.01; x += 0.5) g.lineTo(x, surf(x));
+  g.lineTo(x0 + w, cy + r); g.closePath(); g.clip();
+  ccOrbLiquid(g, cx, cy, f.liq, f.style);
+  if (f.sat > 0) {   // saturation: the broth below its level (never past the food) tinted a lighter cream
+    const ys = ccOrbLevel(cy, f.sat);
+    g.save(); g.beginPath(); g.rect(x0, ys, w, cy + r - ys); g.clip(); ccOrbSatTint(g, cx, cy); g.restore();
+  }
+  if (f.style === 'broth') for (const [x, y, br] of ccOrbBubbles(cx, cy, top, cy + r)) {
+    circle(g, x, y, br); g.strokeStyle = 'rgba(255,230,190,0.55)'; g.lineWidth = 0.15; g.stroke();
+  }
+  g.restore();
+  const absorbing = over && over.to > over.from;
+  if (absorbing) {   // absorption: golden cloud with a few sparkles
+    const ya = ccOrbLevel(cy, over.to), yb = ccOrbLevel(cy, over.from);
+    g.save(); g.beginPath(); g.rect(x0, ya, w, yb - ya); g.clip(); ccOrbLiquid(g, cx, cy, over.liq, 'cloud'); g.restore();
+    for (const [x, y, sz, col] of ccOrbSparkles(cx, x0, w, ya, yb)) { g.fillStyle = col; g.fillRect(x, y, sz, sz); }
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, ya, w, 0.4);
+  } else if (f.wave) {   // the moving surface catching the light
+    g.beginPath(); for (let x = x0; x <= x0 + w + 0.01; x += 0.5) x === x0 ? g.moveTo(x, surf(x)) : g.lineTo(x, surf(x));
+    g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.4; g.stroke();
+  } else { g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, top, w, 0.4); }
+  g.restore();
+}
+/** The liquid's glow on the rim's inner edge (x0..x0 + w, below the level less 1.5): its colour, equal strength for
+ *  every colour (dim ones get more alpha, by luminance), fading out within about a pixel; 'screen' over the rim. */
+function ccOrbGlow(g, cx, cy, x0, w, liq, levelY) {
+  const r = ORB.r;
+  g.save();
+  g.beginPath(); g.arc(cx, cy, ORB.housing, 0, Math.PI * 2); g.arc(cx, cy, r - 0.2, 0, Math.PI * 2, true); g.clip('evenodd');
+  g.beginPath(); g.rect(x0, levelY - 1.5, w, cy + r + 4 - levelY); g.clip();
+  g.globalCompositeOperation = 'screen';
+  const [cr, cg, cb] = [1, 3, 5].map(i => parseInt(liq[1].slice(i, i + 2), 16) / 255);
+  const lum = 0.3 * cr + 0.59 * cg + 0.11 * cb, a = Math.max(0.2, Math.min(0.75, 0.16 / Math.max(lum, 0.05)));
+  const hex = Math.round(a * 255).toString(16).padStart(2, '0');
+  g.fillStyle = radial(g, cx, cy, r + 1.4, [[(r - 0.2) / (r + 1.4), liq[1] + hex], [1, liq[1] + '00']]);
+  g.fillRect(cx - ORB.housing, cy - ORB.housing, 2 * ORB.housing, 2 * ORB.housing);
+  g.restore();
+}
+
+/** Exhaustion (0 to 4; a food point or saturation is taken at 4) as hairline cracks in the food half's glass: three
+ *  cracks from the rim, a segment more of each per stage (ceil of the exhaustion), thin and low contrast. */
+const CC_CRACKS = [   // each: an angle on the rim (from the right, clockwise) and its inward steps [dx, dy]
+  [-0.75, [[-1.3, 0.9], [-1.1, 0.4], [-1.2, 1.1], [-0.9, 0.5]]],
+  [0.1, [[-1.5, -0.3], [-1.0, 0.6], [-1.3, -0.2], [-1.1, 0.5]]],
+  [0.9, [[-1.0, -1.1], [-1.2, -0.5], [-0.8, -1.0], [-1.2, -0.4]]],
+];
+function ccOrbCrackPoints(cx, cy, k, upto) {
+  const [a, steps] = CC_CRACKS[k], r = ORB.r - 0.1;
+  const pts = [[cx + Math.cos(a) * r, cy + Math.sin(a) * r]];
+  for (let i = 0; i < upto; i++) { const [px, py] = pts[pts.length - 1]; pts.push([px + steps[i][0] * 1.3, py + steps[i][1] * 1.3]); }
+  return pts;
+}
+function ccOrbCracks(g, cx, cy, stage) {
+  if (stage <= 0) return;
+  g.save(); g.beginPath(); g.rect(cx, cy - ORB.r, ORB.r, 2 * ORB.r); g.clip(); circle(g, cx, cy, ORB.r); g.clip();
+  for (let k = 0; k < CC_CRACKS.length; k++) {
+    const pts = ccOrbCrackPoints(cx, cy, k, stage);
+    for (const [dy, col, lw] of [[0.15, 'rgba(0,0,0,0.35)', 0.22], [0, 'rgba(225,235,245,0.32)', 0.16]]) {
+      g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y + dy) : g.moveTo(x, y + dy));
+      g.strokeStyle = col; g.lineWidth = lw; g.stroke();
+    }
+  }
+  g.restore();
+}
+/** When exhaustion wraps (a point taken), glass flakes fall from the cracks' ends and fade (since: ms since). */
+function ccOrbFlakes(cx, cy, since) {
+  if (since < 0 || since > 900) return [];
+  const k = since / 900, out = [];
+  for (let c = 0; c < CC_CRACKS.length; c++) {
+    const pts = ccOrbCrackPoints(cx, cy, c, 4);
+    for (const j of [2, 4]) {
+      const [x, y] = pts[j];
+      out.push([x + (c - 1) * 0.6 * k, y + 9 * k * k, `rgba(225,235,245,${0.6 * (1 - k)})`]);
+    }
+  }
+  return out;
 }
 
 /** The health orb's status effects (the meters had them; same rules): the damage flash, Regeneration's rising light,
- *  Farmer's Delight Comfort (saturation 0, hurt, no Regeneration) as a slow warm sheen, the hardcore trim (crimson on
+ *  Farmer's Delight Comfort (saturation 0, hurt, no Regeneration) as a slow warm sheen, (hardcore: ccHardcore, a skull
  *  the bezel), and AppleSkin's previews of what held food restores: pale pulsing bands above the health and food
  *  levels in their halves. */
 function ccOrbFx(g, s, cx, cy, hp, max, riding) {
@@ -206,15 +272,6 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
       circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,120,175,${a})`; g.fill();   // pink
     }
   }
-  if (!riding && s.saturation > 0 && s.food > 0) {   // saturation: a lighter cream broth at the bottom of the food half,
-    // up to its level (never past the food), as the bar's cream segments
-    const ys = level(Math.min(s.saturation, s.food) / 20);
-    // The broth below that level, tinted paler and creamier: its own texture (clouds, bubbles) shows straight through.
-    g.save(); g.beginPath(); g.rect(cx, ys, r, cy + r - ys); g.clip();
-    g.globalCompositeOperation = 'soft-light'; g.fillStyle = 'rgba(255,240,210,0.35)'; g.fillRect(cx, ys, r, cy + r - ys);
-    g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(255,225,180,0.06)'; g.fillRect(cx, ys, r, cy + r - ys);
-    g.restore();
-  }
   if (!riding && s.nourished && s.food > 0) {   // Nourishment: the broth keeps its level, glazed gold with slow sparkles
     const top = level(s.food / 20);
     g.save(); g.beginPath(); g.rect(cx, top, r, cy + r - top); g.clip();
@@ -231,13 +288,16 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
     const y = cy + r + 4 - ((s.t / 2600) % 1) * (2 * r + 8);
     g.fillStyle = vgrad(g, y - 5, y + 5, [[0, '#ff9ec400'], [0.5, '#ff9ec488'], [1, '#ff9ec400']]); g.fillRect(cx - r, y - 5, r, 10);
   }
-  const pulse = 0.3 + 0.25 * Math.sin(s.t / 160);
+  const pulse = (0.3 + 0.25 * Math.sin(s.t / 160)) / 2;   // half the bars' preview: the orb's large area glared
   if (s.holdFood) {
     if (s.holdHeal) { g.fillStyle = `rgba(255,200,200,${pulse})`; g.fillRect(cx - r, level(hp + s.holdHeal / max), r, level(hp) - level(hp + s.holdHeal / max)); }
     if (!riding) { const a = s.food / 20, b = Math.min(20, s.food + s.holdFood) / 20; g.fillStyle = `rgba(255,230,180,${pulse})`; g.fillRect(cx, level(b), r, level(a) - level(b)); }
   }
+  if (!riding && s.exhaustion != null) {   // exhaustion: cracks in the food half's glass; flakes fall when it wraps
+    ccOrbCracks(g, cx, cy, Math.min(4, Math.ceil(s.exhaustion)));
+    for (const [x, y, col] of ccOrbFlakes(cx, cy, s.t - (s.flakeAt ?? -1e9))) { g.fillStyle = col; g.fillRect(x, y, 0.45, 0.45); }
+  }
   g.restore();
-  if (s.hardcore) { circle(g, cx, cy, r + ORB.bezel / 2); g.strokeStyle = 'rgba(160,20,28,0.9)'; g.lineWidth = 0.6; g.stroke(); }
 }
 
 /** The nebula mask: white in the clouds, falling to deep space (dark blue-black) between them; multiplied over a
@@ -294,15 +354,22 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
 }
 
 /** The dodge roll dial at (cx, cy): a stone-rimmed glass with the dash chevrons in the tier colour, and around the rim a
- *  segment per charge, each lit (proud, glowing, as the armor ring) once that charge is ready (partial while
- *  recharging). ready: charges ready (fractional), n: the charge count. */
+ *  segment per charge, each lit (glowing, within the rim) once that charge is ready (partial while recharging).
+ *  ready: charges ready (fractional), n: the charge count. Drawn as its base (by tier) and ring (by tier and n). */
 function ccDashDial(g, cx, cy, ready, n) {
-  const r = 6.2, B = 1.1, R1 = r + B, tier = rollTier(ready), col = tier === 'grey' ? '#5a5e64' : ROLL_TIERS[tier];
+  const tier = rollTier(ready, n);
+  ccDashBase(g, cx, cy, tier);
+  ccDashRing(g, cx, cy, tier, n, ready);
+}
+const ccDashColour = tier => tier === 'grey' ? '#5a5e64' : ROLL_TIERS[tier];
+const CC_DASH = { r: 6.2, B: 1.1, gap: 0.12 };
+/** The dial without its charge ring: recess, stone rim, glass, the chevrons glowing in the tier colour. */
+function ccDashBase(g, cx, cy, tier) {
+  const { r, B } = CC_DASH, R1 = r + B, col = ccDashColour(tier);
   circle(g, cx, cy, R1 + 0.25); g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.4; g.stroke();   // the recess, thin
   circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#55575b'], [0.35, '#36383c'], [1, '#1b1c1f']]); g.fill();
   rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
-  // The chevrons behind the glass, with a soft glow of their colour.
   g.save(); circle(g, cx, cy, r); g.clip();
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy, r, [[0, col + '55'], [1, col + '00']]); g.fill();
   const chev = x0 => { g.beginPath(); g.moveTo(x0, cy - 2.6); g.lineTo(x0 + 1.7, cy - 2.6); g.lineTo(x0 + 3.7, cy); g.lineTo(x0 + 1.7, cy + 2.6); g.lineTo(x0, cy + 2.6); g.lineTo(x0 + 2, cy); g.closePath(); };
@@ -311,13 +378,19 @@ function ccDashDial(g, cx, cy, ready, n) {
   g.beginPath(); g.ellipse(cx - r * 0.3, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.3, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
-  // A segment per charge on the rim.
-  const gap = 0.12;
+}
+/** The segment angles of charge k of n: [start, end]. */
+function ccDashSeg(k, n) {
+  const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + CC_DASH.gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - CC_DASH.gap;
+  return [a0, a1];
+}
+/** The charge ring: a segment per charge on the rim, lit up to ready. */
+function ccDashRing(g, cx, cy, tier, n, ready) {
+  const { r, B } = CC_DASH, R1 = r + B, col = ccDashColour(tier);
   for (let k = 0; k < n; k++) {
     const lit = ready - k;
     if (lit <= 0) break;
-    const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
-    const a2 = a0 + (a1 - a0) * Math.min(1, lit), p0 = r, p1 = R1;   // within the rim: no thicker than the orbs'
+    const [a0, a1] = ccDashSeg(k, n), a2 = a0 + (a1 - a0) * Math.min(1, lit), p0 = r, p1 = R1;
     const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
     g.save(); g.shadowColor = col; g.shadowBlur = 1.6; seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, mixHex(col, '#ffffff', 0.4)], [1, mixHex(col, '#000000', 0.3)]]); g.fill(); g.restore();
     seg(); g.strokeStyle = 'rgba(0,0,0,0.8)'; g.lineWidth = 0.25; g.stroke();
@@ -349,7 +422,7 @@ function ccOrbs(g, s) {
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT, style: 'cloud' }
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : LIQUID.broth, style: 'broth',
-          wave: s.food <= 6 ? 0.35 : 0, t: s.t };   // low food (no sprinting): the broth sloshes too
+          wave: s.food <= 6 ? 0.35 : 0, t: s.t, sat: s.food > 0 ? Math.min(s.saturation, s.food) / 20 : 0 };   // low food (no sprinting): the broth sloshes too
     const low = s.health <= 4;   // vanilla shakes the hearts here; the orb's liquid sloshes instead
     ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.35 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
@@ -372,14 +445,6 @@ function ccOrbs(g, s) {
     if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], p[2][1]]));
   } else if (ring) ccOrb(g, ORB.rx, ORB.y, { ring });   // no mana mod: an empty orb still carries the ring
   else ccHousingCog(g, ORB.rx, ORB.y);                 // no mana mod: a cog pressed into the housing's face
-  // MekaSuit energy: a slim upright gauge between the offhand slot and the health orb, filling from the bottom.
-  if (!s.creative && s.mekasuit) {
-    const gx = CC.lay.meka - 1.2, gy = 30, gh = 18;   // in its slot beside the health orb's housing (ccEnds)
-    rrect(g, gx, gy, 2.4, gh, 1.2); g.fillStyle = vgrad(g, gy, gy + gh, [[0, '#9ea4aa'], [1, '#141619']]); g.fill();
-    rrect(g, gx + 0.4, gy + 0.4, 1.6, gh - 0.8, 0.8); g.fillStyle = '#060708'; g.fill();
-    const fh = (gh - 0.8) * s.mekasuit;
-    rrect(g, gx + 0.4, gy + gh - 0.4 - fh, 1.6, fh, 0.8); g.fillStyle = vgrad(g, gy, gy + gh, [[0, CC_MEKA[0]], [0.5, CC_MEKA[1]], [1, CC_MEKA[2]]]); g.fill();
-  }
   // The backtank's time, always on (players rely on it), just above the right orb's housing.
   if (breath && tank > 0) {
     const t = `${Math.floor(Math.ceil(tank) / 60)}:${String(Math.ceil(tank) % 60).padStart(2, '0')}`;

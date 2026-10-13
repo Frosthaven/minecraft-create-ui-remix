@@ -120,42 +120,44 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 ## Compact HUD (`site/redesign/hud-compact.html`, `hud-compact*.js`): in game via the mod (`mod/CLAUDE.md`, hud/)
 
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
-level badge; left wing offhand, health (absorption in gold) with armor plating on top, Iron's mana; right wing food
-with AppleSkin saturation on top, Ars mana, dodge roll charges; air rises out of the right wing under water. Shipping
-the page exports its textures (`hud-compact-export.js`, 5 files under `createhud:textures/gui/compact/`) and Create Dark
-Inventory draws the layout from them. The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is
-not packed), so other mods that reuse vanilla hearts look vanilla.
-- Meters: health, food (left wing, vitals); Iron's mana, Ars mana (right wing, magic). Armor and breath show only when
-  the game shows them (armor worn; under water), extending the raised hotbar band
-  sideways over the left and right wing (same height, darker iron), as slim pipes level with the XP pipe. Breath is the vanilla bubbles;
-  while a Create backtank has air the breath segment is the tank alone (darker copper meter) with its time left (m:ss,
-  as Create's `remaining_air` layer) always on it: players rely on it. Then the bubbles. Breath shows while under
-  water or while air is below full, so the segment never blinks out when the tank empties.
-- Statuses (`hud-compact-status.js`): heart effects recolour health and its heart icon (poison, wither, frozen);
-  saturation (vanilla's yellow outline) fills the food meter's first segments in cream, up to its level; hardcore crimson trim,
-  shake at 4 health or less, damage flash, regeneration sweep; Hunger effect spoils the broth; AppleSkin's food
-  preview (what held food restores) pulses past the fill; riding swaps food for the mount's health (horse icon) and a
-  the XP pipe is shared: a charging spell (Iron's), a
-  camel's dash cooldown and a jump charge take it over, the level window showing their icon; attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
+level window centred on it; the vitals and mana either as two orbs in housings on the wing plates (default) or as three
+rows of bars per wing (client config "Meter display"). Shipping the page exports its textures (`hud-compact-export.js`,
+6 files under `createhud:textures/gui/compact/`: 4 plates, `parts`, `orbs`) and Create Dark Inventory draws the layout
+from them, piece by piece in the page's order (the page and the export draw with the same functions, so preview and
+game match). The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is not packed), so other
+mods that reuse vanilla hearts look vanilla.
+- Wing ends (`ccEnds`): the offhand socket at the vitals end, the dodge roll dial at the other (left-handed mirrors);
+  the MekaSuit's upright energy gauge takes its own slot beside the vitals (both modes); both wings the wider one's width.
+- Orbs (`hud-compact-orbs.js`, drawn from pieces: bezel, ring, glass, liquid per half, divider, glass front, glow):
+  left orb health (left half; absorption a golden cloud above it) and food (right half; the mount's health while
+  riding; saturation a paler cream tint of the broth below its level), armor as ten bolted plates on the bezel; right
+  orb the mana pools (primary on the left half; one mod fills the orb), breath / the backtank / Helium Flamingo /
+  aircraft hull as a smooth ring. Statuses in the glass: low health and food pulses in sync, sloshing waves, damage
+  flash, Regeneration motes, Comfort glow, Nourishment glaze, AppleSkin previews (half strength), exhaustion as cracks
+  in the food half (4 stages; flakes fall when it wraps). Creative or no mana mod: a cog in the empty housing.
+- Bars: no icons; left rows health, food (or the mount), armor; right rows breath (the backtank while it holds air,
+  with its m:ss time) / Helium Flamingo / aircraft hull or a groove, then the mana pools (primary first; one mod: the
+  last row a groove; none: gears). Liquids carry the orbs' looks (cloud, broth, galaxy at half strength); AppleSkin's
+  exhaustion is a hairline under food.
+- XP pipe: lime with the cloud texture; a charging spell (galaxy), a camel's dash cooldown, a jump charge, a train's
+  speed or an aircraft engine take it over, the level window growing to 9 x 7 to show their icon (5 tall).
+- Hardcore: a skull on a small floating plate above the offhand socket (no trims).
+- Breath and the backtank move smoothly in game (`Smooth`: eased between the game's steps; the tank time stays exact).
+- Statuses (`hud-compact-status.js`): heart effects recolour health (poison, wither, frozen); Hunger spoils the broth;
+  attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
-  Nourishment (gilded broth) and Comfort (health sheen); MekaSuit energy (second pipe in the armor extension);
-  Immersive Aircraft hull (right extension) and engine (XP pipe); Create train speed (XP pipe), toolbox slots (red
-  liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo (right extension) and cooldowns, Immersive
-  Armors steampunk clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the
-  bar. Followers come from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped
-  following"): followers already watching at login are missed until Haven Link sends the current list on join.
+  Nourishment and Comfort; MekaSuit energy; Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
+  liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns, Immersive Armors steampunk
+  clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the bar. Followers come
+  from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped following").
 - Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`): two floating lines (no plate) above the bar's left
-  wing, left-aligned to its edge: buffs nearest the bar, debuffs at 1.5x above, each line always-on first; at most 10 a line (6 debuffs) (wrapping upward: the pack
-  has 39 vanilla + 116 mod effects); each effect a 10 x 10 socket (brass bezel buff, rust debuff,
-  dimmer ambient) with a border draining clockwise from the top, and its time left under it in the bar's small digits
-  (45, 3m, 1h; red under 10 s; none when infinite). Buffs' draining border is green, debuffs' red.
-  Hover (page) shows the name, level and time; in game: names while the numbers key is held or a screen is open.
-  Not in game yet (it would replace MOB_EFFECTS).
-- In game (to build when the orbs are approved): a client config "Meter display: Orbs | Bars" (default Orbs), next to
-  "Primary mana pool: Iron's | Ars" (both mods installed) and the HUD size.
-- Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
-  while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
-  screen is open.
+  wing, left-aligned to its edge: buffs nearest the bar, debuffs at 1.5x above, each line always-on first; at most 10 a
+  line (6 debuffs), wrapping upward; each effect a 10 x 10 socket with a border draining clockwise from the top (green
+  buff, red debuff) and its time left under it (45, 3m, 1h; red under 10 s; none when infinite).
+- Client config (`UiConfig`, Mods > Config in game): meter display Orbs | Bars (default Orbs), primary mana pool
+  Iron's | Ars, action bar size (1.1).
+- Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
+  while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
 
 ## Mob health bars (`site/redesign/mob-bars.html`, `mob-bars.js`): in game via the mod (`mod/CLAUDE.md`, MobBars)
 

@@ -1,6 +1,6 @@
 // Compact HUD statuses: every state the game shows around the hotbar, mapped onto the compact action bar (preview).
 // Uses sprites.js, meters.js (LIQUID), hud-compact.js (ccMeter). s.t is the time in ms (animations).
-//   Hearts: poison / wither / frozen recolour the health liquid; hardcore adds a crimson trim; at 4 health or less the
+//   Hearts: poison / wither / frozen recolour the health liquid; hardcore shows a skull above the offhand (ccHardcore); at 4 health or less the
 //     meter shakes; damage flashes it white; regeneration sweeps a light along it.
 //   Food: saturation (vanilla's yellow outline, AppleSkin's overlay) fills the first segments, up to its level (never
 //     past the food), in light cream against the orange broth; the Hunger effect turns the broth spoiled olive; holding food shows
@@ -25,9 +25,8 @@ function ccShake(s) {
   const k = Math.floor(s.t / 60);
   return [0, ((k * 7919) % 3) - 1];
 }
-/** Effects over the health meter at box: hardcore trim, damage flash, regeneration sweep. */
+/** Effects over the health meter at box: damage flash, low-health pulse, regeneration motes. */
 function ccHealthFx(g, s, [x, y, w, h]) {
-  if (s.hardcore) { rrect(g, x - 0.3, y - 0.3, w + 0.6, h + 0.6, h / 2 + 0.3); g.strokeStyle = '#8a1018'; g.lineWidth = 0.6; g.stroke(); }
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
   // The orbs' effects, laid along the meter: the damage flash red, Regeneration's pink motes drifting along the
   // liquid, and at 4 health or less the empty glass pulsing red (in sync with low food) instead of a shake.
