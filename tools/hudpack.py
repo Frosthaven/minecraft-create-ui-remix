@@ -11,7 +11,7 @@ All textures are R x (8) the originals; every user scales UVs by the logical siz
 """
 import base64, json, os, re, shutil, subprocess, sys
 
-PAGES = {'hud-compact.html': 5, 'inventory.html': 34, 'backpack.html': 9}  # page: files it lists
+PAGES = {'hud-compact.html': 6, 'inventory.html': 34, 'backpack.html': 9}  # page: files it lists
 # The HUD page ('') is not packed: the compact action bar (createhud:textures/gui/compact/*, drawn by the mod) replaces
 # the HUD, and vanilla's own HUD sprites stay untouched, so other mods that reuse them (mob health hearts) look vanilla.
 

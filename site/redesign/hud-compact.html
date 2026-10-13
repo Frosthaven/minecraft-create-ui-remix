@@ -17,7 +17,7 @@
      game would show them, extending the raised band sideways over their wing in a darker tone. Every meter is the same
      size, in ten segments, with the HUD's own icon; hover a meter for its value (current bright, max dim).</p>
   <p>Every status the game shows here has a place (second row of buttons): heart effects recolour the health liquid and
-     the heart (poison, wither, frozen), hardcore trims it in crimson, it shakes at 4 health or less, flashes on damage and carries
+     the heart (poison, wither, frozen), hardcore shows a skull above the offhand, low health pulses red, flashes on damage and carries
      a light sweep under Regeneration. Saturation shows as the first food segments in cream (vanilla's yellow outline); the Hunger effect spoils the broth; holding food shows what it would restore
      (AppleSkin). Riding swaps food for the mount's health,
      as vanilla swaps them. A charging spell (Iron's), a camel's dash cooldown and a mount's jump charge take over the XP pipe, the level
@@ -45,7 +45,7 @@
 <div class="bar">
   <button id="effect" title="Cycle the heart effect">Effect: none</button><button id="hardcore" aria-pressed="false">Hardcore</button>
   <button id="regen" aria-pressed="false">Regeneration</button><button id="hunger" aria-pressed="false">Hunger effect</button>
-  <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button>
+  <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button><button id="exhaust" title="Exhaustion +1 (0 to 4; at 4 a point is taken: orb mode cracks the food glass, flakes fall when it wraps)">Exhaustion: 2.4</button>
   <button id="riding" title="Cycle: on foot, horse, camel">Riding: no</button><button id="dashBtn" title="Camel dash (rides a camel)">Camel dash</button><button id="jump" title="Charge a mount jump (rides a horse if on foot)">Jump</button>
   <button id="castBtn" title="Iron's: charge a spell">Cast spell</button><button id="attack" title="Attack cooldown, hotbar mode">Attack</button>
   <button id="creative" aria-pressed="false">Creative</button><button id="spectator" aria-pressed="false">Spectator</button>
@@ -125,17 +125,18 @@ tap('roll', () => {
   }, 50);
 });
 tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('absorb').setAttribute('aria-pressed', String(!!st.absorb)); });
-/** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air. */
+/** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air; out of the water the
+ *  air refills. Small steps every 50 ms, so the meters move smoothly (the game interpolates between its updates). */
 function swim(on, diving) {
   for (const id of ['water', 'dive']) document.getElementById(id).setAttribute('aria-pressed', 'false');
-  clearInterval(waterTimer); st.air = 1; st.underwater = on; st.diving = on && diving; st.tank = st.diving ? st.tankMax : 0;
-  if (!on) return;
-  document.getElementById(diving ? 'dive' : 'water').setAttribute('aria-pressed', 'true');
+  clearInterval(waterTimer); st.underwater = on; st.diving = on && diving; st.tank = st.diving ? st.tankMax : 0;
+  if (on) { st.air = 1; document.getElementById(diving ? 'dive' : 'water').setAttribute('aria-pressed', 'true'); }
   waterTimer = setInterval(() => {
-    if (st.diving && st.tank > 0) st.tank = Math.max(0, st.tank - 60);
-    else st.air = st.air <= 0.05 ? 0.999 : st.air - 0.05;
+    if (!st.underwater) { st.air = Math.min(1, st.air + 0.02); if (st.air >= 1) clearInterval(waterTimer); }
+    else if (st.diving && st.tank > 0) st.tank = Math.max(0, st.tank - 7.5);
+    else st.air = st.air <= 0.05 ? 0.999 : st.air - 0.00625;
     render();
-  }, 400);
+  }, 50);
 }
 tap('water', () => swim(!st.underwater || st.diving, false));
 tap('dive', () => swim(!st.diving, true));
@@ -190,6 +191,8 @@ tap('manaMods', () => { manaSet = (manaSet + 1) % MANA_SETS.length; const [name,
   st.irons = i; st.ars = a; document.getElementById('manaMods').textContent = 'Mana mods: ' + name; });
 tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
 flag('orbsBtn', 'orbs');
+tap('exhaust', () => { st.exhaustion += 1; if (st.exhaustion >= 4) { st.exhaustion -= 4; st.flakeAt = performance.now(); }
+  document.getElementById('exhaust').textContent = 'Exhaustion: ' + st.exhaustion.toFixed(1); });
 tap('primary', () => { st.manaPrimary = st.manaPrimary === 'irons' ? 'ars' : 'irons'; document.getElementById('primary').textContent = 'Primary mana: ' + (st.manaPrimary === 'irons' ? "Iron's" : 'Ars'); });
 tap('rollCount', () => { st.rollCount = (st.rollCount || 2) % 5 + 1; st.rolls = st.rollCount; document.getElementById('rollCount').textContent = 'Roll charges: ' + st.rollCount; });
 tap('dashBtn', () => { st.riding = 'camel'; document.getElementById('riding').textContent = 'Riding: camel'; ramp('dash', 2750, null); });
@@ -204,7 +207,7 @@ tap('castBtn', () => ramp('cast', 1500, null, () => { if (st.irons != null) st.i
 tap('attack', () => ramp('attack', 625, null));
 // Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
 setInterval(() => {
-  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || st.jump != null || st.cast != null || st.attack != null;
+  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.flakeAt ?? -1e9) < 1000 || st.jump != null || st.cast != null || st.attack != null;
   if (moving) render();
 }, 60);
 addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; st.itemName = ITEMS[st.slot]; st.nameAt = performance.now(); render(); } });

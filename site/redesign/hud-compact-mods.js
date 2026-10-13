@@ -63,9 +63,7 @@ function ccInstruments(g, s) {
   if (!items.length) return;
   const cellW = it => it === 'ghost' ? 9 + ccNumberWidth(String(s.followers), 0.625) + 1 : 9;
   const cell = 9, w = items.reduce((a, it) => a + cellW(it), 0) + 3, h = 9, x = -w / 2, y = CC.plate.mid - h - 2.5, r = CC.plate.r;
-  const plate = () => rrect(g, x, y, w, h, r);
-  g.save(); g.translate(0, 0.6); plate(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill(); g.restore();
-  plate(); g.fillStyle = iron(g, y, y + h); g.fill(); ironSurface(g, plate); rim(g, plate, y, y + h, P.brassHi, 0.35);
+  ccFloatPlate(g, x, y, w, h);
   let cur = x + 2;
   items.forEach((it) => {
     const cx = cur + cell / 2 - 0.5, cy = y + h / 2; cur += cellW(it);
@@ -115,6 +113,30 @@ function ccComfortFx(g, s, [x, y, w, h]) {
   gr.addColorStop(0, 'rgba(255,158,196,0)'); gr.addColorStop(0.5, 'rgba(255,158,196,0.55)'); gr.addColorStop(1, 'rgba(255,158,196,0)');   // pink, the whole glass
   g.fillStyle = gr; g.fillRect(x + p - 6, y, 12, h);
   g.restore();
+}
+/** Hardcore: a pale skull on a small floating iron plate above the offhand socket (the follower ghost's style). */
+const CC_SKULL_PLATE = { w: 9, h: 9, lift: 2.5 };
+function ccHardcore(g, s) {
+  if (!s.hardcore) return;
+  const { w, h, lift } = CC_SKULL_PLATE, x = CC.lay.offhand + 9 - w / 2, y = CC.plate.wing - h - lift;
+  ccFloatPlate(g, x, y, w, h);
+  ccSkull(g, x + w / 2, y + h / 2);
+}
+/** A small iron plate floating above the bar (the instrument plate's style): shadow, iron, brass rim. */
+function ccFloatPlate(g, x, y, w, h) {
+  const plate = () => rrect(g, x, y, w, h, CC.plate.r);
+  g.save(); g.translate(0, 0.6); plate(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill(); g.restore();
+  plate(); g.fillStyle = iron(g, y, y + h); g.fill(); ironSurface(g, plate); rim(g, plate, y, y + h, P.brassHi, 0.35);
+}
+/** A skull centred on (cx, cy), about 5 wide and 6 tall, pale as the follower ghost. */
+function ccSkull(g, cx, cy) {
+  g.fillStyle = 'rgba(220,235,255,0.92)';
+  circle(g, cx, cy - 0.7, 2.5); g.fill();
+  rrect(g, cx - 1.6, cy + 0.6, 3.2, 2.2, 0.5); g.fill();
+  g.fillStyle = '#152030';
+  circle(g, cx - 1, cy - 0.5, 0.75); g.fill(); circle(g, cx + 1, cy - 0.5, 0.75); g.fill();
+  g.beginPath(); g.moveTo(cx, cy + 0.4); g.lineTo(cx - 0.45, cy + 1.1); g.lineTo(cx + 0.45, cy + 1.1); g.closePath(); g.fill();
+  for (const dx of [-0.8, 0, 0.8]) g.fillRect(cx + dx - 0.12, cy + 1.7, 0.24, 1.1);
 }
 /** The follower ghost centred on (cx, cy), about 5 wide and 6 tall. */
 ccInstruments.ghost = (g, cx, cy) => {

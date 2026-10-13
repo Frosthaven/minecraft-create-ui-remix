@@ -6,7 +6,8 @@
 // worn; under water), extend the raised hotbar band sideways over their wing only then, in a darker iron, as slim
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
-const CX = 172, BOTTOM = 50, TOPM = 66;   // TOPM: room above the bar for the game's text (item name, action bar)
+const CX = 172, BOTTOM = 50, TOPM = 66;
+const CC_TANK = ['#c98a5a', '#7a3e1c', '#2e1206'];   // Create's backtank: copper   // TOPM: room above the bar for the game's text (item name, action bar)
 // Three floating plates: the centre (hotbar and XP band, -91..91) and a wing plate each side (±96..±165), 5 px apart. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
 // socket / the dodge roll (18), 4, the plate's edge.
 const GAP = 4;
@@ -205,6 +206,30 @@ function ccEnds(s) {
     meka: -(inner + G + 1.7),
   };
 }
+/** The level window: k the digits' size, h its height for digits; iconW x iconH while an icon (size icon) shows. */
+const CC_LEVEL = { k: 0.55, h: 4.6, iconW: 9, iconH: 7, icon: 5 };
+function ccLevelWindow(g, x, y, w, h) {
+  rrect(g, x, y, w, h, 1.2); g.fillStyle = steel(g, y, y + h); g.fill();
+  rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, 0.8); g.fillStyle = '#060708'; g.fill();
+}
+/** MekaSuit energy: a slim upright gauge in its slot beside the vitals (ccEnds' meka), filling from the bottom. Both
+ *  modes. */
+const CC_MEKA_GAUGE = { y: 30, h: 18, w: 2.4 };
+function ccMekaGauge(g, s) {
+  const { y: gy, h: gh, w: gw } = CC_MEKA_GAUGE, gx = CC.lay.meka - gw / 2;
+  ccMekaCasing(g, gx, gy);
+  const fh = (gh - 0.8) * s.mekasuit;
+  g.save(); g.beginPath(); g.rect(gx, gy + gh - 0.4 - fh, gw, fh); g.clip(); ccMekaFill(g, gx, gy); g.restore();
+}
+function ccMekaCasing(g, gx, gy) {
+  const { h: gh, w: gw } = CC_MEKA_GAUGE;
+  rrect(g, gx, gy, gw, gh, gw / 2); g.fillStyle = vgrad(g, gy, gy + gh, [[0, '#9ea4aa'], [1, '#141619']]); g.fill();
+  rrect(g, gx + 0.4, gy + 0.4, gw - 0.8, gh - 0.8, gw / 2 - 0.4); g.fillStyle = '#060708'; g.fill();
+}
+function ccMekaFill(g, gx, gy) {
+  const { h: gh, w: gw } = CC_MEKA_GAUGE;
+  rrect(g, gx + 0.4, gy + 0.4, gw - 0.8, gh - 0.8, gw / 2 - 0.4); g.fillStyle = vgrad(g, gy, gy + gh, [[0, CC_MEKA[0]], [0.5, CC_MEKA[1]], [1, CC_MEKA[2]]]); g.fill();
+}
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
@@ -257,9 +282,6 @@ function compactHud(s, font) {
   // (catching your breath after surfacing). Not from the tank or air values alone: when the backtank empties the air
   // is still full for a moment, and the segment must not blink out.
   const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
-  // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
-  const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
-  const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
   const ends = CC.lay = ccEnds(s);
   ccPlate(g, { left: false, right: false,   // no raised tabs: bar mode puts armor and breath in a third row
     inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
@@ -272,11 +294,9 @@ function compactHud(s, font) {
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
   // Experience: one glass pipe along the section's top edge (0 to 100 % in one run, behind the window); the level in a
   // small window centred on the pipe.
-  const X = CC.xp, LK = 0.55, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 3.6, 8.5);
-  const wh = 4.6, wy = X.y + X.h / 2 - wh / 2, wx = -ww / 2;   // centred on the pipe, which runs on behind it
   // The pipe is shared: casting a spell (Iron's), a camel's dash cooldown and a mount's jump charge take it over (vanilla
   // already swaps the XP bar for the jump bar), and the level window shows that action's icon instead of the number.
-  const mounted = s.riding === 'camel' ? ccCamel : ccHorse;
+  const X = CC.xp, mounted = s.riding === 'camel' ? ccCamel : ccHorse;
   const take = s.cast != null ? [s.cast, MANA.irons, () => ccFlask(MANA.irons)]
     : s.riding === 'camel' && s.dash != null ? [s.dash, CC_COOLDOWN, ccCamel]
     : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted]
@@ -284,10 +304,13 @@ function compactHud(s, font) {
     : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
   const [xf, xl] = take ? take : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
   ccMeter(g, X.x0, X.y, X.x1 - X.x0, X.h, xf, xl, 18, 'left', !take ? 'cloud' : s.cast != null ? 'mana' : undefined);   // XP: health's billows; a cast is mana: the galaxy
-  rrect(g, wx, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
-  rrect(g, wx + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
-  const mid = wy + wh / 2;
-  if (take) ccIcon(g, take[2](), 0, mid, wh - 2.4);
+  // The window, centred on the pipe (which runs on behind it): small for the level's digits, larger while an icon
+  // shows (so the icon reads).
+  const LK = CC_LEVEL.k, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK);
+  const [ww, wh] = take ? [CC_LEVEL.iconW, CC_LEVEL.iconH] : [Math.max(tw + 3.6, 8.5), CC_LEVEL.h];
+  const wy = X.y + X.h / 2 - wh / 2, mid = wy + wh / 2;
+  ccLevelWindow(g, -ww / 2, wy, ww, wh);
+  if (take) ccIcon(g, take[2](), 0, mid, CC_LEVEL.icon);
   else ccNumber(g, txt, -tw / 2, mid - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', 'rgba(0,0,0,0.9)', LK);
   // Meters: every one the same size, with the HUD's own sprite as its icon.
   const { rows, meterH: mh, meterW: mw, icon: is } = CC, L = CC.left, Rt = CC.right;
@@ -310,19 +333,12 @@ function compactHud(s, font) {
         'rgba(0,0,0,0.85)', NK);
     }
   };
-  // Extension pipes match the wing meters below them (same x, width, icon centre); the section's S divider runs
-  // between their inner ends (±93 at the wing's level) and the XP band (±85).
-  // Armor (left) and breath (right) take each wing's third row.
-  const E = CC.ext, extL = [L.x, rows[2], mw, mh], extR = [Rt.x, rows[2], mw, mh];
-  const row = (side, k, img, frac, liq, segs, value, max, opt) => {
-    const id = (side === L ? 'L' : 'R') + k;
-    if (k === 'ear') return meterAt(id, side.iconC, E.icon, side === L ? extL : extR, img, frac, liq, segs, value, max, opt);
-    meterAt(id, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max, opt);
-  };
+  const row = (side, k, img, frac, liq, segs, value, max, opt) =>
+    meterAt((side === L ? 'L' : 'R') + k, side.iconC, is, [side.x, rows[k], mw, mh], img, frac, liq, segs, value, max, opt);
   if (s.orbs) ccOrbs(g, s);   // orbs in place of the wing meters (hud-compact-orbs.js)
   else {
   // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
-  if (s.creative) ccGearRow(g, (CC.left.iconC - 3 + CC.left.x + CC.meterW) / 2, 39);   // the empty vitals wing
+  if (s.creative) ccGearRow(g, L.x + mw / 2, (rows[0] + rows[2] + mh) / 2);   // the empty vitals wing: centred on its three rows
   if (!s.creative) {
   // Health against the real maximum (Health Boost and gear raise it; each segment is a tenth of it); absorption in
   // gold continues past the health, AppleSkin's regeneration preview (held food) pulses past that.
@@ -333,37 +349,32 @@ function compactHud(s, font) {
   else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20,
     { style: 'broth', after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodFx(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
   }
-  // Armor: the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
-  // With a MekaSuit the extension holds two half-height pipes: armor above, suit energy below (Mekanism's bar).
-  if (leftExt && s.mekasuit) {
-    const [ex, ey, ew, eh] = extL, hh = (eh - 0.4) / 2;
-    ccMeter(g, ex, ey, ew, hh, Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10);
-    ccMeter(g, ex, ey + hh + 0.4, ew, hh, s.mekasuit, CC_MEKA, 10);
-    CC.hit.Lear = [ex, ey, ew, eh];
-  } else if (showArmor) row(L, 'ear', armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
-  // Magic: a mana row per mod present (null: the mod is not in the pack). None: engraved gears fill the wing; one: the
-  // other row is an empty groove, so the wing still reads as complete.
-  const hasIrons = s.irons != null, hasArs = s.ars != null;
-  if (!hasIrons && !hasArs) ccGearRow(g, (Rt.x + Rt.iconC + 3) / 2, 39);   // centred on the wing's meter + icon span
-  else {
-    // The primary pool (the setting) takes the top row, the other the bottom.
-    const [ri, ra] = s.manaPrimary === 'ars' ? [1, 0] : [0, 1];
-    if (hasIrons) row(Rt, ri, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200, { style: 'mana' }); else ccGroove(g, Rt.x, rows[ri], mw, mh);
-    if (hasArs) row(Rt, ra, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150, { style: 'mana' }); else ccGroove(g, Rt.x, rows[ra], mw, mh);
+  // Armor (row 2): the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
+  if (showArmor) row(L, 2, armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
+  // The right wing: row 0 breath (the backtank while it holds air), else the Helium Flamingo's charge, else an
+  // aircraft's health, else an empty groove; rows 1 and 2 the mana pools, the primary (the setting) on row 1. One mana
+  // mod: its pool on row 1, row 2 a groove; none: engraved gears fill rows 1 and 2.
+  const pools = [['irons', s.irons, MANA.irons, 200, ccFlask], ['ars', s.ars, MANA.ars, 150, ccGem]].filter(p => p[1] != null);
+  if (s.manaPrimary === 'ars') pools.reverse();
+  if (!pools.length) ccGearRow(g, Rt.x + mw / 2, (rows[1] + rows[2] + mh) / 2);   // centred on the two mana rows
+  else for (const k of [1, 2]) {
+    const p = pools[k - 1];
+    if (p) row(Rt, k, p[4](p[2]), p[1], p[2], 10, p[1] * p[3], p[3], { style: 'mana' }); else ccGroove(g, Rt.x, rows[k], mw, mh);
   }
-  // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
-  // with its time left (m:ss, as Create's counter) always on it; the vanilla air stays full meanwhile. When the tank
-  // is empty, the bubbles take over (draining under water, refilling after).
+  // Breath: while a Create backtank holds air, the row is the tank alone (a darker copper meter, tank / capacity) with
+  // its time left (m:ss, as Create's counter) always on it; the vanilla air stays full meanwhile. When the tank is
+  // empty, the bubbles take over (draining under water, refilling after).
   const mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
   if (showBreath && tank > 0) {
-    const [ex, ey, ew, eh] = extR, tankTime = mmss(Math.ceil(tank));
-    ccMeter(g, ex, ey, ew, eh, tank / s.tankMax, ['#c98a5a', '#7a3e1c', '#2e1206'], 10);
-    CC.hit.Rear = [ex, ey, ew, eh];
-    ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, ccTint('#d9874a'), 'rgba(0,0,0,0.9)', NK);
-  } else if (showBreath) row(Rt, 'ear', air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
-  else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
-  else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
+    const tankTime = mmss(Math.ceil(tank));
+    row(Rt, 0, ccBacktank(), tank / s.tankMax, CC_TANK, 10, null, null);
+    ccNumber(g, tankTime, Rt.x + mw / 2 - ccNumberWidth(tankTime, NK) / 2, rows[0] + mh / 2 - 2.5 * NK, ccTint('#d9874a'), 'rgba(0,0,0,0.9)', NK);
+  } else if (showBreath) row(Rt, 0, air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
+  else if (s.flamingo != null) row(Rt, 0, ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
+  else if (s.aircraft) row(Rt, 0, ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
+  else ccGroove(g, Rt.x, rows[0], mw, mh);
   }
+  if (!s.creative && s.mekasuit) ccMekaGauge(g, s);
   // Dodge roll: a small dial like the orbs (stone rim, dark rivets, glass) with the dash chevrons behind the glass in
   // the tier colour and a ring segment per charge, lit as charges are ready. Centred in its space at the wing's end.
   // No dodge roll mod: a pressed-in cog there instead.
@@ -376,6 +387,7 @@ function compactHud(s, font) {
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
   ccInstruments(g, s);
+  ccHardcore(g, s);
   if (s.effects && s.effects.length) ccEffectsRail(g, s, s.effectIcons || {});
   return c;
 }
