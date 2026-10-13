@@ -157,6 +157,12 @@ not packed), so other mods that reuse vanilla hearts look vanilla.
   while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
   screen is open.
 
+## Mob health bars (`site/redesign/mob-bars.html`, `mob-bars.js`): in game via the mod (`mod/CLAUDE.md`, MobBars)
+
+A night scene (vanilla zombie skin, orthographic 3/4 view; `tools/extract.py` takes the zombie skin and grass top, and
+skips entity skins from packs because Fresh Animations remaps them) with a flat, dim bar half a block over the head.
+Three kinds: hostile red, not hostile green, players blue; each toggled in the client config, range 10 blocks.
+
 ## Inventory Redesign (`site/redesign/inventory.html`), work in progress
 
 - Before (Colourful Containers' `container/inventory`, its slot icons and the mod buttons) and after, side

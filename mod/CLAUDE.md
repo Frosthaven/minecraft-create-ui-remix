@@ -90,3 +90,18 @@ not a spectator.
   and cooldowns, Immersive Armors steampunk chestplate, AppleSkin food and health previews, vanilla attack indicator),
   through `Reflect` (cached, absent mod = hidden, logged once). `HudEffects`: buffs and debuffs (replaces EFFECTS),
   hover tooltip while a screen is open. The bar hides those mods' own layers (`REPLACED`).
+
+## Mob health bars (`hud/MobBars`)
+
+Designed on the redesign page `mob-bars.html`. A flat, dim bar over every living entity within `UiConfig` `mobBars.range`
+blocks (default 10): hostile (`Enemy`, bosses included) #a83a3a, players #4a76b8, every other mob #5c9a46, each kind
+toggled in the client config (`mobBars.*`). Not the player, armor stands, invisible or dying entities.
+- `RenderLivingEvent.Post`, drawn into the entity pass's buffers with `RenderType.textBackground()` (as a name tag
+  background: same quad order, which matters for culling), billboarded with `cameraOrientation()`, in model px (1/16
+  block). Half a block over the bounding box, 0.3 more when a name tag shows. Depth-tested, so walls hide it (no
+  line-of-sight raycast); full brightness (the colours are already dim); outside the GUI, so DME never sees it.
+- The pieces are coplanar and never overlap (edge strips, fill with a lighter top strip, trail, empty backing): no
+  z-fighting, no doubled alpha.
+- Damage trail per entity (`WeakHashMap`): holds the pre-hit health 400 ms, then drains over 600 ms; healing clears it.
+- Iris: skipped in the shadow pass (`IrisApi.isRenderingShadowPass`, by reflection). Hidden with F1.
+- Log prefix `[mob bars]` (`HudLog.Channel`): config state on change, Iris found or not, errors once.
