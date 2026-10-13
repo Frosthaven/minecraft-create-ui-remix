@@ -37,7 +37,7 @@ public final class PackScreens {
         boolean backpack = screenClass.startsWith(BACKPACK_SCREENS);
         if (!backpack && !(screen instanceof InventoryScreen) && !retextured(screenClass)) return false;
         return caller.startsWith(VANILLA_INVENTORY) || caller.startsWith(VANILLA_WIDGETS)
-                || (backpack && caller.startsWith(SOPHISTICATED))
+                || (backpack && (caller.startsWith(SOPHISTICATED) || caller.startsWith(TabSlots.class.getName())))
                 || retexturedCaller(caller);
     }
 

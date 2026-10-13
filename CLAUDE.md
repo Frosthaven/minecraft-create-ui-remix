@@ -68,3 +68,10 @@ No player config edits needed; the instance config stays at DME's defaults.
   on those screens and on their own screens: the caller class is mapped to its mod jar's ids.
   The same rule skips their HUD parts (Ars Nouveau mana bar, Iron's Spellbooks bars) while a
   GUI layer draws or no screen is open.
+- Sophisticated upgrade tabs: Sophisticated Core draws the storage grid and tab slots from one
+  texture (`slots_background.png`). `TabSlots` (`createdarkinventory.sophisticated.mixins.json`,
+  optional) draws tab slots from `sophisticatedcore:textures/gui/upgrade_slots_background.png`
+  when a pack has it; the storage grid is told apart by caller (`StorageScreenBase`,
+  `SettingsScreen`).
+- Pack textures: keep alpha binary (0 or 255). Many GUI blits run without blending, so a
+  half-transparent pixel shows at full color (the bright clumps on the backpack window corners).
