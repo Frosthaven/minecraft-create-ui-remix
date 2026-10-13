@@ -7,10 +7,10 @@
 // most that stays hidden at joints, so only the row's ends are rounded (the end caps). Every sprite draws its whole
 // segment, so full or half sprites over the container, or air with no container, look the same.
 // Rows: every meter is the same pipe, 3 to 8, window 4 to 7. Under the food pipe, AppleSkin's exhaustion meter is a bare
-// thin line (rows 8.5 to 9, 1 px above the experience bar: the game's boxes leave that gap), no chrome. The pipe is plain shaded steel, no
-// texture: a texture repeats every 8 px and reads as tiles. Game behaviour: hearts shake 1 px each at 4 health or less, and
+// line (rows 8 to 9, 1 px above the experience bar: the game's boxes leave that gap), no chrome. The pipe is plain
+// shaded steel, no texture: a texture repeats every 8 px and reads as tiles. Game behaviour: hearts shake 1 px each at 4 health or less, and
 // Regeneration lifts one heart 2 px in a wave; food shakes when saturation is out. Segments part for a moment.
-const MT = { top: 3, bot: 8, win: [4, 7], line: [8.5, 9], r: 0.5 };
+const MT = { top: 3, bot: 8, win: [4, 7], line: [8, 9], r: 0.5 };
 
 // Liquids: light top, mid, dark bottom (the experience pipe's lighting).
 const LIQUID = {
@@ -58,9 +58,8 @@ function meterSegment(fill, liquid, opt = {}) {
 /** AppleSkin's pieces for the meters: saturation as a lighter broth over the full window height, filling from the
  *  right (a quarter to all of the segment), with its own darker separator on the right edge; drawn over the food
  *  (right to left too), so it leaves the left edge (0..0.5) alone, which lies over the next segment. The hunger
- *  version is lighter hunger broth. Exhaustion grows from the right and is cut
- *  from this fixed band, so a ramp along x colours it by how far it has come: green at the right, orange in the
- *  middle, red at the left end, where saturation or food is lost. */
+ *  version is lighter hunger broth. Exhaustion grows from the right, cut from this fixed band: two flat tones, the
+ *  top half black and the bottom half white. */
 function meterAppleskin() {
   const glaze = (f, liquid) => {
     const [c, g] = hires(9, 9), x0 = 0.5 + 8 * (1 - f), col = lighter(LIQUID[liquid]), [w0, w1] = MT.win;
@@ -68,9 +67,10 @@ function meterAppleskin() {
     g.fillStyle = meterDark(col); g.fillRect(8.5, w0, 0.5, w1 - w0);
     return c;
   };
-  const [c, g] = hires(81, 9), [l0, l1] = MT.line, ramp = g.createLinearGradient(0, 0, 81, 0);
-  for (const [t, col] of [[0, '#e8402a'], [0.5, '#ff9a3c'], [1, '#6cc444']]) ramp.addColorStop(t, col);
-  g.fillStyle = ramp; g.fillRect(0, l0, 81, l1 - l0);
+  // Exactly two tones, split: the top half black, the bottom half white (each 0.5: thinner would vanish at GUI scale 2).
+  const [c, g] = hires(81, 9), [l0, l1] = MT.line, mid = (l0 + l1) / 2;
+  g.fillStyle = '#000000'; g.fillRect(0, l0, 81, mid - l0);
+  g.fillStyle = '#ffffff'; g.fillRect(0, mid, 81, l1 - mid);
   return { sat: SAT_FRACS.map(f => glaze(f, 'broth')), hunger: SAT_FRACS.map(f => glaze(f, 'hunger')), exhaustion: c };
 }
 

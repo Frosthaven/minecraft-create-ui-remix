@@ -13,6 +13,8 @@ const INV = {
   result: [154, 28],
   main: [0, 1, 2].flatMap(i => [...Array(9).keys()].map(j => [8 + j * 18, 84 + i * 18])),
   hotbar: [...Array(9).keys()].map(j => [8 + j * 18, 142]),
+  cos: [0, 1, 2, 3].map(i => [98 + 18 * i, 62]),   // Cosmetic Armor screen: cosmetic slots (toggles at (97 + 18 i, 61) 5 x 5)
+  cosRecipe: [76, 27, 20, 18],                    // and its recipe book button
   model: [26, 8, 75, 78],        // the game draws the player centred in this box (x 50.5)
   window: [28.5, 8, 72.5, 78],    // the viewport we draw: narrower, symmetric about the player, so the
                                   // scrolls on either side can centre on their slots
@@ -66,32 +68,44 @@ function craftingTable(g) {
 }
 
 /** container/inventory: the whole panel at logical 176 x 166. */
-function inventoryPanel() {
+/** The inventory panel; cosmetic: the Cosmetic Armor screen's (cosarmorinventory.png at (0, 0)), the same layout but
+ *  for the recipe book button at (76, 27) where the cog is (left out) and the offhand plus 4 cosmetic slots in a row
+ *  at y 62 (one long scroll over the table's lower edge holds them). */
+function inventoryPanel(cosmetic = false) {
   const [c, g] = hires(INV.w, INV.h);
   panelBody(g, 0, 0, INV.w, INV.h);
 
   viewport(g, INV.window);
   // Schematic scrolls, each centred on its slots (paper 2 px past the armor column, 1.6 px past the offhand
   // slot and the recipe book; rollers 1 px clear above and below). Empty-slot silhouettes come from the
-  // game (container/slot/*, blueprint lines), so only the slot marks are baked in.
+  // game (textures/item/empty_armor_slot_*, blueprint lines), so only the slot marks are baked in.
   scroll(g, 4, 3.6, 24, 78.8, 2.4);
   for (const [x, y] of INV.armor) draftMark(g, x - 1, y - 1);
-  scroll(g, 73.4, 57.6, 53.2, 24.8, 2.4);
-  draftMark(g, INV.offhand[0] - 1, INV.offhand[1] - 1);
-  // The strip between the player and the table: a flat engraved cog, surface only (nothing to press).
-  engrave(g, () => cogPath(g, 83.5, 30, 6, 4.6, 10));
-  engrave(g, () => circle(g, 83.5, 30, 1.8));
+  if (!cosmetic) {
+    scroll(g, 73.4, 57.6, 53.2, 24.8, 2.4);
+    draftMark(g, INV.offhand[0] - 1, INV.offhand[1] - 1);
+    // The strip between the player and the table: a flat engraved cog, surface only (nothing to press).
+    engrave(g, () => cogPath(g, 83.5, 30, 6, 4.6, 10));
+    engrave(g, () => circle(g, 83.5, 30, 1.8));
+  }
   craftingTable(g);
+  if (cosmetic) {   // the offhand and the 4 cosmetic slots: one scroll, 2.6 px past the first and last cells
+    scroll(g, 73.4, 57.6, 98.2, 24.8, 2.4);
+    for (const [x, y] of [INV.offhand, ...INV.cos]) draftMark(g, x - 1, y - 1);
+  }
   cells(g, INV.main);
   cells(g, INV.hotbar);
-  // 0.5 wide on the half-pixel grid, so nearest sampling keeps it at GUI scale 2.
-  g.strokeStyle = 'rgba(214,170,90,0.55)'; g.lineWidth = 0.5; g.strokeRect(6.25, 140.25, 163.5, 19.5);
+  hotbarOutline(g, ...INV.hotbar[0]);
   return c;
 }
 
 const GLYPHS = {
-  // Curios: a pendant on a chain.
-  curios: (g, w, h) => { g.beginPath(); g.arc(w / 2, h * 0.32, w * 0.24, Math.PI * 0.15, Math.PI * 0.85, true); g.stroke(); circle(g, w / 2, h * 0.68, w * 0.16); g.fill(); },
+  // Curios (accessories): a ring with a gem on top (a pendant read as headphones).
+  curios: (g, w, h) => {
+    circle(g, w / 2, h * 0.62, w * 0.2); g.stroke();
+    const y = h * 0.3, r = w * 0.13;
+    g.beginPath(); g.moveTo(w / 2, y - r); g.lineTo(w / 2 + r, y); g.lineTo(w / 2, y + r); g.lineTo(w / 2 - r, y); g.closePath(); g.fill();
+  },
   // Cosmetic armor: a coat hanger.
   cosmetic: (g, w, h) => {
     g.beginPath(); g.moveTo(w * 0.2, h * 0.72); g.lineTo(w / 2, h * 0.42); g.lineTo(w * 0.8, h * 0.72); g.closePath(); g.stroke();
@@ -114,7 +128,7 @@ function bookButton(hover) {
   return c;
 }
 
-/** Empty-slot silhouettes (container/slot/*, 16x16), drawn by the game in empty slots: blueprint lines. */
+/** Empty-slot silhouettes (1.21.1: textures/item/empty_armor_slot_*, 16x16; also TrashSlot's trashcan), drawn by the game in empty slots: blueprint lines. */
 const SLOT_ICONS = {
   helmet: g => {
     g.beginPath(); g.moveTo(3, 12); g.lineTo(3, 8); g.bezierCurveTo(3, 2.5, 13, 2.5, 13, 8); g.lineTo(13, 12);
@@ -142,13 +156,28 @@ const SLOT_ICONS = {
     }
   },
   shield: g => { g.save(); g.translate(0.5, 0.6); g.scale(15 / 9, 15 / 9); shieldPath(g); g.restore(); },
+  // TrashSlot's empty slot (trashslot:item/trashcan): a can, its lid and handle.
+  trash: g => {
+    g.beginPath(); g.moveTo(4, 4.5); g.lineTo(5, 14.5); g.lineTo(11, 14.5); g.lineTo(12, 4.5); g.closePath();
+    g.moveTo(2.5, 3.5); g.lineTo(13.5, 3.5); g.rect(6.5, 1.5, 3, 2);
+  },
 };
+/** Makes every pixel fully opaque or fully clear (alpha cut at half), for item-atlas art the game draws unblended. */
+function solidAlpha(c) {
+  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height);
+  for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] >= 128 ? 255 : 0;
+  g.putImageData(d, 0, 0);
+}
 function slotIcon(kind) {
   const [c, g] = hires(16, 16);
   const path = () => SLOT_ICONS[kind](g);
-  // A dotted ghost, so an empty slot never reads as filled. Dots and gaps 0.5 long and the line 0.5 wide:
-  // nearest sampling at GUI scale 2 lands one sample on each dot.
-  g.setLineDash([0.5, 0.5]); g.lineCap = 'butt';
-  path(); g.strokeStyle = 'rgba(200,220,240,0.32)'; g.lineWidth = 0.5; g.stroke();
+  // A dotted ghost, so an empty slot never reads as filled: half the slot's size (centred) and faint. The game draws
+  // these from the item atlas without blending (any pixel not fully clear shows at full strength), so the faintness
+  // is a solid dim colour (the light line at about 16 % over the dark slot), with no partial alpha: no anti-aliasing.
+  // Drawn at half scale, so the dash and width are doubled: dots and gaps 0.5 long and the line 0.5 wide on screen.
+  g.translate(8, 8); g.scale(0.5, 0.5); g.translate(-8, -8);
+  g.setLineDash([1, 1]); g.lineCap = 'butt';
+  path(); g.strokeStyle = '#3a414b'; g.lineWidth = 1; g.stroke();
+  solidAlpha(c);
   return c;
 }

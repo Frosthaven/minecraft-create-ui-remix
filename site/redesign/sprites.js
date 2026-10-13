@@ -78,11 +78,10 @@ function glow(g, x, y, r, col, core) {
 
 /** An item socket: a lit brass bezel around a black well (item area 16 x 16 at x+1, y+1). */
 function socket(g, x, y) {
-  const bezel = () => rrect(g, x, y, 18, 18, 1.2);
+  // The brass bezel is 0.5 wide (x + 0.5 .. x + 1), around the 16 x 16 well where the game draws the item.
+  const bezel = () => rrect(g, x + 0.5, y + 0.5, 17, 17, 1);
   bezel(); g.fillStyle = brass(g, y, y + 18); g.fill();
   brassSurface(g, bezel);
-  rrect(g, x + 0.55, y + 0.55, 16.9, 16.9, 0.9);
-  g.strokeStyle = vgrad(g, y, y + 18, [[0, 'rgba(0,0,0,0.45)'], [1, 'rgba(244,216,152,0.3)']]); g.lineWidth = 0.25; g.stroke();
   rrect(g, x + 1, y + 1, 16, 16, 0.6); g.fillStyle = vgrad(g, y + 1, y + 17, [[0, '#030202'], [1, '#141009']]); g.fill();
   // The well's upper wall in shadow, its lower lip catching the light.
   g.save(); rrect(g, x + 1, y + 1, 16, 16, 0.6); g.clip();
@@ -90,7 +89,7 @@ function socket(g, x, y) {
   g.strokeStyle = 'rgba(244,216,152,0.35)'; g.lineWidth = 0.3;
   g.beginPath(); g.moveTo(x + 1.6, y + 16.8); g.lineTo(x + 16.4, y + 16.8); g.stroke();
   g.restore();
-  rim(g, () => rrect(g, x + 0.15, y + 0.15, 17.7, 17.7, 1.1), y, y + 18);
+  rim(g, () => rrect(g, x + 0.6, y + 0.6, 16.8, 16.8, 0.9), y, y + 18, P.brassHi, 0.2);
 }
 
 /** hud/hotbar 182x22: a blackened iron plate in a brushed steel frame with gear-rack teeth along its
@@ -100,16 +99,13 @@ function hotbar() {
   const plate = () => rrect(g, 0.4, 0.4, 181.2, 21.2, 1.2);
   plate(); g.fillStyle = iron(g, 0, 22); g.fill();
   ironSurface(g, plate);
-  const frame = () => rrect(g, 0.75, 0.75, 180.5, 20.5, 1.1);
-  frame(); g.strokeStyle = steel(g, 0, 22); g.lineWidth = 0.9; g.stroke();
-  rim(g, () => rrect(g, 0.3, 0.3, 181.4, 21.4, 1.3), 0, 22, '#eef1f4', 0.3);
-  // Rack teeth: notches cut into the frame's top and bottom edges.
+  // The steel frame, 0.5 wide (0.4 .. 0.9), its outer edge lit; rack teeth notched into it. No bolts between sockets.
+  const frame = () => rrect(g, 0.65, 0.65, 180.7, 20.7, 1.15);
+  frame(); g.strokeStyle = steel(g, 0, 22); g.lineWidth = 0.5; g.stroke();
+  rim(g, () => rrect(g, 0.5, 0.5, 181, 21, 1.25), 0, 22, '#eef1f4', 0.25);
   g.fillStyle = 'rgba(8,9,10,0.85)';
-  for (let x = 3; x < 179; x += 2) { g.fillRect(x, 0.25, 0.9, 0.55); g.fillRect(x, 21.2, 0.9, 0.55); }
-  for (let i = 0; i < 9; i++) {
-    socket(g, 2 + i * 20, 2);
-    if (i < 8) { hexBolt(g, 21 + i * 20, 4.2, 0.65); hexBolt(g, 21 + i * 20, 17.8, 0.65); }
-  }
+  for (let x = 3; x < 179; x += 2) { g.fillRect(x, 0.4, 0.9, 0.3); g.fillRect(x, 21.3, 0.9, 0.3); }
+  for (let i = 0; i < 9; i++) socket(g, 2 + i * 20, 2);
   return c;
 }
 
@@ -117,7 +113,7 @@ function hotbar() {
 function selection() {
   const [c, g] = hires(24, 23);
   g.save(); g.shadowColor = 'rgba(255,140,30,1)'; g.shadowBlur = 3.5;
-  g.strokeStyle = steel(g, 1, 22); g.lineWidth = 1.3;
+  g.strokeStyle = steel(g, 1, 22); g.lineWidth = 0.65;   // half the old 1.3, as the hotbar's borders
   for (let k = 0; k < 2; k++) { rrect(g, 1.4, 1.4, 21.2, 20.2, 1.4); g.stroke(); }
   g.restore();
   rim(g, () => rrect(g, 0.8, 0.8, 22.4, 21.4, 1.8), 0.8, 22.2, '#f4f6f8', 0.35);
@@ -143,10 +139,9 @@ function offhand() {
   hexBolt(g, 25.5, 10.5, 0.45); hexBolt(g, 25.5, 13.5, 0.45);
   const plate = () => rrect(g, 0.5, 1.5, 21, 21, 1.2);
   plate(); g.fillStyle = iron(g, 1.5, 22.5); g.fill(); ironSurface(g, plate);
-  g.strokeStyle = steel(g, 1.5, 22.5); g.lineWidth = 0.9; rrect(g, 0.75, 1.75, 20.5, 20.5, 1.1); g.stroke();
-  rim(g, () => rrect(g, 0.4, 1.4, 21.2, 21.2, 1.3), 1.4, 22.6, '#eef1f4', 0.3);
+  g.strokeStyle = steel(g, 1.5, 22.5); g.lineWidth = 0.5; rrect(g, 0.75, 1.75, 20.5, 20.5, 1.1); g.stroke();   // 0.5, as the hotbar's
+  rim(g, () => rrect(g, 0.55, 1.55, 20.9, 20.9, 1.2), 1.4, 22.6, '#eef1f4', 0.25);
   socket(g, 2, 3);
-  for (const [x, y] of [[1.25, 2.25], [20.75, 2.25], [1.25, 21.75], [20.75, 21.75]]) hexBolt(g, x, y, 0.5);
   return c;
 }
 
@@ -157,19 +152,23 @@ function offhand() {
  *  separator at 8.5 in each) on the left half, the food's (cells from x 173 leftward) on the right half, one in the
  *  middle gap. Dark grey on the empty glass, a darker green over the liquid. No texture or clamps, and no end caps:
  *  like the meters, the window runs to the ends, edged only by a 0.5 px separator and the 0.5 rounded corners. */
+// The bar (window) is half the meters' height, rows 2.5 to 4; the pipe gives it 1 px of steel above and below, as the
+// health and food meters have (rows 1.5 to 5; the sprite's top 1.5 rows stay empty).
+const XP_ROWS = [1.5, 5], XP_WIN = [2.5, 4];
 const XP_SEPS = [...Array.from({ length: 10 }, (_, k) => 8.5 + 8 * k), 90.75, ...Array.from({ length: 10 }, (_, i) => 101.5 + 8 * i)];
 function xpBack() {
   const [c, g] = hires(182, 5);
-  rrect(g, 0, 0, 182, 5, 0.5); g.fillStyle = vgrad(g, 0, 5, [[0, '#6a7076'], [0.25, '#46494e'], [0.75, '#2c2f33'], [1, '#18191b']]); g.fill();
-  g.fillStyle = '#050605'; g.fillRect(0.5, 1, 181, 3);
-  g.fillStyle = '#1e2023'; for (const x of [0, ...XP_SEPS, 181.5]) g.fillRect(x, 1, 0.5, 3);
+  rrect(g, 0, XP_ROWS[0], 182, XP_ROWS[1] - XP_ROWS[0], 0.5);
+  g.fillStyle = vgrad(g, XP_ROWS[0], XP_ROWS[1], [[0, '#6a7076'], [0.25, '#46494e'], [0.75, '#2c2f33'], [1, '#18191b']]); g.fill();
+  g.fillStyle = '#050605'; g.fillRect(0.5, XP_WIN[0], 181, XP_WIN[1] - XP_WIN[0]);
+  g.fillStyle = '#1e2023'; for (const x of [0, ...XP_SEPS, 181.5]) g.fillRect(x, XP_WIN[0], 0.5, XP_WIN[1] - XP_WIN[0]);
   return c;
 }
 /** hud/experience_bar_progress 182x5: the liquid experience in the window (drawn cropped to the fill width). */
 function xpFill() {
   const [c, g] = hires(182, 5), col = ['#bfe07a', '#6aa83e', '#1f4a1f'];
-  meterFill(g, 0.5, 181.5, 1, 4, col);
-  g.fillStyle = meterDark(col); for (const x of [0, ...XP_SEPS, 181.5]) g.fillRect(x, 1, 0.5, 3);
+  meterFill(g, 0.5, 181.5, XP_WIN[0], XP_WIN[1], col);
+  g.fillStyle = meterDark(col); for (const x of [0, ...XP_SEPS, 181.5]) g.fillRect(x, XP_WIN[0], 0.5, XP_WIN[1] - XP_WIN[0]);
   return c;
 }
 

@@ -75,12 +75,12 @@ choice('tier', 'tier'); choice('set', 'set'); choice('open', 'open');
   const iconSheet = await core('icons'), origControls = await core('gui_controls');
   before = { bg: {}, slots: await core('slots_background'), controls: origControls, iconSheet, icons };
   for (const k of keys) before.bg[k] = await core('storage_background_' + k);
-  after = { bg: {}, slots: slotsBackground(), controls: guiControls(origControls), iconSheet: bpIcons(iconSheet, SCREEN.font), icons };
+  after = { bg: {}, slots: slotsBackground(), controls: guiControls(origControls), iconSheet: bpIcons(iconSheet, SCREEN.font), icons, searchGlyph: searchGlyph() };
   for (const k of keys) after.bg[k] = storageBackground(+k.slice(0, 2).replace('_', ''), k.endsWith('wider'));
   SCREEN.render();
   fileList([...keys.map(k => ['sophisticatedcore: storage_background_' + k, after.bg[k]]),
     ['sophisticatedcore: slots_background', after.slots], ['sophisticatedcore: gui_controls', after.controls],
-    ['sophisticatedcore: icons', after.iconSheet]]);
+    ['sophisticatedcore: icons', after.iconSheet], ['createhud: font/search', after.searchGlyph]]);
 })();
 </script>
 <script src="../live.js"></script>

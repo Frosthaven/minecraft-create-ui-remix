@@ -127,7 +127,7 @@ function levelSprite(n, disabled) {
   return c;
 }
 
-/** container/slot/lapis_lazuli, 16 x 16: a dotted ghost of a lapis gem (empty-slot hint, never filled). */
+/** item/empty_slot_lapis_lazuli (1.21.1's item atlas), 16 x 16: a dotted ghost of a lapis gem (empty-slot hint, never filled). */
 function lapisGhost() {
   const [c, g] = hires(16, 16);
   g.setLineDash([0.5, 0.5]); g.lineCap = 'butt';

@@ -46,8 +46,7 @@ function storageBackground(cols, wider) {
   xOnly(c, 17, join);
   rim(g, body, 0.4, join, 'rgba(255,220,180,0.35)', 0.3);
   stitch(g, () => rrect(g, 3, 1.8, W - 6, 155.2, 1));
-  // The title label: canvas, clear of the search box (it collapses to x W-42 to W-32).
-  canvasLabel(g, 6.6, 3.8, W - 49.6, 11.4);   // centred on the title's caps (y 6 to 13)
+  // No label behind the title (chosen): the mod's title sits on the leather itself.
   // Framed like the sort buttons beside it, so the mod's flat grey square reads as one of that row.
   steelButton(g, W - 43, 4, 12, 12, false, 1.2);
   // The player's inventory: the inventory screen's iron plate, full width through the "Inventory" row,
@@ -61,7 +60,18 @@ function storageBackground(cols, wider) {
     g.closePath();
   };
   ironPlate(g, plate, join, 256);
-  playerInventory(g, off + 8, 162);   // the label's position in the texture (H - 94 on screen)
+  playerInventory(g, off + 8, 162, { plate: false });   // the label's position (H - 94 on screen); no plate (chosen)
+  return c;
+}
+
+/** The search box's hint glyph, U+1F50D (the mod writes "🔍" centred on its grey fill, in #BBBBBB with a shadow, from
+ *  the game's font): a basic pixel magnifier in an 8 x 8 font cell (ascent 7), crisp like the font itself: a 5 x 5
+ *  ring with its corners cut and a 2 px handle, white so the mod's grey tints it. Shipped as createhud:font/search.png
+ *  with a bitmap provider in minecraft:font/default.json. */
+function searchGlyph() {
+  const c = document.createElement('canvas'); c.width = c.height = 8;
+  const g = c.getContext('2d'); g.fillStyle = '#ffffff';
+  for (const [x, y] of [[1, 0], [2, 0], [3, 0], [0, 1], [4, 1], [0, 2], [4, 2], [0, 3], [4, 3], [1, 4], [2, 4], [3, 4], [5, 5], [6, 6]]) g.fillRect(x, y, 1, 1);
   return c;
 }
 
@@ -128,21 +138,19 @@ function guiControls(orig) {
  *  its icon. The mod glues the halves at any height and cuts any width, so the body is flat with grain
  *  along x only. A lit top and shaded bottom make it read raised (tabs are controls). */
 function tabArt(g) {
+  // The tabs in the side pouch's dark leather and style (same fill, grain, dark edge, stitching); no bright rim
+  // (it bunched into a white clump where the edge rounds at the top right).
   const x0 = 128, w = 128;
   const body = () => rrect(g, x0, 0, w, 256, [0, 2.4, 2.4, 0]);
-  body(); g.fillStyle = '#a8865e'; g.fill();
+  body(); g.fillStyle = hgrad(g, x0, 256, [[0, '#3a2619'], [1, '#4a3122']]); g.fill();
   surface(g, body, TEX.grain, 0.1);
-  g.save(); body(); g.clip();
-  g.fillStyle = vgrad(g, 252, 256, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); g.fillRect(x0, 252, w, 4);
-  g.restore();
-  g.strokeStyle = 'rgba(40,24,10,0.7)'; g.lineWidth = 0.4;
+  g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineWidth = 0.4;
   g.beginPath(); g.moveTo(x0 + 3, 0.2); g.lineTo(256 - 2.4, 0.2); g.arcTo(255.8, 0.2, 255.8, 2.4, 2.2); g.lineTo(255.8, 253.6);
   g.arcTo(255.8, 255.8, 253.6, 255.8, 2.2); g.lineTo(x0 + 3, 255.8); g.stroke();
-  rim(g, body, 0, 256, 'rgba(255,240,215,0.45)', 0.3);
   stitch(g, () => {
     g.beginPath(); g.moveTo(x0, 2.2); g.lineTo(252.8, 2.2); g.arcTo(253.8, 2.2, 253.8, 3.2, 1); g.lineTo(253.8, 252.8);
     g.arcTo(253.8, 253.8, 252.8, 253.8, 1); g.lineTo(x0, 253.8);
-  }, 'rgba(70,45,20,0.4)');
+  });
   // The strip the mod lays over the panel edge to join a tab (x 128 to 131): transparent, so the tab sits
   // flush against the panel's own edge.
   g.clearRect(x0, 0, 3, 256);

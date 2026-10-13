@@ -20,6 +20,7 @@
 <div class="bar">
   <button id="sockets" aria-pressed="false">Show slots</button>
   <button id="hover" aria-pressed="false">Hover recipe book</button>
+  <button id="cosScreen" aria-pressed="false" title="The Cosmetic Armor screen (its panel is in cosarmorinventory.png)">Cosmetic screen</button>
   <span style="color:var(--muted);align-self:center">GUI scale</span>
   <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4" aria-pressed="true">4</button>
   <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
@@ -35,21 +36,29 @@
 <script src="panel-art.js"></script>
 <script src="components.js"></script>
 <script src="inventory.js"></script>
+<script src="inv-mods.js"></script>
 <script src="mcfont.js"></script>
 <script src="screen-page.js"></script>
 <script>
-let showSlots = false, hover = false, before = {}, after = {};
+let showSlots = false, hover = false, cosScreen = pageQuery.has('cos'), before = {}, after = {};
 
 /** The inventory screen: panel, slot icons, buttons and title, as InventoryScreen and the mods place them. */
 function compose(set, scale) {
-  const { c, g, put, text } = screenCanvas(INV.w, INV.h, scale);
+  if (cosScreen) return composeCos(set, scale);
+  const { c, g, put, text } = screenCanvas(INV.w, INV.h + 22, scale);   // + the trash slot's tab below the panel
   put(set.panel, 0, 0, INV.w, INV.h);
+  // TrashSlot (after the panel, before the buttons): the bottom piece at (144, 162), the join patch over its top-left
+  // corner, the empty-slot icon at (152, 165).
+  put(set.trash, 144, 162, 32, 25, 0, 0, 32, 25); put(set.trash, 144, 162, 4, 4, 50, 29, 4, 4);
+  put(set.trashIcon, 152, 165, 16, 16);
   // Empty-slot silhouettes, as the game draws them in empty armor and offhand slots.
   ['helmet', 'chestplate', 'leggings', 'boots'].forEach((k, i) => put(set.icons[k], ...INV.armor[i], 16, 16));
   put(set.icons.shield, ...INV.offhand, 16, 16);
   const [bx, by, bw, bh] = INV.book;
   put(hover ? set.bookHover : set.book, bx, by, bw, bh);
-  for (const k of ['curios', 'cosmetic', 'cosToggle']) put(set[k], ...INV[k]);
+  put(set.curios, ...INV.curios);
+  // Cosmetic Armor's open button (normal) and toggle (cosmetics shown), from its sheet.
+  put(set.cos, ...INV.cosmetic, 0, 166, 10, 10); put(set.cos, ...INV.cosToggle, 0, 176, 5, 5);
   text('Crafting', ...INV.title);   // the game's font and colour, no shadow
   if (showSlots) {
     g.strokeStyle = 'rgba(255,255,255,0.6)'; g.setLineDash([3, 3]);
@@ -58,22 +67,41 @@ function compose(set, scale) {
   }
   return c;
 }
+/** The Cosmetic Armor screen (GuiCosArmorInventory): its panel from cosarmorinventory.png, the recipe book button at
+ *  (76, 27), the cosmetic slots' toggles at (97 + 18 i, 61) (shown here alternating on and off), the open button at
+ *  (65, 67), the title "Crafting" at (97, 6). Empty slots show the armor icons. */
+function composeCos(set, scale) {
+  const { c, g, put, text } = screenCanvas(INV.w, INV.h, scale);
+  put(set.cos, 0, 0, INV.w, INV.h, 0, 0, INV.w, INV.h);
+  ['helmet', 'chestplate', 'leggings', 'boots'].forEach((k, i) => { put(set.icons[k], ...INV.armor[i], 16, 16); put(set.icons[k], ...INV.cos[i], 16, 16); });
+  put(set.icons.shield, ...INV.offhand, 16, 16);
+  put(hover ? set.bookHover : set.book, ...INV.cosRecipe);
+  put(set.cos, ...INV.cosmetic, 0, 166, 10, 10);
+  INV.cos.forEach(([x, y], i) => put(set.cos, x - 1, y - 1, 5, 5, i % 2 ? 5 : 0, 176, 5, 5));
+  text('Crafting', 97, 6);
+  return c;
+}
 screenPage(compose, () => ({ before, after }));
 pageToggle('sockets', on => { showSlots = on; });
 pageToggle('hover', on => { hover = on; });
+pageToggle('cosScreen', on => { cosScreen = on; }, cosScreen);
 (async () => {
   const icons = k => Object.fromEntries(['helmet', 'chestplate', 'leggings', 'boots', 'shield'].map(n => [n, k(n)]));
   after = { panel: inventoryPanel(), book: bookButton(false), bookHover: bookButton(true), icons: icons(slotIcon),
-    curios: miniButton(10, 10, GLYPHS.curios), curiosHover: miniButton(10, 10, GLYPHS.curios, true), cosmetic: miniButton(10, 10, GLYPHS.cosmetic), cosToggle: miniButton(5, 5, GLYPHS.toggle) };
+    curios: miniButton(10, 10, GLYPHS.curios), curiosHover: miniButton(10, 10, GLYPHS.curios, true), trash: trashSheet(), trashIcon: slotIcon('trash') };
   const tex = await packTextures();
-  const widget = await tex('sprites/widget/button');
   before = { panel: await tex('container/inventory'), book: await tex('sprites/recipe_book/button'), bookHover: await tex('sprites/recipe_book/button_highlighted'),
-    icons: {}, curios: await tex('curios/button', 'curios'), cosmetic: widget, cosToggle: widget };
-  for (const n of ['helmet', 'chestplate', 'leggings', 'boots', 'shield']) before.icons[n] = await tex('sprites/container/slot/' + n);
+    icons: {}, curios: await tex('curios/button', 'curios'), cos: await tex('cosarmorinventory', 'cosmeticarmorreworked'),
+    trash: await tex('slot', 'trashslot'), trashIcon: await tex('textures/item/trashcan', 'trashslot') };
+  after.cos = cosSheet(before.cos);
+  // 1.21.1 draws empty armor and shield slots from the item atlas (textures/item/empty_armor_slot_*); the
+  // container/slot sprites some packs carry are 1.21.2's and unused here.
+  for (const n of ['helmet', 'chestplate', 'leggings', 'boots', 'shield']) before.icons[n] = await tex('textures/item/empty_armor_slot_' + n);
   SCREEN.render();
   fileList([['container/inventory', sheetTexture(after.panel)], ['sprites/recipe_book/button', after.book],
     ['sprites/recipe_book/button_highlighted', after.bookHover], ['curios: curios/button', after.curios], ['curios: curios/button_highlighted', after.curiosHover],
-    ...Object.entries(after.icons).map(([n, img]) => ['sprites/container/slot/' + n, img])]);
+    ...Object.entries(after.icons).map(([n, img]) => ['item/empty_armor_slot_' + n, img]),
+    ['cosmeticarmorreworked: cosarmorinventory', after.cos], ['trashslot: slot', after.trash], ['trashslot: item/trashcan', after.trashIcon]]);
 })();
 </script>
 <script src="../live.js"></script>

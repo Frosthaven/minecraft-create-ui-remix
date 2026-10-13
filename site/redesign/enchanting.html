@@ -115,7 +115,7 @@ function placeholder(kind) {
   if (sgaImg) sga = mcFont(sgaImg);
   const sp = p => tex('sprites/container/enchanting_table/' + p);
   const items = { item: placeholder('item'), lapisItem: placeholder('lapis') };
-  before = { panel: await tex('container/enchanting_table'), lapisGhost: await tex('sprites/container/slot/lapis_lazuli'), ...items,
+  before = { panel: await tex('container/enchanting_table'), lapisGhost: await tex('textures/item/empty_slot_lapis_lazuli'), ...items,
     slot: { enabled: await sp('enchantment_slot'), highlighted: await sp('enchantment_slot_highlighted'), disabled: await sp('enchantment_slot_disabled') },
     level: [] };
   for (const n of [1, 2, 3]) before.level.push({ enabled: await sp('level_' + n), disabled: await sp(`level_${n}_disabled`) });
@@ -126,7 +126,7 @@ function placeholder(kind) {
   fileList([['container/enchanting_table', sheetTexture(after.panel)],
     ...['enabled', 'highlighted', 'disabled'].map(k => [`sprites/container/enchanting_table/enchantment_slot${k === 'enabled' ? '' : '_' + k}`, after.slot[k]]),
     ...[1, 2, 3].flatMap(n => [[`sprites/container/enchanting_table/level_${n}`, after.level[n - 1].enabled], [`sprites/container/enchanting_table/level_${n}_disabled`, after.level[n - 1].disabled]]),
-    ['sprites/container/slot/lapis_lazuli', after.lapisGhost]]);
+    ['item/empty_slot_lapis_lazuli', after.lapisGhost]]);
 })();
 </script>
 <script src="../live.js"></script>

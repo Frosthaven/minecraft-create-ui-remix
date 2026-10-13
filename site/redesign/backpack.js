@@ -133,10 +133,21 @@ function bpCompose(T, L, scale, state) {
   // Search box, collapsed: a solid fill, 10 x 10, right-anchored at x W - 32 (not restylable).
   const [qx, qy] = P(L.W - 42, 5);
   g.fillStyle = '#777777'; g.fillRect(qx * scale, qy * scale, 10 * scale, 10 * scale);
-  // Its hint: a magnifying glass (U+1F50D, from the game's fallback font) centred, in #BBBBBB.
-  g.strokeStyle = '#bbbbbb'; g.lineWidth = 0.8 * scale;
-  g.beginPath(); g.arc((qx + 4.4) * scale, (qy + 4.4) * scale, 2 * scale, 0, Math.PI * 2); g.stroke();
-  g.beginPath(); g.moveTo((qx + 5.9) * scale, (qy + 5.9) * scale); g.lineTo((qx + 7.8) * scale, (qy + 7.8) * scale); g.stroke();
+  // Its hint: U+1F50D written centred in #BBBBBB with the game's text shadow. Ours: our glyph (createhud:font/search);
+  // before: an approximation of the game's fallback-font magnifier.
+  if (T.searchGlyph) {
+    const tint = (col, dx) => {
+      const t = document.createElement('canvas'); t.width = T.searchGlyph.width; t.height = T.searchGlyph.height;
+      const tg = t.getContext('2d'); tg.drawImage(T.searchGlyph, 0, 0); tg.globalCompositeOperation = 'source-in';
+      tg.fillStyle = col; tg.fillRect(0, 0, t.width, t.height);
+      g.imageSmoothingEnabled = false; g.drawImage(t, (qx + 1 + dx) * scale, (qy + 1 + dx) * scale, 8 * scale, 8 * scale);
+    };
+    tint('#2e2e2e', 1); tint('#bbbbbb', 0);
+  } else {
+    g.strokeStyle = '#bbbbbb'; g.lineWidth = 0.8 * scale;
+    g.beginPath(); g.arc((qx + 4.4) * scale, (qy + 4.4) * scale, 2 * scale, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.moveTo((qx + 5.9) * scale, (qy + 5.9) * scale); g.lineTo((qx + 7.8) * scale, (qy + 7.8) * scale); g.stroke();
+  }
   // Sort and sort-by (TITLE_LINE_RIGHT), transfer buttons beside the "Inventory" label: small buttons + icons.
   for (const [x, y, ix, iy] of [[L.W - 31, 4, 0, 144], [L.W - 19, 4, 24, 144],
     [8 + L.off + 137, L.H - 96, 0, 144], [8 + L.off + 149, L.H - 96, 12, 156]]) {

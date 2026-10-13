@@ -10,8 +10,9 @@ os.makedirs(tex_dir, exist_ok=True)
 # Screen art: textures/gui (most mods and vanilla), and the other folders mods use for screens
 # (Mekanism keeps it in assets/<ns>/gui/). Item icons and map markers are left out.
 GUI = re.compile(r"^assets/([^/]+)/((?:textures/(?:gui|guis|hud|screens?|jei|contextmenu|waystones_gui|slot|crosshair)|gui)/.+"
-                 r"|textures/font/ascii(?:_sga)?|textures/icons)\.png$")  # the GUI and enchanting fonts, for the mockups;
-                                                                         # AppleSkin's HUD overlay sheet
+                 r"|textures/font/ascii(?:_sga)?|textures/icons|textures/item/empty_armor_slot_[a-z]+|textures/item/empty_slot_lapis_lazuli|textures/item/trashcan)\.png$")  # the GUI and enchanting fonts, for the mockups;
+                                                                         # AppleSkin's HUD overlay sheet; 1.21.1's
+                                                                         # empty armor and shield slot icons
 
 def mod_name(z):
     try:
@@ -40,6 +41,19 @@ def take(z, mod, source):
             owner[ns] = mod
         entries[key] = {"ns": ns, "path": path, "data": z.read(n), "meta": meta, "source": source,
                         "mod": entries.get(key, {}).get("mod") or mod}
+
+class FolderPack:
+    """An unzipped resource pack, read like a ZipFile (namelist, read)."""
+    def __init__(self, root):
+        self.root = root
+    def namelist(self):
+        return [os.path.relpath(os.path.join(d, f), self.root).replace(os.sep, "/")
+                for d, _, files in os.walk(self.root) for f in files]
+    def read(self, name):
+        try:
+            return open(os.path.join(self.root, name), "rb").read()
+        except FileNotFoundError:
+            raise KeyError(name)
 
 def walk_jar(data, label, depth=0):
     try:
@@ -70,6 +84,8 @@ for p in packs:
     label = re.sub(r"§.", "", p[5:]).removesuffix(".zip")
     if os.path.isfile(path):
         take(zipfile.ZipFile(path), None, "pack:" + label)
+    elif os.path.isdir(path):
+        take(FolderPack(path), None, "pack:" + label)
 
 manifest = []
 for i, ((ns, path), e) in enumerate(sorted(entries.items())):

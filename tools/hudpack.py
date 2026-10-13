@@ -8,7 +8,7 @@ All textures are R x (8) the originals; every user scales UVs by the logical siz
 """
 import base64, json, os, re, subprocess, sys
 
-PAGES = {'': None, 'inventory.html': 10, 'backpack.html': 7}  # page: files it lists (None: the page records it)
+PAGES = {'': None, 'inventory.html': 13, 'backpack.html': 8}  # page: files it lists (None: the page records it)
 
 
 def target(name):
@@ -18,6 +18,8 @@ def target(name):
     ns, path = name.split(': ') if ': ' in name else ('minecraft', name)
     if name.startswith('hud/'):
         path = 'sprites/' + path
+    if path.startswith(('item/', 'font/')):   # item atlas textures (1.21.1's empty armor slot icons), font glyphs
+        return f'assets/{ns}/textures/{path}.png'
     return f'assets/{ns}/textures/gui/{path}.png'
 
 
@@ -39,6 +41,10 @@ for name, b64 in files:
     with open(out, 'wb') as f:
         f.write(base64.b64decode(b64))
 
+# The search box's hint (Sophisticated Core writes U+1F50D): our glyph, merged into the default font by a bitmap provider.
+os.makedirs(os.path.join(pack, 'assets/minecraft/font'), exist_ok=True)
+with open(os.path.join(pack, 'assets/minecraft/font/default.json'), 'w', encoding='utf-8') as f:
+    json.dump({'providers': [{'type': 'bitmap', 'file': 'createhud:font/search.png', 'ascent': 7, 'height': 8, 'chars': ['\U0001F50D']}]}, f, ensure_ascii=False, indent=2)
 with open(os.path.join(pack, 'pack.mcmeta'), 'w') as f:
     json.dump({'pack': {'pack_format': 34, 'description': 'Create GUI: dark steampunk HUD, inventory and backpacks'}}, f, indent=2)
 print(f'{len(files)} files in {pack}')

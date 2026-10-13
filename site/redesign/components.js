@@ -97,13 +97,21 @@ function ironPlate(g, path, y0, y1) {
   rim(g, path, y0, y1, 'rgba(220,225,230,0.12)', 0.4);
 }
 
+/** The hotbar's brass outline (it echoes the HUD's), for a hotbar whose first slot's item sits at (x, y): 1 px wide (a
+ *  whole pixel renders the same width on every side at any GUI scale; 0.5 came out 1 or 2 screen px by position),
+ *  1 px clear of the cells, corners rounded 1.5. */
+function hotbarOutline(g, x, y) {
+  rrect(g, x - 2.5, y - 2.5, 165, 21, 1.5);
+  g.strokeStyle = 'rgba(214,170,90,0.45)'; g.lineWidth = 1; g.stroke();
+}
+
 /** The player's inventory as every screen shows it, placed from its label's position (lx, ly), which the game
  *  sets (vanilla (8, imageHeight - 94)): a steel nameplate behind "Inventory" (50 px in the game font), the
  *  3 x 9 grid 12 px below the label, the hotbar 70 px below it in the brass outline that echoes the HUD.
  *  Draw it on the iron plate (ironPlate). One component, so every screen's inventory is identical. */
-function playerInventory(g, lx, ly) {
-  steelNameplate(g, lx - 2.4, ly - 2, 53, 11);
+function playerInventory(g, lx, ly, { plate = true } = {}) {
+  if (plate) steelNameplate(g, lx - 2.4, ly - 2, 53, 11);   // plate: false leaves "Inventory" on the iron itself
   cells(g, [0, 1, 2].flatMap(i => [...Array(9).keys()].map(j => [lx + 18 * j, ly + 12 + 18 * i])));
   cells(g, [...Array(9).keys()].map(j => [lx + 18 * j, ly + 70]));
-  g.strokeStyle = 'rgba(214,170,90,0.55)'; g.lineWidth = 0.5; g.strokeRect(lx - 1.75, ly + 68.25, 163.5, 19.5);
+  hotbarOutline(g, lx, ly + 70);
 }
