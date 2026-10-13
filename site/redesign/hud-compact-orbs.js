@@ -109,17 +109,23 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
     if (close) { g.lineTo(cx - dx, b); g.closePath(); }
     g.restore();
   };
-  g.save(); g.translate(0, -0.6); outline(true); g.fillStyle = 'rgba(0,0,0,0.55)'; g.save(); g.beginPath(); g.rect(cx - dx - 1, cy - R - 2, 2 * dx + 2, wing - (cy - R - 2)); g.clip(); outline(true); g.fill(); g.restore(); g.restore();
   // The plate's own gradient (shared, from the dome's peak), plus a soft light on the dome's crown so it reads round.
   outline(true); g.fillStyle = iron(g, cy - R, b); g.fill(); ironSurface(g, () => outline(true));
   g.save(); outline(true); g.clip();
   circle(g, cx, cy - R * 0.55, R * 0.75); g.fillStyle = radial(g, cx, cy - R * 0.7, R * 0.75, [[0, 'rgba(255,240,220,0.10)'], [1, 'rgba(255,240,220,0)']]); g.fill();
   g.restore();
   // The rim along the smooth outline only (not the closing sides inside the plate).
+  outline(false); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.6; g.stroke();   // an even dark edge (no shifted shadow: it read as a flat top)
   rim(g, () => outline(false), cy - R, cy + R, P.brassHi, 0.35);
   // The seat: a recessed groove the orb's bezel drops into.
   circle(g, cx, cy, ORB.r + ORB.bezel + 0.55); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.9; g.stroke();
   g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 1.05); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
+}
+
+/** An empty housing (creative's vitals, no mana mod): a cog pressed into its face. */
+function ccHousingCog(g, cx, cy) {
+  ccEngrave(g, () => cogPath(g, cx, cy, ORB.r * 0.9, ORB.r * 0.7, 12), 0.6);
+  ccEngrave(g, () => circle(g, cx, cy, ORB.r * 0.3), 0.6);
 }
 
 /** Value / max centred on an orb (two lines when a secondary shows), the bar's small digits. */
@@ -146,20 +152,28 @@ function ccOrbs(g, s) {
       shake: ccShake(s)[1] });
     CC.hit.orbL = [ORB.lx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
     if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, '#ffffff'], riding ? [s.mount, s.mountMax, '#f0c890'] : [s.food, 20, '#ffd08a']]);
-  } else ccGearRow(g, ORB.lx, ORB.y);
+  } else ccHousingCog(g, ORB.lx, ORB.y);   // creative: a cog pressed into the housing's face
   // Right: the mana pools (primary the liquid, the other the crescent), breath as the ring under water.
   const pools = [['irons', s.irons, MANA.irons, 200], ['ars', s.ars, MANA.ars, 150]].filter(p => p[1] != null);
   if (s.manaPrimary === 'ars') pools.reverse();
   const tank = s.diving ? Math.max(0, s.tank) : 0, breath = !s.creative && (s.underwater || s.air < 1);
-  const ring = !breath ? null : tank > 0 ? { frac: tank / s.tankMax, on: ['#ffd9b0', '#c98a5a', '#5a2814'] }
-    : { frac: s.air, on: LIQUID.air };
+  // The right ring shows one thing: breath (or the backtank), else the Helium Flamingo's charge, else an aircraft's health.
+  const ring = breath ? (tank > 0 ? { frac: tank / s.tankMax, on: ['#ffd9b0', '#c98a5a', '#5a2814'] } : { frac: s.air, on: LIQUID.air })
+    : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO }
+    : s.aircraft ? { frac: s.hull, on: CC_HULL } : null;
   if (pools.length) {
     ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2] }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2] } : null, ring });
     CC.hit.orbR = [ORB.rx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
     if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], '#ffffff']));
-  } else {
-    ccGearRow(g, ORB.rx, ORB.y);
-    if (ring) ccOrb(g, ORB.rx, ORB.y, { ring });   // breath still needs its ring: an empty orb carries it
+  } else if (ring) ccOrb(g, ORB.rx, ORB.y, { ring });   // no mana mod: an empty orb still carries the ring
+  else ccHousingCog(g, ORB.rx, ORB.y);                 // no mana mod: a cog pressed into the housing's face
+  // MekaSuit energy: a slim upright gauge between the offhand slot and the health orb, filling from the bottom.
+  if (!s.creative && s.mekasuit) {
+    const gx = ORB.lx - ORB.housing - 3.4 - 1.2, gy = 30, gh = 18;   // left of the health orb's housing
+    rrect(g, gx, gy, 2.4, gh, 1.2); g.fillStyle = vgrad(g, gy, gy + gh, [[0, '#9ea4aa'], [1, '#141619']]); g.fill();
+    rrect(g, gx + 0.4, gy + 0.4, 1.6, gh - 0.8, 0.8); g.fillStyle = '#060708'; g.fill();
+    const fh = (gh - 0.8) * s.mekasuit;
+    rrect(g, gx + 0.4, gy + gh - 0.4 - fh, 1.6, fh, 0.8); g.fillStyle = vgrad(g, gy, gy + gh, [[0, CC_MEKA[0]], [0.5, CC_MEKA[1]], [1, CC_MEKA[2]]]); g.fill();
   }
   // The backtank's time, always on (players rely on it), under the right orb's ring.
   if (breath && tank > 0) {

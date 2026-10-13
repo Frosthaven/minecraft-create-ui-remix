@@ -210,7 +210,7 @@ function compactHud(s, font) {
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
   const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
-  ccPlate(g, { left: leftExt, right: !!rightExt, inner: s.orbs ? ORB.innerEnd : 0, pull: s.orbs ? ORB.pull : 0, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
+  ccPlate(g, { left: leftExt && !s.orbs, right: !!rightExt && !s.orbs, inner: s.orbs ? ORB.innerEnd : 0, pull: s.orbs ? ORB.pull : 0, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
@@ -312,7 +312,9 @@ function compactHud(s, font) {
   else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   }
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
-  if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -152 : 152, 39);   // no dodge roll mod: a pressed-in cog
+  // No dodge roll mod: a pressed-in cog, centred in the dash's space (with orbs: between the housing and the plate's end).
+  const dashC = s.orbs ? (ORB.rx + ORB.housing + CC.plate.x1 - ORB.pull) / 2 : 152;
+  if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -dashC : dashC, 39);
   else {
   const dashIn = s.orbs ? 4 : 0;   // with orbs the dash sits a little further in, centred in its space
   const [rx, ry] = s.leftHanded ? [-164.5 + pull + dashIn, CC.roll[1]] : [CC.roll[0] - pull - dashIn, CC.roll[1]], tier = rollTier(s.rolls);
