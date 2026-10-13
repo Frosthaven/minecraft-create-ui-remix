@@ -21,9 +21,7 @@
   <div class="scene" style="grid-column:1/-1"><span class="label after">Night, a zombie 4 blocks away</span><canvas id="scene" width="860" height="520" style="width:100%;height:auto"></canvas></div>
 </div>
 <h2>Kinds (config: which get bars)</h2>
-<p style="color:var(--muted);margin:0 24px 10px">A mob takes the first kind that fits, top to bottom (an iron golem is neutral, a tamed wolf is your pet).
-   Ticked: on by default. Bosses are off by default because they already have the boss bar; bats are off by default
-   because they are only clutter.</p>
+<p style="color:var(--muted);margin:0 24px 10px">Hostile is the game's own test (Enemy); players are players; every other mob is not hostile.</p>
 <div id="kinds" class="kinds"></div>
 <style>
   .kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; padding: 0 24px 40px; }

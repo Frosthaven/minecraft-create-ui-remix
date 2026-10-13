@@ -2,20 +2,12 @@
 // draws a night scene (a zombie from the vanilla skin, in an orthographic 3/4 view) to judge the bar in context.
 // Uses sprites.js (vgrad), meters.js (LIQUID, mixHex).
 
-/** The kinds, in the order a mob is matched (the first that fits wins), each with its bar colour: dimmed and
- *  desaturated so the bars read at night without glaring, and apart from each other. on: the default config. */
+/** The kinds, each with its bar colour: dimmed and desaturated so the bars read at night without glaring.
+ *  on: the default config. */
 const MOB_KINDS = {
+  hostile: { name: 'Hostile', col: '#a83a3a', on: true, test: 'Enemy', ex: 'zombies, skeletons, creepers, slimes, bosses' },
+  friendly: { name: 'Not hostile', col: '#5c9a46', on: true, test: 'every other mob', ex: 'animals, villagers, pets, golems, wolves, endermen' },
   player: { name: 'Players', col: '#4a76b8', on: true, test: 'Player', ex: 'other players' },
-  pet: { name: 'Your pets', col: '#b05a8a', on: true, test: 'tamed or owned by you', ex: 'wolves, cats, parrots, horses' },
-  otherPet: { name: "Others' pets", col: '#7a5a72', on: true, test: 'tamed or owned by someone else', ex: "a friend's wolf or horse" },
-  boss: { name: 'Bosses', col: '#8c3aa8', on: false, test: 'shows a boss bar', ex: 'Wither, Ender Dragon, modded bosses (they have the boss bar)' },
-  hostile: { name: 'Hostile', col: '#a83a3a', on: true, test: 'Enemy', ex: 'zombies, skeletons, creepers, slimes, phantoms' },
-  neutral: { name: 'Neutral', col: '#b07a2e', on: true, test: 'NeutralMob', ex: 'wolves, endermen, bees, piglins, polar bears' },
-  golem: { name: 'Golems', col: '#858b93', on: true, test: 'AbstractGolem', ex: 'snow golems (iron golems are neutral, shulkers hostile)' },
-  villager: { name: 'Villagers', col: '#a0784e', on: true, test: 'Npc', ex: 'villagers, wandering traders' },
-  passive: { name: 'Passive', col: '#5c9a46', on: true, test: 'Animal', ex: 'cows, sheep, pigs, chickens, foxes' },
-  water: { name: 'Water life', col: '#2f8f9a', on: true, test: 'WaterAnimal, axolotls', ex: 'squid, dolphins, fish, axolotls' },
-  ambient: { name: 'Ambient', col: '#8a78b0', on: false, test: 'AmbientCreature', ex: 'bats' },
 };
 const MOB_BAR = { w: 14, h: 1.4, lift: 6, back: 'rgba(10,11,14,0.62)', edge: 'rgba(0,0,0,0.7)' };   // model px (16 = a block)
 
