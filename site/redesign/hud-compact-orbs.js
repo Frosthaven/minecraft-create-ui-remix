@@ -5,7 +5,8 @@
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 96, pull: 8,   // innerEnd: the wing plates' inner ends, past the
+const ORB = { tex: 0.67,   // tex: the orbs' texture strength (a third less than first drawn)
+  r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 96.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
   // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
   bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
@@ -18,7 +19,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   // top, the unlit ones staying plain brass.
   const B = ORB.bezel, R1 = r + B;
   circle(g, cx, cy, R1); g.fillStyle = brass(g, cy - R1, cy + R1); g.fill();
-  surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08);   // a light brushed finish
+  surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);   // a light brushed finish
   if (ring) {
     // Only the full segments show (bright plates proud of the rim); empty ones leave the plain rim.
     const n = 10, gap = 0.07;
@@ -33,20 +34,20 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       g.save(); g.shadowColor = ring.on[1]; g.shadowBlur = 2.2;
       seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill();
       g.restore();
-      surface(g, seg, TEX.brushed, 0.15);
+      surface(g, seg, TEX.brushed, 0.15 * ORB.tex);
       seg(); g.strokeStyle = 'rgba(0,0,0,0.85)'; g.lineWidth = 0.3; g.stroke();
       g.beginPath(); g.arc(cx, cy, p1 - 0.25, a0 + 0.02, a2 - 0.02); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.2; g.stroke();
     }
   }
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
-  surface(g, () => circle(g, cx, cy, r), TEX.rock, 0.12);   // the empty glass: smoky
+  surface(g, () => circle(g, cx, cy, r), TEX.rock, 0.12 * ORB.tex);   // the empty glass: smoky
   g.save(); circle(g, cx, cy, r); g.clip();
   const level = f => cy + r - 2 * r * Math.max(0, Math.min(1, f));
   // A liquid: its gradient, then slow swirls (broad blotches) and a fine shimmer, clipped to its level.
   const liquid = (liq, y0, y1) => {
     const area = () => { g.beginPath(); g.rect(cx - r, y0, 2 * r, y1 - y0); };
     g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
-    surface(g, area, TEX.blotch, 0.35); surface(g, area, TEX.brushed, 0.12, 'soft-light');
+    surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light');
   };
   if (fill && fill.frac > 0) {
     const top = level(fill.frac);
@@ -67,7 +68,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   const moon = (frac) => edgePath(frac, true);
   if (crescent && crescent.frac > 0) {
     g.globalAlpha = 0.88; moon(Math.min(1, crescent.frac)); g.fillStyle = radial(g, cx + r * 0.5, cy, r * 1.4, [[0, crescent.liq[0]], [0.5, crescent.liq[1]], [1, crescent.liq[2]]]); g.fill('evenodd');
-    g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd'); surface(g, () => circle(g, cx, cy, r), TEX.blotch, 0.3); g.restore();
+    g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd'); surface(g, () => circle(g, cx, cy, r), TEX.blotch, 0.3 * ORB.tex); g.restore();
     if (crescent.light && crescent.light.frac > 0) {
       g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd');
       moon(Math.min(crescent.frac, crescent.light.frac)); g.fillStyle = radial(g, cx + r * 0.5, cy, r * 1.4, [[0, crescent.light.liq[0]], [1, crescent.light.liq[1]]]); g.fill('evenodd');
@@ -89,17 +90,27 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
 /** The orb's housing, part of its wing plate: the plate rises into a round iron boss around the orb (the plate's own
  *  iron and texture, so they read as one casting), its brass rim continuing over the top where it rises above the
  *  plate, and a dark seat line where the orb sits recessed. Drawn after the plate, before the orb. */
-function ccHousing(g, cx, cy) {
-  const R = ORB.r + ORB.bezel + 2.4, wing = CC.plate.wing, b = BOTTOM;
-  const boss = () => circle(g, cx, cy, R);
-  g.save(); g.beginPath(); g.rect(cx - R - 2, cy - R - 2, 2 * R + 4, wing - (cy - R - 2)); g.clip();   // shadow above the plate only
-  g.save(); g.translate(0, -0.6); boss(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
-  g.restore();
-  boss(); g.fillStyle = iron(g, wing, b); g.fill(); ironSurface(g, boss);
-  // The rim over the boss's top, joining the plate's rim where the boss meets the plate's top edge.
-  g.save(); g.beginPath(); g.rect(cx - R - 2, cy - R - 2, 2 * R + 4, wing + 0.2 - (cy - R - 2)); g.clip();
-  rim(g, boss, cy - R, cy + R, P.brassHi, 0.35);
-  g.restore();
+function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the right, -1 to the left
+  const R = ORB.r + ORB.bezel + 2.4, wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
+  // The boss's outline above the plate: the plate's top edge, a concave fillet into the circle, over the top, a fillet
+  // back down to the edge, so the outline flows from the straight edge into the curve without a corner.
+  const fy = wing - f, dy = fy - cy, dx = Math.sqrt((R + f) ** 2 - dy ** 2);
+  const tL = Math.atan2(dy, -dx), tR = Math.atan2(dy, dx);              // where the fillets touch the circle
+  // Toward the hotbar there is no fillet: the plate ends at the housing's edge (ORB.innerEnd), so the curve runs down
+  // to the circle's side and the plate's straight end continues below it. Drawn for inner = +1, mirrored for -1.
+  const outline = (close) => {
+    g.save(); g.translate(cx, 0); g.scale(inner, 1); g.translate(-cx, 0);
+    g.beginPath(); g.moveTo(cx - dx - 0.01, wing);
+    g.arc(cx - dx, fy, f, Math.PI / 2, Math.atan2(cy - fy, dx), true);
+    g.arc(cx, cy, R, tL, 0, false);
+    g.lineTo(cx + R, close ? b : cy);
+    if (close) { g.lineTo(cx - dx, b); g.closePath(); }
+    g.restore();
+  };
+  g.save(); g.translate(0, -0.6); outline(true); g.fillStyle = 'rgba(0,0,0,0.55)'; g.save(); g.beginPath(); g.rect(cx - dx - 1, cy - R - 2, 2 * dx + 2, wing - (cy - R - 2)); g.clip(); outline(true); g.fill(); g.restore(); g.restore();
+  outline(true); g.fillStyle = iron(g, wing, b); g.fill(); ironSurface(g, () => outline(true));
+  // The rim along the smooth outline only (not the closing sides inside the plate).
+  rim(g, () => outline(false), cy - R, cy + R, P.brassHi, 0.35);
   // The seat: a recessed groove the orb's bezel drops into.
   circle(g, cx, cy, ORB.r + ORB.bezel + 0.55); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.9; g.stroke();
   g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 1.05); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
@@ -117,7 +128,7 @@ function ccOrbNumbers(g, cx, cy, lines) {
 /** Both orbs for a state (in place of the wing meters and the armor / breath tabs). */
 function ccOrbs(g, s) {
   const showNums = s.numbers || s.hover === 'orbL' || s.hover === 'orbR';
-  ccHousing(g, ORB.lx, ORB.y); ccHousing(g, ORB.rx, ORB.y);
+  ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1);
   // Left: health, food (or the mount), armor.
   if (!s.creative) {
     const max = s.maxHealth || 20, hp = s.health / max, liq = ccHealthLiquid(s);
