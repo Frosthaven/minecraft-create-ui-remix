@@ -38,7 +38,8 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
       const a2 = a0 + (a1 - a0) * Math.min(1, lit);
       // A lit segment stands proud of the rim (wider than the bezel, dark outline) and glows in its colour.
-      const p0 = r - 0.35, p1 = R1 + 0.45;
+      // Segmented (armor): thick iron plates reaching from the rim across the seat into the housing; smooth: on the rim.
+      const p0 = r - 0.35, p1 = ring.smooth ? R1 + 0.45 : R1 + 2.1;
       const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
       g.save(); g.shadowColor = ring.on[1]; g.shadowBlur = 2.2;
       seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill();
@@ -79,12 +80,17 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       g.globalCompositeOperation = 'source-over';
     } else {
       g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
-      if (style === 'cloud') {   // billows: lighter clouds rising, darker ones settling, at two scales
+      if (style === 'cloud' || style === 'broth') {   // billows: lighter clouds rising, darker ones settling, at two scales
         g.save(); g.translate(cx, cy); g.scale(0.55, 0.55); g.translate(-cx, -cy);
         surface(g, () => { g.beginPath(); g.rect(cx - 3 * r, cy - 3 * r, 6 * r, 6 * r); }, TEX.blotch, 0.55 * ORB.tex, 'soft-light');
         g.restore();
         surface(g, area, TEX.blotch, 0.45 * ORB.tex, 'overlay');
         surface(g, area, TEX.rock, 0.25 * ORB.tex, 'soft-light');
+        if (style === 'broth') for (let i = 0; i < 7; i++) {   // a few rising bubbles
+          const h = Math.sin((cx + i * 9.17) * 33.1) * 43758.5453, u = h - Math.floor(h), v = h * 5.3 - Math.floor(h * 5.3);
+          const by = y0 + 1 + v * (y1 - y0 - 2);
+          circle(g, cx - r + u * 2 * r, by, 0.35 + (i % 3) * 0.15); g.strokeStyle = 'rgba(255,230,190,0.55)'; g.lineWidth = 0.15; g.stroke();
+        }
       } else {
         surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light');
       }
@@ -126,6 +132,33 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
   rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
+}
+
+/** The health orb's status effects (the meters had them; same rules): the damage flash, Regeneration's rising light,
+ *  Farmer's Delight Comfort (saturation 0, hurt, no Regeneration) as a slow warm sheen, the hardcore trim (crimson on
+ *  the bezel), and AppleSkin's previews of what held food restores: pale pulsing bands above the health and food
+ *  levels in their halves. */
+function ccOrbFx(g, s, cx, cy, hp, max, riding) {
+  const r = ORB.r, level = f => cy + r - 2 * r * Math.max(0, Math.min(1, f));
+  g.save(); circle(g, cx, cy, r); g.clip();
+  const leftHalf = () => { g.beginPath(); g.rect(cx - r, cy - r, r, 2 * r); };
+  const since = s.t - (s.hurtAt || -1e9);
+  if (since < 400) { g.fillStyle = `rgba(255,255,255,${0.6 * (1 - since / 400)})`; leftHalf(); g.fill(); }
+  const sweep = (period, col) => {   // a soft band of light rising through the health half
+    const y = level(hp) + (1 - (s.t / period) % 1) * (cy + r - level(hp) + 6) - 3;
+    g.save(); leftHalf(); g.clip(); g.beginPath(); g.rect(cx - r, level(hp), r, cy + r - level(hp)); g.clip();
+    g.fillStyle = vgrad(g, y - 3, y + 3, [[0, col + '00'], [0.5, col + '99'], [1, col + '00']]); g.fillRect(cx - r, y - 3, r, 6);
+    g.restore();
+  };
+  if (s.regen) sweep(1400, '#ffe6dc');
+  else if (s.comfort && s.saturation <= 0 && hp < 1) sweep(2600, '#ffecbe');
+  const pulse = 0.3 + 0.25 * Math.sin(s.t / 160);
+  if (s.holdFood) {
+    if (s.holdHeal) { g.fillStyle = `rgba(255,200,200,${pulse})`; g.fillRect(cx - r, level(hp + s.holdHeal / max), r, level(hp) - level(hp + s.holdHeal / max)); }
+    if (!riding) { const a = s.food / 20, b = Math.min(20, s.food + s.holdFood) / 20; g.fillStyle = `rgba(255,230,180,${pulse})`; g.fillRect(cx, level(b), r, level(a) - level(b)); }
+  }
+  g.restore();
+  if (s.hardcore) { circle(g, cx, cy, r + ORB.bezel / 2); g.strokeStyle = 'rgba(160,20,28,0.9)'; g.lineWidth = 0.6; g.stroke(); }
 }
 
 /** The nebula mask: white in the clouds, falling to deep space (dark blue-black) between them; multiplied over a
@@ -205,10 +238,11 @@ function ccOrbs(g, s) {
     const max = s.maxHealth || 20, hp = s.health / max, liq = ccHealthLiquid(s);
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT, style: 'cloud' }
-      : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth };
+      : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth, style: 'broth' };
     ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud' }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
       shake: ccShake(s)[1] });
+    ccOrbFx(g, s, ORB.lx, ORB.y + ccShake(s)[1], hp, max, riding);
     CC.hit.orbL = [ORB.lx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
     if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, liq[1]], riding ? [s.mount, s.mountMax, CC_MOUNT[1]] : [s.food, 20, LIQUID.broth[1]]]);
   } else ccHousingCog(g, ORB.lx, ORB.y);   // creative: a cog pressed into the housing's face
