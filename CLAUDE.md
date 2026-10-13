@@ -3,6 +3,7 @@
 Fixes for Dark Mode Everywhere (DME, `darkmodeeverywhere-neoforge-1.21.1-1.4.0`) in the
 "Create Ultimate Selection 2" Prism instance (NeoForge 21.1.243, Create 6.0.10). Client only.
 `./install.sh [instance/minecraft]` builds and copies both parts into the instance.
+It stops if an instance pack differs from the repo copy: edit packs in `resourcepacks/` here.
 
 ## resourcepacks/ (each folder copied into the instance's `resourcepacks/`)
 
