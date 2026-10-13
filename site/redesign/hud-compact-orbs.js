@@ -183,10 +183,10 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
       const h = Math.sin((i + 1) * 91.7) * 43758.5453, u = h - Math.floor(h), sp = 0.6 + (h * 3.1 - Math.floor(h * 3.1)) * 0.6;
       const k = ((s.t / 1600) * sp + u * 3.7) % 1, y = cy + r - k * depth, x = cx - r + 1 + u * (r - 2) + Math.sin(s.t / 300 + i) * 0.4;
       const a = Math.sin(Math.PI * k) * 0.9;
-      circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,220,225,${a})`; g.fill();
+      circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,120,175,${a})`; g.fill();   // pink
     }
   }
-  if (s.comfort && s.saturation <= 0 && hp < 1 && !s.regen) {   // Comfort: a slow pink glow rising through the health half's whole glass
+  if (s.comfort && s.saturation <= 0 && hp < 1) {   // shows alongside Regeneration's motes   // Comfort: a slow pink glow rising through the health half's whole glass
     const y = cy + r + 4 - ((s.t / 2600) % 1) * (2 * r + 8);
     g.fillStyle = vgrad(g, y - 5, y + 5, [[0, '#ff9ec400'], [0.5, '#ff9ec488'], [1, '#ff9ec400']]); g.fillRect(cx - r, y - 5, r, 10);
   }
