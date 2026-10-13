@@ -11,7 +11,8 @@ All textures are R x (8) the originals; every user scales UVs by the logical siz
 """
 import base64, json, os, re, shutil, subprocess, sys
 
-PAGES = {'hud-compact.html': 5, 'inventory.html': 34, 'backpack.html': 9}  # page: files it lists
+PAGES = {'hud-compact.html': 5, 'inventory.html': 38, 'backpack.html': 15}  # page: files it lists (with the _grey layers)
+PORT = os.environ.get('HUDPACK_PORT', '18777')   # another port for a second checkout's server
 # The HUD page ('') is not packed: the compact action bar (createhud:textures/gui/compact/*, drawn by the mod) replaces
 # the HUD, and vanilla's own HUD sprites stay untouched, so other mods that reuse them (mob health hearts) look vanilla.
 
@@ -32,7 +33,7 @@ pack = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 files = []
 for page, n in PAGES.items():
     dom = subprocess.run(['google-chrome-stable', '--headless', '--incognito', '--disable-gpu', '--virtual-time-budget=20000',
-                          '--dump-dom', 'http://127.0.0.1:18777/redesign/' + page], capture_output=True, text=True, timeout=120).stdout
+                          '--dump-dom', f'http://127.0.0.1:{PORT}/redesign/' + page], capture_output=True, text=True, timeout=120).stdout
     found = re.findall(r'<b>([^<]+)</b>[^<]*?<a download="[^"]*" href="data:image/png;base64,([^"]+)"', dom)
     m = re.search(r'id="sheet" data-count="(\d+)"', dom)
     n = n if n is not None else (int(m.group(1)) if m else -1)

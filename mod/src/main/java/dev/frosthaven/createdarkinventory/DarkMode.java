@@ -8,6 +8,11 @@ public final class DarkMode {
 
     private DarkMode() {}
 
+    /** DME is installed (its toggle exists, on or off). */
+    public static boolean installed() {
+        return SELECTED != null;
+    }
+
     public static boolean on() {
         try {
             return SELECTED != null && SELECTED.get(null) != null;

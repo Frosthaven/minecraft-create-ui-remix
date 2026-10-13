@@ -22,6 +22,7 @@
   <button id="hover" aria-pressed="false">Hover recipe book</button>
   <button id="cosScreen" aria-pressed="false" title="The Cosmetic Armor screen (its panel is in cosarmorinventory.png)">Cosmetic screen</button>
   <button id="curiosScreen" aria-pressed="false" title="The Curios screen: accessory slots in a side panel (curios/inventory.png)">Curios screen</button>
+  <button id="darkMode" title="Dark Mode Everywhere: the panel greys follow it (the _grey layers), leather, wood, blueprints and steel do not">Dark mode</button>
   <span style="color:var(--muted);align-self:center">GUI scale</span>
   <button data-scale="2">2</button><button data-scale="3">3</button><button data-scale="4" aria-pressed="true">4</button>
   <button id="nearest" aria-pressed="false" title="Minecraft samples GUI textures nearest-pixel: a high resolution texture at a low GUI scale drops texels">Game sampling</button>
@@ -110,7 +111,9 @@ function composeCurios(set, scale) {
   text('Crafting', INV.title[0] + ox, INV.title[1] + oy);
   return c;
 }
-screenPage(compose, () => ({ before, after }));
+// The panel greys follow DME (screen-page.js, greyLayer); greys holds each split texture's grey layer.
+let darkMode = darkModeButton('darkMode', m => { darkMode = m; }), greys = {};
+screenPage(compose, () => ({ before, after: { ...after, ...Object.fromEntries(Object.entries(greys).map(([k, l]) => [k, darkView(after[k], l, darkMode)])) } }));
 pageToggle('sockets', on => { showSlots = on; });
 pageToggle('hover', on => { hover = on; });
 pageToggle('cosScreen', on => { cosScreen = on; }, cosScreen);
@@ -141,8 +144,11 @@ pageToggle('curiosScreen', on => { curiosScreen = on; }, curiosScreen);
   // 1.21.1 draws empty armor and shield slots from the item atlas (textures/item/empty_armor_slot_*); the
   // container/slot sprites some packs carry are 1.21.2's and unused here.
   for (const n of ['helmet', 'chestplate', 'leggings', 'boots', 'shield']) before.icons[n] = await tex('textures/item/empty_armor_slot_' + n);
+  for (const k of ['panel', 'cos', 'trash', 'curiosSheet']) greys[k] = greyLayer(after[k]);
   SCREEN.render();
-  fileList([['container/inventory', sheetTexture(after.panel)], ['sprites/recipe_book/button', after.book],
+  fileList([['container/inventory', sheetTexture(after.panel)], ['container/inventory_grey', sheetTexture(greys.panel)],
+    ['cosmeticarmorreworked: cosarmorinventory_grey', greys.cos], ['trashslot: slot_grey', greys.trash],
+    ['curios: curios/inventory_grey', sheetTexture(greys.curiosSheet)], ['sprites/recipe_book/button', after.book],
     ['sprites/recipe_book/button_highlighted', after.bookHover], ['curios: curios/button', after.curios], ['curios: curios/button_highlighted', after.curiosHover],
     ...Object.entries(after.icons).map(([n, img]) => ['item/empty_armor_slot_' + n, img]),
     ['cosmeticarmorreworked: cosarmorinventory', after.cos], ['trashslot: slot', after.trash], ['trashslot: item/trashcan', after.trashIcon],

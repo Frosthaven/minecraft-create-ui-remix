@@ -274,6 +274,13 @@ mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
   `tools/dme.sha512`, DME's license), `resourcepacks/` (each pack zipped) and `INSTALL.txt` (`tools/INSTALL.txt`).
   `.github/workflows/release.yml` runs it on every push to main touching those parts and replaces the
   `latest` release, which the README links. So: commit and push the regenerated pack to publish.
+- Dark mode split: the inventory, Curios, Cosmetic Armor, trash slot and backpack textures (storage backgrounds,
+  `slots_background`, the upgrade pouch's wells in `gui_controls`) also ship a `<name>_grey` layer: their plain greys
+  (opaque, max - min of RGB <= 12, luma <= 255 / 5.5) as neutral grey at 5.5 x luma (`greyLayer` in `screen-page.js`).
+  The mod draws it over the full art through Dark Mode Everywhere, so the greys follow DME (off: light grey; perfect
+  dark: today's greys) while leather, wood, blueprints, brass and steel objects (buttons, switches, gauges, frames)
+  keep their look. The pages' **Dark mode** button cycles no DME / off / perfect dark / less perfect dark / toasted
+  light, simulating DME's shader (`dmeShade`). `tools/hudpack.py` takes `HUDPACK_PORT` for a second checkout's server.
 - Pack textures: keep alpha binary (0 or 255). Many GUI blits run without blending, so a half-transparent
   pixel shows at full color (the bright clumps that were on the backpack window corners).
 
