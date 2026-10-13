@@ -17,7 +17,7 @@ entry of `METHOD_SHADER_BLACKLIST`. Its default list has `com.simibubi.create.fo
 so every Create panel stays light, and one screen cannot be told from another by caller.
 
 The mod injects into `AllGuiTextures.render(GuiGraphics, int, int)` and, for Create's
-`player_inventory.png` and `frogport_and_mailbox.png`, draws through `DarkBlit` instead. The caller
+`player_inventory.png`, `frogport_and_mailbox.png` and `clipboard.png`, draws through `DarkBlit` instead. The caller
 is then `DarkBlit:blit`, which is not blacklisted, so these get the dark shader and follow DME's
 toggle and shader choice. To darken more Create textures, add their paths to `DARK` in
 `AllGuiTexturesMixin`. A baked dark texture would not follow the toggle: do not use one.
@@ -25,6 +25,8 @@ toggle and shader choice. To darken more Create textures, add their paths to `DA
 DME's font rule turns text light only when red, green and blue are all under 65.
 `PackagePortScreenMixin` moves the frogport/mailbox title color from #3D3C48 to #3D3C40 so the
 rule catches it; check other dark-panel text against the same rule.
+Plain fills (no texture, no text) are not darkened: `ClipboardScreenMixin` draws the clipboard's
+black mid-line cursor white while DME is on (`DarkMode.on()`, DME's `SELECTED_SHADER_VALUE`).
 
 Build: Gradle runs on JDK 17 (system default is 27, too new); the toolchain gets JDK 21.
 

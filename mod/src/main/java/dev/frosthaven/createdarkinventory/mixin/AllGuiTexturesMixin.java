@@ -12,11 +12,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
 
-/** Create's player inventory and the frogport and mailbox screens: drawn through {@link DarkBlit}. */
+/** Create's player inventory, the frogport and mailbox screens and the clipboard: drawn through {@link DarkBlit}. */
 @Mixin(targets = "com.simibubi.create.foundation.gui.AllGuiTextures", remap = false)
 public abstract class AllGuiTexturesMixin {
     private static final Set<String> DARK = Set.of(
             "textures/gui/player_inventory.png",
+            "textures/gui/clipboard.png",
             "textures/gui/frogport_and_mailbox.png");
 
     @Shadow @Final public ResourceLocation location;
