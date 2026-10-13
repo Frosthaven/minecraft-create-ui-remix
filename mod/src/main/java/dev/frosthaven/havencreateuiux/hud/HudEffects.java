@@ -40,6 +40,7 @@ final class HudEffects {
 
     /** left: the bar's left edge + 1, top: where the lines start (units; with orbs, clear of the housings). */
     static void draw(GuiGraphics g, Player p, List<GearStatus.Gear> gear, int cx, int bottom, float scale, double left, double startTop) {
+        restoreBlend();
         BOXES.clear();
         List<MobEffectInstance> all = new ArrayList<>();
         for (MobEffectInstance e : p.getActiveEffects()) if (e.showIcon()) all.add(e);

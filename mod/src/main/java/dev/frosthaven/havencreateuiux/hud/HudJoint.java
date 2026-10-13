@@ -102,6 +102,7 @@ final class HudJoint {
             if (r2 > 0) cross(mat, p, sign, k, u0, a, a + r2, false, r2);
             if (p.from >= 0) side(mat, p, sign, k, u0);
         }
+        HudDraw.restoreBlend();
         HudDraw.reset();
     }
 
@@ -161,9 +162,8 @@ final class HudJoint {
     private static void draw(BufferBuilder b, java.util.function.Supplier<net.minecraft.client.renderer.ShaderInstance> shader) {
         MeshData mesh = b.build();
         if (mesh == null) return;
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(shader);
+        HudDraw.restoreBlend();   // enable last (see restoreBlend)
         BufferUploader.drawWithShader(mesh);
     }
 

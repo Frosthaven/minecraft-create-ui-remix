@@ -60,11 +60,28 @@ final class HudDraw {
         if (lastKind != null && !lastKind.equals(kind)) drawBatched(g);
         lastKind = kind;
     }
-    /** Draws everything batched so far (vanilla's buffer source and ImmediatelyFast's HUD batch, when it batches). */
+    /** Draws everything batched so far (vanilla's buffer source and ImmediatelyFast's HUD batch, when it batches), then
+     *  restores the HUD's blending. Drawing a batched layer ends with its render type's clearRenderState, which turns
+     *  blending off; ImmediatelyFast records the blend state with each later blit, so every blit after a flush came out
+     *  opaque (the orbs' glass and glow as solid white and black, the digits' cells as blocks, the selection frame's
+     *  transparent margin as a second border). */
     static void drawBatched(GuiGraphics g) {
         g.flush();
         if (Reflect.cls(IF_BATCHING) != null && Reflect.bool(Reflect.callStatic(IF_BATCHING, "isHudBatching")))
             Reflect.callStatic(IF_BATCHING, "tryForceDrawHudBuffers");
+        restoreBlend();
+    }
+    /** The HUD's blend state: alpha blending on, the default function (what every piece is drawn with). Enable LAST:
+     *  while ImmediatelyFast batches, a blend change first draws what is batched, and that draw ends by turning blending
+     *  off, so a blendFunc after enableBlend left it off. */
+    static void restoreBlend() {
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableBlend();
+    }
+    /** Logs once if blending is off when a frame starts drawing (the state every texture here needs). */
+    static void checkBlend(String where) {
+        if (!org.lwjgl.opengl.GL11.glIsEnabled(org.lwjgl.opengl.GL11.GL_BLEND))
+            HudLog.once("blend-off:" + where, "blending was off at {} (restored): something before it left the GL state changed", where);
     }
 
     static void part(GuiGraphics g, int u, int v, int w, int h, int x, int y) {
@@ -84,9 +101,9 @@ final class HudDraw {
     }
     /** A screen-blended piece (glows on black: result = src + dst (1 - src)). */
     static void screen(Runnable draw) {
-        RenderSystem.enableBlend();
         RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR);
-        try { draw.run(); } finally { RenderSystem.defaultBlendFunc(); }
+        RenderSystem.enableBlend();   // after the function: see restoreBlend
+        try { draw.run(); } finally { restoreBlend(); }
     }
 
     /** A textured sector: the texture around (u, v) (texels) drawn around (cx, cy) out to radius r, from angle a0 to a1
@@ -109,6 +126,7 @@ final class HudDraw {
             vertex(b, m, texW, texH, u, v, cx, cy, Math.cos(t0) * rr, Math.sin(t0) * rr);
         }
         BufferUploader.drawWithShader(b.buildOrThrow());
+        restoreBlend();
         lastKind = null;
     }
     private static void vertex(BufferBuilder b, Matrix4f m, int texW, int texH, double u, double v, double cx, double cy, double dx, double dy) {

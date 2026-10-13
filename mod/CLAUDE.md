@@ -78,6 +78,11 @@ not a spectator.
   the batches out of call order, which put the dash dial's chevrons (orbs atlas) under its housing (parts). Every
   draw names its kind (`HudDraw.use`); a change of kind draws the batch first (`drawBatched`: `g.flush()` and IF's
   `BatchingBuffers.tryForceDrawHudBuffers` while it batches). Immediate meshes (`sector`, `HudJoint`) flush first.
+  Every flush and immediate mesh is followed by `HudDraw.restoreBlend` (default function, then enable LAST): drawing a
+  batched render type ends with its clearRenderState (blending off), and ImmediatelyFast records the blend state with
+  each blit, so without it everything after a flush drew opaque (solid white glass highlight, black empty glass, digit
+  cells as blocks, the selection frame's margin as a second border, the glow lighting the rim). `checkBlend` logs once
+  if blending is off where a draw group starts.
 - `HudJoint`: the plate joints (see the root CLAUDE.md), one immediate mesh per pass; the profile is cached per (mode,
   side scale) and logged once. `CompactAtlas.checkPieces` logs any atlas piece that is blank or outside its texture.
 - `AirGear`: breathing gear on the ring (see the GearStatus note below). Side bars size: the config times

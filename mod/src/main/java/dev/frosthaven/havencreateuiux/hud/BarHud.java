@@ -24,6 +24,7 @@ final class BarHud {
     private BarHud() {}
 
     static void draw(GuiGraphics g, HudFrame f) {
+        checkBlend("bars"); restoreBlend();
         side(g, -1, f.side, () -> scaled(g, -ANCHOR, () -> {
             if (!f.hurtable) gears(g, LEFT_X + MW / 2, (ROWS[0] + ROWS[2] + MH) / 2);   // the empty vitals wing
             else left(g, f);

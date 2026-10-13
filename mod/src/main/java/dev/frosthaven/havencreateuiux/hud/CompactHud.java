@@ -109,6 +109,7 @@ public final class CompactHud {
     /** The instrument plate above the bar: web followers (ghost and count), the steampunk armor's clock and compass, the
      *  worn Artifacts on cooldown (their item, shaded by the time left). Only while there is one. */
     private static void instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta) {
+        restoreBlend();
         int followers = Followers.count();
         boolean steam = HudExtras.steampunk(p);
         var cooldowns = HudExtras.artifactCooldowns(p, delta);
@@ -220,7 +221,7 @@ public final class CompactHud {
         pose.pushPose();
         pose.translate(cx, bottom, 0);
         pose.scale(1f / K, 1f / K, 1);
-        RenderSystem.enableBlend();
+        checkBlend("frame start"); restoreBlend();
         // The plate in three parts: the centre, and each wing at the side bars' size (attached at WING_ANCHOR).
         ResourceLocation plate = plate(f.orbs);
         int cut = x(-WING_ANCHOR) - PLATE_X, mid = PLATE_W - 2 * cut;   // each wing part: the plate's edge to the anchor
@@ -288,6 +289,7 @@ public final class CompactHud {
     /** The shared pipe: XP, or a takeover (first wins: a charging spell (Iron's), a mount's dash cooldown or jump, a
      *  train's speed, an engine) with its icon in a larger window. The level in a small window centred on the pipe. */
     private static void xpPipe(GuiGraphics g, LocalPlayer p, Float cast, Float train, Float engine) {
+        restoreBlend();   // the level window and digits have transparent cells
         var jumpable = p.jumpableVehicle();
         HudLog.changed("mount", p.getVehicle() == null ? "none" : p.getVehicle().getType().toString(), "vehicle: {}",
                 p.getVehicle() == null ? "none" : p.getVehicle().getType().toShortString() + (jumpable != null ? " (jump bar takes the XP pipe while charging)" : ""));
@@ -323,6 +325,7 @@ public final class CompactHud {
     /** The dodge roll dial (stone rim, the chevrons in the tier colour, a segment per charge lit as charges are ready),
      *  centred in its space at the wing's end; a pressed-in cog without the mod. */
     private static void dash(GuiGraphics g, HudFrame f) {
+        restoreBlend();
         float[] roll = f.roll;
         HudLog.changed("roll", roll == null ? "none" : String.valueOf((int) roll[1]), "dodge roll: {}", roll == null ? "not found (a pressed-in cog takes its place)" : "found, " + (int) roll[1] + " charges");
         // Orbs: in its own housing (a parts piece over the plate); bars: centred on the meter block. Drawn DIAL_S x.

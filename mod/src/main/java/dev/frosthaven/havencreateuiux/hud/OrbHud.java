@@ -30,6 +30,7 @@ final class OrbHud {
     }
 
     static void draw(GuiGraphics g, HudFrame f) {
+        checkBlend("orbs"); restoreBlend();   // every orb texture needs alpha blending (see HudDraw.restoreBlend)
         side(g, -1, f.side, () -> scaled(g, LX, () -> left(g, f)));
         side(g, 1, f.side, () -> scaled(g, RX, () -> right(g, f)));
         // Numbers and the tank's time doubled with the orbs (readable at the bigger size).
