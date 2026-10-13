@@ -35,6 +35,7 @@ public final class MobBars {
     private static final int HOSTILE = 0xa83a3a, NOT_HOSTILE = 0x5c9a46, PLAYER = 0x4a76b8, ATTACKER = 0xa8409a;
     private static final long ATTACKER_MS = 30_000;   // a player who hit any player stays magenta this long
     private static final Map<Player, Long> ATTACKERS = new WeakHashMap<>();
+    private static final java.util.Set<Integer> LOGGED_KINDS = new java.util.HashSet<>();   // a first-draw line per colour
     private static final long TRAIL_WAIT = 400, TRAIL_DRAIN = 600;   // ms
     private static final Map<LivingEntity, Trail> TRAILS = new WeakHashMap<>();
     private static Method shadowPass;   // Iris: IrisApi.getInstance().isRenderingShadowPass(), when Iris is installed
@@ -86,6 +87,8 @@ public final class MobBars {
         float max = Math.max(1, e.getMaxHealth()), hp = Math.max(0, Math.min(max, e.getHealth()));
         float trail = trail(e, hp);
 
+        if (LOGGED_KINDS.add(col)) LOG.once("drawn:" + col, "first bar of colour #{} drawn: {} ({} of {} hp, {} blocks away)",
+                Integer.toHexString(col), e.getType().getDescriptionId(), hp, max, String.format("%.1f", Math.sqrt(e.distanceToSqr(mc.player))));
         PoseStack pose = event.getPoseStack();
         pose.pushPose();
         // Half a block over the head (a name tag sits there: then above it), turned to face the camera, in model px.
@@ -171,12 +174,14 @@ public final class MobBars {
         }
     }
 
-    /** A quad facing the camera (the name tag background's vertex order, for its culling). */
+    /** A quad facing the camera. textBackground() culls back faces, and the -y scale flips the winding, so the
+     *  vertices go bottom edge first (as the name tag background's effect quad: y0 is its bottom): wound the other
+     *  way the bar faced away from the camera and was culled. */
     private static void quad(VertexConsumer vc, Matrix4f m, float x0, float y0, float x1, float y1, int argb, int light) {
-        vc.addVertex(m, x0, y0, 0).setColor(argb).setLight(light);
-        vc.addVertex(m, x1, y0, 0).setColor(argb).setLight(light);
-        vc.addVertex(m, x1, y1, 0).setColor(argb).setLight(light);
         vc.addVertex(m, x0, y1, 0).setColor(argb).setLight(light);
+        vc.addVertex(m, x1, y1, 0).setColor(argb).setLight(light);
+        vc.addVertex(m, x1, y0, 0).setColor(argb).setLight(light);
+        vc.addVertex(m, x0, y0, 0).setColor(argb).setLight(light);
     }
 
     private static int argb(int a, int r, int g, int b) { return a << 24 | r << 16 | g << 8 | b; }
