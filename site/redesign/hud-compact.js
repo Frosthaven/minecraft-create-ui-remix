@@ -158,7 +158,8 @@ function ccDashFiller(g, cx, cy) {
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
-  const { x0, x1, wing, mid, step, r, sec } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
+  const pull = ears.pull || 0, x0 = CC.plate.x0 + pull, x1 = CC.plate.x1 - pull;   // pull: wings moved toward the centre
+  const { wing, mid, step, r, sec } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
   const inner = ears.inner || CC.plate.inner;   // the wings' inner ends (with orbs: just past the orb housings)
   // One plate: a top edge of level runs [x from, x to, y] joined by S curves, rounded corners, its shadow, iron, a
   // lit brass rim. Returns its path.
@@ -209,11 +210,12 @@ function compactHud(s, font) {
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
   const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
-  ccPlate(g, { left: leftExt, right: !!rightExt, inner: s.orbs ? ORB.innerEnd : 0 });
+  ccPlate(g, { left: leftExt, right: !!rightExt, inner: s.orbs ? ORB.innerEnd : 0, pull: s.orbs ? ORB.pull : 0 });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
-  const [ox, oy] = s.leftHanded ? [143, CC.offhand[1]] : CC.offhand;
+  const pull = s.orbs ? ORB.pull : 0;   // with orbs the wings sit closer to the centre
+  const [ox, oy] = s.leftHanded ? [143 - pull, CC.offhand[1]] : [CC.offhand[0] + pull, CC.offhand[1]];
   socket(g, ox, oy);
   g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
@@ -312,7 +314,7 @@ function compactHud(s, font) {
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -152 : 152, 39);   // no dodge roll mod: a pressed-in cog
   else {
-  const [rx, ry] = s.leftHanded ? [-164.5, CC.roll[1]] : CC.roll, tier = rollTier(s.rolls);
+  const [rx, ry] = s.leftHanded ? [-164.5 + pull, CC.roll[1]] : [CC.roll[0] - pull, CC.roll[1]], tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
   if (font) {
     const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line

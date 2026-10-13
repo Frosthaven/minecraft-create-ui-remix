@@ -5,7 +5,8 @@
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, innerEnd: 104,   // innerEnd: the wing plates' inner ends, past the housings
+const ORB = { r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 96, pull: 8,   // innerEnd: the wing plates' inner ends, past the
+  // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
   bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
 /** One orb at (cx, cy): fill {frac, liq}, over {from, to, liq} (absorption, above the fill), crescent {frac, liq,
