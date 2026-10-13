@@ -7,7 +7,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  * Read the values each frame: NeoForge reloads them when the file or the config screen changes them.
  */
 public final class UiConfig {
-    public enum MeterDisplay { BARS, ORBS }
+    public enum MeterDisplay { ORBS, BARS }
     public enum PrimaryMana { IRONS, ARS }
 
     public static final ModConfigSpec SPEC;
@@ -20,7 +20,7 @@ public final class UiConfig {
         var b = new ModConfigSpec.Builder();
         b.push("hud");
         METER_DISPLAY = b.comment("Health, food and mana as two orbs beside the hotbar, or as rows of bars on the wings.")
-                .translation("haven_create_ui_ux.config.meter_display").defineEnum("meterDisplay", MeterDisplay.BARS);
+                .translation("haven_create_ui_ux.config.meter_display").defineEnum("meterDisplay", MeterDisplay.ORBS);
         PRIMARY_MANA = b.comment("With both Iron's Spellbooks and Ars Nouveau installed: the mana pool shown first (the orb's left half, the top bar).")
                 .translation("haven_create_ui_ux.config.primary_mana").defineEnum("primaryMana", PrimaryMana.IRONS);
         HUD_SCALE = b.comment("The action bar's size, relative to the GUI scale.")
