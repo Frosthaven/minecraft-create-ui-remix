@@ -11,7 +11,7 @@ const CC_EFFECT = {
   debuff: { bezel: ['#e8a080', '#9a4a28', '#4a1c0a'], track: 'rgba(70,14,12,0.95)', glow: '#ff4e44' },
 };
 
-/** One effect at (x, y), 24 x 24: socket, icon (18 x 18 at +3), the draining border. frac: time left / starting time
+/** One effect at (x, y), 24 x 24: socket, icon (14 x 14 at +5), the draining border (thick, ~1 px when drawn at 11). frac: time left / starting time
  *  (1 for infinite), ambient: a beacon's (dimmer). */
 function ccEffect(g, x, y, kind, icon, frac, ambient = false) {
   const k = CC_EFFECT[kind], r = 2.2;
@@ -20,17 +20,17 @@ function ccEffect(g, x, y, kind, icon, frac, ambient = false) {
   g.fillStyle = vgrad(g, y, y + 24, [[0, k.bezel[0]], [0.25, k.bezel[1]], [1, k.bezel[2]]]); g.fill();
   rrect(g, x + 1.6, y + 1.6, 20.8, 20.8, r - 0.8);
   g.fillStyle = vgrad(g, y + 1.6, y + 22.4, [[0, '#08090a'], [1, '#1a1a1c']]); g.fill();
-  if (icon) { g.save(); if (ambient) g.globalAlpha = 0.7; g.imageSmoothingEnabled = false; g.drawImage(icon, x + 3, y + 3, 18, 18); g.restore(); }
+  if (icon) { g.save(); if (ambient) g.globalAlpha = 0.7; g.imageSmoothingEnabled = false; g.drawImage(icon, x + 5, y + 5, 14, 14); g.restore(); }
   if (ambient) { rrect(g, x + 0.5, y + 0.5, 23, 23, r); g.fillStyle = 'rgba(10,12,16,0.35)'; g.fill(); return; }
   // The time border: a dark track, then the time left drawn clockwise from the top centre.
-  const w = 21.6, rr = r - 0.4, per = 4 * (w - 2 * rr) + 2 * Math.PI * rr;
+  const w = 20.4, rr = r - 0.4, per = 4 * (w - 2 * rr) + 2 * Math.PI * rr;
   const border = () => {
-    const x0 = x + 1.2, y0 = y + 1.2;
+    const x0 = x + 1.8, y0 = y + 1.8;
     g.beginPath(); g.moveTo(x0 + w / 2, y0);
     g.arcTo(x0 + w, y0, x0 + w, y0 + w, rr); g.arcTo(x0 + w, y0 + w, x0, y0 + w, rr);
     g.arcTo(x0, y0 + w, x0, y0, rr); g.arcTo(x0, y0, x0 + w, y0, rr); g.lineTo(x0 + w / 2, y0);
   };
-  g.lineWidth = 0.7; g.lineCap = 'butt';
+  g.lineWidth = 2.2; g.lineCap = 'butt';   // about 1 px at the bar's 11 px size
   border(); g.strokeStyle = k.track; g.stroke();
   g.save(); g.setLineDash([per * Math.max(0, Math.min(1, frac)), per + 1]);
   g.shadowColor = k.glow; g.shadowBlur = 1.2;
@@ -55,7 +55,7 @@ function ccEffectsCorner(effects, icons, w = 180) {
  *  under 10 s; none when infinite). effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
 function ccEffectsRail(g, s, icons) {
   const list = s.effects || [];
-  const size = 11, cell = 15, rowH = 16.5, k = 0.7, right = CC.plate.x1;
+  const size = 11, cell = 15, rowH = 20, k = 0.75, right = CC.plate.x1;   // rowH: socket, time, 3.5 between the rows
   const rows = { buff: list.filter(e => e.kind === 'buff'), debuff: list.filter(e => e.kind === 'debuff') };
   const debuffTop = CC.plate.mid - 2 - rowH, buffTop = rows.debuff.length ? debuffTop - rowH : debuffTop;
   for (const [kind, top] of [['buff', buffTop], ['debuff', debuffTop]]) {
