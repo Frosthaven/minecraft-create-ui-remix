@@ -11,7 +11,7 @@ const CX = 172, BOTTOM = 50, TOPM = 66;   // TOPM: room above the bar for the ga
 // socket / the dodge roll (18), 4, the plate's edge.
 const GAP = 4;
 const CC = {
-  plate: { x0: -165, x1: 165, wing: 28, mid: 23.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
+  plate: { x0: -165, x1: 165, wing: 28, mid: 24.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
   slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
   offhand: [-161, 30],
   rows: [31.4, 37.2, 43.4], meterH: 4, meterW: 32, icon: 5.6,   // three rows a wing, centred on the sockets' middle (y 39);
@@ -21,7 +21,7 @@ const CC = {
   ext: { l: [-133, -96], r: [96, 133], y: 25, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 24.6, h: 4, x0: -88.5, x1: 88.5 },   // the pipe across nearly the centre plate's full width (±91), the level
+  xp: { y: 25.6, h: 3, x0: -88.5, x1: 88.5 },   // the pipe across nearly the centre plate's full width (±91), the level
   // window centred on it
 };
 
@@ -37,6 +37,7 @@ function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left', style) {
   if (style && fw > 0) ccMeterTexture(g, fx, y, fw, h, liq, style);   // the orbs' liquid looks (cloud, broth, galaxy)
   g.fillStyle = 'rgba(0,0,0,0.55)';
   for (let k = 1; k < segs; k++) g.fillRect(x + 0.5 + (w - 1) * k / segs - 0.15, y, 0.3, h);
+
   g.restore();
 }
 /** The orbs' liquid looks on a meter's fill (x, y, w, h): 'cloud' billows (health, absorption, the mount), 'broth' the
@@ -45,10 +46,10 @@ function ccMeterTexture(g, x, y, w, h, liq, style) {
   const area = () => { g.beginPath(); g.rect(x, y, w, h); };
   g.save(); area(); g.clip();
   if (style === 'mana') {
-    g.globalCompositeOperation = 'multiply';
+    g.globalCompositeOperation = 'multiply'; g.globalAlpha = 0.5;   // half the orbs' mask: a thin meter reads as noise at full contrast
     const pat = g.createPattern(ccNebula(), 'repeat');
     pat.setTransform(new DOMMatrix().translateSelf(x * 3, y * 5).rotateSelf(60).scaleSelf(0.05, 0.05)); g.fillStyle = pat; area(); g.fill();
-    g.globalCompositeOperation = 'source-over';
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
     for (let i = 0; i < Math.round(w / 3); i++) {
       const hh = Math.sin((x + i * 12.9898) * 78.233) * 43758.5453, u = hh - Math.floor(hh), v = hh * 7.13 - Math.floor(hh * 7.13);
       g.fillStyle = i % 5 ? 'rgba(220,230,255,0.7)' : 'rgba(255,255,255,0.95)'; g.fillRect(x + u * w, y + v * h, 0.25, 0.25);
@@ -271,8 +272,8 @@ function compactHud(s, font) {
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
   // Experience: one glass pipe along the section's top edge (0 to 100 % in one run, behind the window); the level in a
   // small window centred on the pipe.
-  const X = CC.xp, LK = 0.7, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 4.4, 10);
-  const wh = 5.6, wy = X.y + X.h / 2 - wh / 2, wx = -ww / 2;   // centred on the pipe, which runs on behind it
+  const X = CC.xp, LK = 0.55, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 3.6, 8.5);
+  const wh = 4.6, wy = X.y + X.h / 2 - wh / 2, wx = -ww / 2;   // centred on the pipe, which runs on behind it
   // The pipe is shared: casting a spell (Iron's), a camel's dash cooldown and a mount's jump charge take it over (vanilla
   // already swaps the XP bar for the jump bar), and the level window shows that action's icon instead of the number.
   const mounted = s.riding === 'camel' ? ccCamel : ccHorse;
@@ -282,7 +283,7 @@ function compactHud(s, font) {
     : s.train != null ? [s.train, CC_TRAIN, () => ccModIcon('train')]      // Create's train HUD speed
     : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
   const [xf, xl] = take ? take : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
-  ccMeter(g, X.x0, X.y, X.x1 - X.x0, X.h, xf, xl, 18);
+  ccMeter(g, X.x0, X.y, X.x1 - X.x0, X.h, xf, xl, 18, 'left', !take ? 'cloud' : s.cast != null ? 'mana' : undefined);   // XP: health's billows; a cast is mana: the galaxy
   rrect(g, wx, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
   rrect(g, wx + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
   const mid = wy + wh / 2;
