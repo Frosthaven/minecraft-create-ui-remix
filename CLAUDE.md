@@ -17,7 +17,7 @@ python3 -I tools/extract.py \
   "$HOME/.local/share/PrismLauncher/libraries/com/mojang/minecraft/1.21.1/minecraft-1.21.1-client.jar" \
   site
 # 2. Serve (fetch() needs http, not file://) and open http://127.0.0.1:18777/ and /redesign/.
-cd site && python3 -I -m http.server 18777 --bind 127.0.0.1
+python3 -I tools/serve.py   # site/ on 127.0.0.1:18777, Cache-Control: no-store (a reload always runs current scripts)
 ```
 
 Re-run step 1 after changing mods or resource packs. Both pages hot reload on save (`site/live.js` polls
