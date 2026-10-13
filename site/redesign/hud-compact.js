@@ -21,8 +21,8 @@ const CC = {
   ext: { l: [-133, -96], r: [96, 133], y: 25, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 24.6, h: 4, x0: -88.5, x1: 88.5 },   // the pipe across nearly the centre plate's full width (±91); the level
-  // sits in its own window centred above the plate, clear of the pipe
+  xp: { y: 24.6, h: 4, x0: -88.5, x1: 88.5 },   // the pipe across nearly the centre plate's full width (±91), the level
+  // window centred on it
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
@@ -269,10 +269,10 @@ function compactHud(s, font) {
   socket(g, ox, oy);
   g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
-  // Experience: one glass pipe along the section's top edge (0 to 100 % in one run); the level in a small window centred
-  // above the plate, standing on its top edge (a little plate of its own: iron, lit rim, a dark window), off the pipe.
+  // Experience: one glass pipe along the section's top edge (0 to 100 % in one run, behind the window); the level in a
+  // small window centred on the pipe.
   const X = CC.xp, LK = 0.7, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 4.4, 10);
-  const wh = 6.4, wy = CC.plate.mid - wh - 0.4, wx = -ww / 2;   // its plate ends just above the pipe
+  const wh = 5.6, wy = X.y + X.h / 2 - wh / 2, wx = -ww / 2;   // centred on the pipe, which runs on behind it
   // The pipe is shared: casting a spell (Iron's), a camel's dash cooldown and a mount's jump charge take it over (vanilla
   // already swaps the XP bar for the jump bar), and the level window shows that action's icon instead of the number.
   const mounted = s.riding === 'camel' ? ccCamel : ccHorse;
@@ -283,12 +283,9 @@ function compactHud(s, font) {
     : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
   const [xf, xl] = take ? take : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
   ccMeter(g, X.x0, X.y, X.x1 - X.x0, X.h, xf, xl, 18);
-  { const tab = () => rrect(g, wx - 1.4, wy - 1.2, ww + 2.8, wh + 1.8, CC.plate.r);   // the window's own little plate
-    g.save(); g.translate(0, -0.5); tab(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill(); g.restore();
-    tab(); g.fillStyle = iron(g, wy - 1.2, wy + wh); g.fill(); ironSurface(g, tab); rim(g, tab, wy - 1.2, wy + wh, P.brassHi, 0.35); }
-  rrect(g, wx, wy, ww, wh - 0.6, 1); g.fillStyle = steel(g, wy, wy + wh); g.fill();
-  rrect(g, wx + 0.5, wy + 0.5, ww - 1, wh - 1.6, 0.7); g.fillStyle = '#060708'; g.fill();
-  const mid = wy + (wh - 0.6) / 2;
+  rrect(g, wx, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
+  rrect(g, wx + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
+  const mid = wy + wh / 2;
   if (take) ccIcon(g, take[2](), 0, mid, wh - 2.4);
   else ccNumber(g, txt, -tw / 2, mid - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', 'rgba(0,0,0,0.9)', LK);
   // Meters: every one the same size, with the HUD's own sprite as its icon.
