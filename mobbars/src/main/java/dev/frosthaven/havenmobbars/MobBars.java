@@ -1,8 +1,7 @@
-package dev.frosthaven.havencreateuiux.hud;
+package dev.frosthaven.havenmobbars;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import dev.frosthaven.havencreateuiux.UiConfig;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -19,7 +18,7 @@ import org.joml.Matrix4f;
 
 /**
  * Floating health bars (designed on the redesign page mob-bars.html): a flat, dim bar above every living entity within
- * {@link UiConfig#MOB_BAR_RANGE} blocks, facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
+ * {@link MobBarsConfig#RANGE} blocks, facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
  * other mob), with recent damage as a pale trail that waits, then drains.
  *
  * Drawn from {@link RenderLivingEvent.Post} into the entity pass's own buffers with the name tag background's render
@@ -28,7 +27,7 @@ import org.joml.Matrix4f;
  * Dark Mode Everywhere never touches it. Skipped in Iris's shadow pass, and with F1 (hidden GUI).
  */
 public final class MobBars {
-    private static final HudLog.Channel LOG = new HudLog.Channel("[mob bars] ");
+    private static final Log LOG = new Log();
     // Sizes in model pixels (16 = a block), as on the page.
     private static final float W = 14, H = 1.4f, EDGE = 0.15f, LIFT = 0.5f, NAME_LIFT = 0.3f;
     private static final int BACK = argb(158, 10, 11, 14), EDGE_COL = argb(179, 0, 0, 0);
@@ -61,13 +60,13 @@ public final class MobBars {
     private static void render(RenderLivingEvent.Post<?, ?> event) {
         Minecraft mc = Minecraft.getInstance();
         LivingEntity e = event.getEntity();
-        boolean on = UiConfig.MOB_BARS.get();
+        boolean on = MobBarsConfig.ENABLED.get();
         LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {}, friendly players {}, hostile players {})",
-                on ? "on" : "off", UiConfig.MOB_BAR_RANGE.get(), UiConfig.MOB_BARS_HOSTILE.get(),
-                UiConfig.MOB_BARS_NOT_HOSTILE.get(), UiConfig.MOB_BARS_PLAYERS.get(), UiConfig.MOB_BARS_AGGRESSIVE.get());
+                on ? "on" : "off", MobBarsConfig.RANGE.get(), MobBarsConfig.HOSTILE.get(),
+                MobBarsConfig.NOT_HOSTILE.get(), MobBarsConfig.FRIENDLY_PLAYERS.get(), MobBarsConfig.HOSTILE_PLAYERS.get());
         if (!on || mc.player == null || mc.options.hideGui || e == mc.player || e instanceof ArmorStand) return;
         if (e.isInvisibleTo(mc.player) || e.isDeadOrDying() || inShadowPass()) return;
-        int range = UiConfig.MOB_BAR_RANGE.get();
+        int range = MobBarsConfig.RANGE.get();
         if (e.distanceToSqr(mc.player) > (double) range * range) return;
         int col;
         if (e instanceof Player) {
@@ -75,13 +74,13 @@ public final class MobBars {
             // Hostile players (hit any player in the last 30 s) and friendly ones (everyone else) have separate toggles.
             Long hit = ATTACKERS.get(e);
             boolean hostile = hit != null && System.currentTimeMillis() - hit < ATTACKER_MS;
-            if (!(hostile ? UiConfig.MOB_BARS_AGGRESSIVE.get() : UiConfig.MOB_BARS_PLAYERS.get())) return;
+            if (!(hostile ? MobBarsConfig.HOSTILE_PLAYERS.get() : MobBarsConfig.FRIENDLY_PLAYERS.get())) return;
             col = hostile ? ATTACKER : PLAYER;
         } else if (e instanceof Enemy) {
-            if (!UiConfig.MOB_BARS_HOSTILE.get()) return;
+            if (!MobBarsConfig.HOSTILE.get()) return;
             col = HOSTILE;
         } else {
-            if (!UiConfig.MOB_BARS_NOT_HOSTILE.get()) return;
+            if (!MobBarsConfig.NOT_HOSTILE.get()) return;
             col = NOT_HOSTILE;
         }
         float max = Math.max(1, e.getMaxHealth()), hp = Math.max(0, Math.min(max, e.getHealth()));

@@ -22,8 +22,14 @@ To update, download the zip again and replace the files.
 
 ## What is in it
 
-- **haven-create-hud** (resource pack): the HUD (hotbar, hearts, food, armor, air, XP, mod meters), the inventory
-  and the backpack screens, and Dark Mode Everywhere's shaders fixed so they load next to Veil.
-- **haven-create-ui-ux** (mod): dark mode for Create's panels, and it leaves the screens haven-create-hud
-  restyles alone.
-- **Dark Mode Everywhere** by Buuz135 (MIT; license included), the mod the fixes are for.
+Mods:
+- **haven-create-ui-ux** (built here): the compact action bar (orbs or bars) in place of the vanilla and mod HUD rows,
+  buffs and debuffs above it, the dark mode split for the inventory and backpack screens, Dark Mode Everywhere fixes
+  for Create's screens, and a config screen. Needs Create.
+- **haven-mob-health-bars** (built here): floating health bars over nearby mobs and players, with its own config.
+  Works on its own.
+- **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified.
+
+Resource packs:
+- **haven-create-hud** (built here): the action bar's art, the inventory, Curios, Cosmetic Armor, TrashSlot and
+  Sophisticated Backpacks screens with their dark mode layers, and Dark Mode Everywhere's shaders fixed for Veil.

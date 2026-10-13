@@ -19,8 +19,6 @@ import net.neoforged.neoforge.common.NeoForge;
 
 import dev.frosthaven.havencreateuiux.hud.CompactHud;
 import dev.frosthaven.havencreateuiux.hud.Followers;
-import dev.frosthaven.havencreateuiux.hud.MobBars;
-import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import java.util.List;
 import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
@@ -67,7 +65,6 @@ public final class HavenCreateUiUx {
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, CompactHud::onLayerPre);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Render.Post.class, CompactHud::onScreenRender);
         NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class, Followers::onChat);
-        NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post.class, MobBars::onRender);   // floating mob health bars
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class, Followers::onLogout);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, HudLayers::pre);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Post.class, HudLayers::post);

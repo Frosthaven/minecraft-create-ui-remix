@@ -6,9 +6,10 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 instance="${1:-$HOME/.local/share/PrismLauncher/instances/Create Ultimate Selection 2/minecraft}"
 
-(cd "$here/mod" && JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}" ./gradlew build -q --no-configuration-cache)
+for m in mod mobbars; do (cd "$here/$m" && JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}" ./gradlew build -q --no-configuration-cache); done
 rm -f "$instance"/mods/haven-create-ui-ux-*.jar "$instance"/mods/createdarkinventory-*.jar   # and the old name
-cp "$here"/mod/build/libs/haven-create-ui-ux-*.jar "$instance/mods/"
+rm -f "$instance"/mods/haven-mob-health-bars-*.jar
+cp "$here"/mod/build/libs/haven-create-ui-ux-*.jar "$here"/mobbars/build/libs/haven-mob-health-bars-*.jar "$instance/mods/"
 # Old packs: the Veil fix is merged into haven-create-hud, which was Create-HUD.
 rm -rf "$instance/resourcepacks/DarkModeEverywhere-Veil-Fix" "$instance/resourcepacks/Create-HUD" "$instance/config/createdarkinventory-client.toml"
 for pack in "$here"/resourcepacks/*/; do

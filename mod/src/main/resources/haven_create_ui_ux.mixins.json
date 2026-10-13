@@ -8,8 +8,7 @@
     "ClipboardScreenMixin",
     "PackagePortScreenMixin",
     "GuiGraphicsInvoker",
-    "GuiGraphicsSplitMixin",
-    "RecentAttackerMixin"
+    "GuiGraphicsSplitMixin"
   ],
   "injectors": {
     "defaultRequire": 1

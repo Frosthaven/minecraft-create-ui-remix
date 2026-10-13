@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.frosthaven.havenmobbars.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "RecentAttackerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
