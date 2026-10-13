@@ -85,7 +85,9 @@ choice('tier', 'tier'); choice('set', 'set'); choice('open', 'open');
   for (const k of keys) after.bg[k] = storageBackground(+k.slice(0, 2).replace('_', ''), k.endsWith('wider'));
   for (const k of keys) greys.bg[k] = greyLayer(after.bg[k]);
   greys.slots = greyLayer(after.slots);
-  greys.controls = greyLayer(after.controls, [[0, 0, 27, 204]]);   // only the upgrade pouch's slot wells: the buttons, switches and gauges are steel
+  // The upgrade pouch's slot wells and the steel push buttons (their icons are outlined to read on a light face); not
+  // the switches, gauges and result frame, which sit on leather.
+  greys.controls = greyLayer(after.controls, [[0, 0, 27, 204], [29, 0, 36, 30], [53, 18, 16, 12], [69, 18, 16, 12], [63, 30, 16, 12]]);
   SCREEN.render();
   fileList([...keys.map(k => ['sophisticatedcore: storage_background_' + k, after.bg[k]]),
     ['sophisticatedcore: slots_background', after.slots], ['sophisticatedcore: upgrade_slots_background', after.tabSlots], ['sophisticatedcore: gui_controls', after.controls],

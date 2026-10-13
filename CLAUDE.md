@@ -275,12 +275,18 @@ mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
   `.github/workflows/release.yml` runs it on every push to main touching those parts and replaces the
   `latest` release, which the README links. So: commit and push the regenerated pack to publish.
 - Dark mode split: the inventory, Curios, Cosmetic Armor, trash slot and backpack textures (storage backgrounds,
-  `slots_background`, the upgrade pouch's wells in `gui_controls`) also ship a `<name>_grey` layer: their plain greys
-  (opaque, max - min of RGB <= 12, luma <= 255 / 5.5) as neutral grey at 5.5 x luma (`greyLayer` in `screen-page.js`).
-  The mod draws it over the full art through Dark Mode Everywhere, so the greys follow DME (off: light grey; perfect
-  dark: today's greys) while leather, wood, blueprints, brass and steel objects (buttons, switches, gauges, frames)
-  keep their look. The pages' **Dark mode** button cycles no DME / off / perfect dark / less perfect dark / toasted
-  light, simulating DME's shader (`dmeShade`). `tools/hudpack.py` takes `HUDPACK_PORT` for a second checkout's server.
+  `slots_background`, `gui_controls`) and the steel push buttons (recipe book sprite, Curios and Cosmetic Armor buttons,
+  Sophisticated's buttons) also ship a `<name>_grey` layer (`greyLayer` in `screen-page.js`): their plain greys (opaque,
+  max - min of RGB <= 12, luma <= 160) as neutral grey, split into base (a 1.5 px blur) and relief (the rest). The base
+  is lightened 5.5 x up to luma 38, then eases to white (no bands across gradients); the relief only 2.75 x, so
+  engravings, bevels and lips stay subtle at every setting (perfect dark about half today's contrast, toasted light
+  about 1.4 x). Left out: the player window (black, as vanilla's), the result frame (its well stays in), the Cosmetic
+  Armor toggle bezel, switches and gauges, bright rims and glyphs. Glyphs and Sophisticated's icons have a thin dark
+  outline (`glyphLayer`, `outlineCanvas` in `panel-art.js`) so they read on a light button face. The mod draws the layer
+  over the full art through Dark Mode Everywhere (off: light grey; perfect dark: about today's greys) while leather,
+  wood, blueprints, brass and steel frames keep their look. The pages' **Dark mode** button cycles no DME / off /
+  perfect dark / less perfect dark / toasted light, simulating DME's shader (`dmeShade`). `tools/hudpack.py` takes
+  `HUDPACK_PORT` for a second checkout's server.
 - Pack textures: keep alpha binary (0 or 255). Many GUI blits run without blending, so a half-transparent
   pixel shows at full color (the bright clumps that were on the backpack window corners).
 

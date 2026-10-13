@@ -25,6 +25,8 @@ public final class SplitBlit {
     private static final Logger LOG = LogUtils.getLogger();
     /** Texture to its grey layer, if the resource packs have one. Cleared on resource reload. */
     private static final Map<ResourceLocation, Optional<ResourceLocation>> GREY = new ConcurrentHashMap<>();
+    /** GUI sprite to its grey sprite ("&lt;sprite&gt;_grey" in the GUI atlas), if the packs have one. */
+    private static final Map<ResourceLocation, Optional<ResourceLocation>> GREY_SPRITE = new ConcurrentHashMap<>();
     private static final Set<String> LOGGED = ConcurrentHashMap.newKeySet();
     private static boolean drawing;
 
@@ -47,6 +49,35 @@ public final class SplitBlit {
         }
     }
 
+    /** After a GUI sprite blit (GuiGraphics.blitSprite, e.g. the recipe book button): its grey sprite on top, through DME. */
+    public static void afterSprite(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int z, int width, int height) {
+        if (drawing || !DarkMode.installed()) return;
+        Optional<ResourceLocation> grey = GREY_SPRITE.computeIfAbsent(sprite, SplitBlit::findSprite);
+        if (grey.isEmpty()) return;
+        drawing = true;
+        try {
+            drawSprite(graphics, grey.get(), x, y, z, width, height);
+        } catch (RuntimeException e) {
+            if (LOGGED.add("error:" + sprite)) LOG.error("[dark split] grey sprite of {} failed; drawing the sprite only", sprite, e);
+            GREY_SPRITE.put(sprite, Optional.empty());
+        } finally {
+            drawing = false;
+        }
+    }
+
+    /** DME's caller for a grey sprite: keep this a separate method of this class. */
+    private static void drawSprite(GuiGraphics graphics, ResourceLocation grey, int x, int y, int z, int width, int height) {
+        graphics.blitSprite(grey, x, y, z, width, height);
+    }
+
+    private static Optional<ResourceLocation> findSprite(ResourceLocation sprite) {
+        if (sprite.getPath().endsWith("_grey")) return Optional.empty();
+        var grey = ResourceLocation.fromNamespaceAndPath(sprite.getNamespace(), sprite.getPath() + "_grey");
+        if (!Minecraft.getInstance().getGuiSprites().getSprite(grey).contents().name().equals(grey)) return Optional.empty();
+        if (LOGGED.add(grey.toString())) LOG.info("[dark split] sprite {} has a grey layer ({}): its greys follow Dark Mode Everywhere", sprite, grey);
+        return Optional.of(grey);
+    }
+
     /** DME's caller for the grey layer: keep this a separate method of this class. */
     private static void draw(GuiGraphics graphics, ResourceLocation grey, int x1, int x2, int y1, int y2, int z,
                              float u0, float u1, float v0, float v1, float[] color) {
@@ -67,5 +98,6 @@ public final class SplitBlit {
     /** Resource packs changed: look the grey layers up again. */
     public static void reload() {
         GREY.clear();
+        GREY_SPRITE.clear();
     }
 }

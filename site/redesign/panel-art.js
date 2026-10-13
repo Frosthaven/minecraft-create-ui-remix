@@ -143,9 +143,29 @@ function cells(g, list, lip) {
 function miniButton(w, h, glyph, hover) {
   const [c, g] = hires(w, h);
   steelButton(g, 0, 0, w, h, hover, Math.min(w, h) * 0.18);
-  g.fillStyle = g.strokeStyle = hover ? '#ffd9a0' : '#c9ccd0'; g.lineWidth = 0.6;
-  glyph(g, w, h);
+  g.drawImage(glyphLayer(w, h, gg => { gg.fillStyle = gg.strokeStyle = hover ? '#ffd9a0' : '#c9ccd0'; gg.lineWidth = 0.6; glyph(gg, w, h); }), 0, 0, w, h);
   return c;
+}
+/** A button glyph on its own w x h layer with a thin dark outline: steel buttons follow dark mode (their face turns
+ *  light grey with DME off or light), and the outline keeps the light glyph readable on a light face too. */
+function glyphLayer(w, h, draw, outline = 0.35) {
+  const [c, g] = hires(w, h);
+  draw(g);
+  outlineCanvas(c, outline);
+  return c;
+}
+/** A dark outline around the opaque pixels of c, behind them (only inside rects, logical units, when given). */
+function outlineCanvas(c, width = 0.5, rects = null) {
+  const k = c.lw ? c.width / c.lw : R, s = document.createElement('canvas');
+  s.width = c.width; s.height = c.height;
+  const sg = s.getContext('2d');
+  sg.drawImage(c, 0, 0); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#0b0c0d'; sg.fillRect(0, 0, s.width, s.height);
+  const g = c.getContext('2d');
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  if (rects) { g.beginPath(); for (const [x, y, rw, rh] of rects) g.rect(x * k, y * k, rw * k, rh * k); g.clip(); }
+  g.globalCompositeOperation = 'destination-over';
+  for (let a = 0; a < 8; a++) g.drawImage(s, Math.round(Math.cos(a * Math.PI / 4) * width * k), Math.round(Math.sin(a * Math.PI / 4) * width * k));
+  g.restore();
 }
 
 /** A container panel: dark iron, quiet tarnish, a thin iron frame lit along its top. */

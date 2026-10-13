@@ -144,11 +144,20 @@ pageToggle('curiosScreen', on => { curiosScreen = on; }, curiosScreen);
   // 1.21.1 draws empty armor and shield slots from the item atlas (textures/item/empty_armor_slot_*); the
   // container/slot sprites some packs carry are 1.21.2's and unused here.
   for (const n of ['helmet', 'chestplate', 'leggings', 'boots', 'shield']) before.icons[n] = await tex('textures/item/empty_armor_slot_' + n);
-  for (const k of ['panel', 'cos', 'trash', 'curiosSheet']) greys[k] = greyLayer(after[k]);
+  // The panel's greys, without the player's window (black, as vanilla's) and the steel result frame (its well stays in).
+  const panelAreas = [[0, 0, 176, 166], [INV.window[0], INV.window[1], INV.window[2] - INV.window[0], INV.window[3] - INV.window[1], false],
+    [INV.result[0] - 2.3, INV.result[1] - 2.3, 20.6, 20.6, false], [INV.result[0], INV.result[1], 16, 16]];
+  greys.panel = greyLayer(after.panel, panelAreas);
+  greys.cos = greyLayer(after.cos, [...panelAreas, [0, 166, 20, 10]]);   // and its two mini buttons (not the toggle bezel)
+  for (const k of ['trash', 'curiosSheet', 'book', 'bookHover', 'curios', 'curiosHover', 'curiosCosmetic']) greys[k] = greyLayer(after[k]);
+  const cosGreys = Object.fromEntries(Object.entries(cosBtn).map(([n, img]) => [n, greyLayer(img)]));
   SCREEN.render();
   fileList([['container/inventory', sheetTexture(after.panel)], ['container/inventory_grey', sheetTexture(greys.panel)],
     ['cosmeticarmorreworked: cosarmorinventory_grey', greys.cos], ['trashslot: slot_grey', greys.trash],
-    ['curios: curios/inventory_grey', sheetTexture(greys.curiosSheet)], ['sprites/recipe_book/button', after.book],
+    ['curios: curios/inventory_grey', sheetTexture(greys.curiosSheet)],
+    ['sprites/recipe_book/button_grey', greys.book], ['sprites/recipe_book/button_highlighted_grey', greys.bookHover],
+    ['curios: curios/button_grey', greys.curios], ['curios: curios/button_highlighted_grey', greys.curiosHover],
+    ...Object.entries(cosGreys).map(([n, img]) => ['curios: curios/' + n + '_grey', img]), ['sprites/recipe_book/button', after.book],
     ['sprites/recipe_book/button_highlighted', after.bookHover], ['curios: curios/button', after.curios], ['curios: curios/button_highlighted', after.curiosHover],
     ...Object.entries(after.icons).map(([n, img]) => ['item/empty_armor_slot_' + n, img]),
     ['cosmeticarmorreworked: cosarmorinventory', after.cos], ['trashslot: slot', after.trash], ['trashslot: item/trashcan', after.trashIcon],
