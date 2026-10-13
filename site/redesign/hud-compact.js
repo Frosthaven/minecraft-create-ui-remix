@@ -1,5 +1,5 @@
 // Compact HUD concept (preview only, not packed): one iron action bar instead of the floating bits. Shipping it needs
-// Create Dark Inventory to cancel the vanilla and mod HUD layers and draw this layout itself (RenderGuiLayerEvent).
+// haven-create-ui-ux to cancel the vanilla and mod HUD layers and draw this layout itself (RenderGuiLayerEvent).
 // Logical units, x centred on the screen (0), the action bar's bottom at y 50. Every meter is the same size, with the
 // HUD's own sprite as its icon (heart, drumstick, shield, porthole bubble). The always-on meters sit in the wings
 // (health and food left, the two manas right); armor and breath, which the game shows only when they apply (armor

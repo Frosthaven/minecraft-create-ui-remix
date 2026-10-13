@@ -84,7 +84,7 @@ function slotsBackground() {
   return c;
 }
 
-/** upgrade_slots_background (ours): Create Dark Inventory draws every upgrade tab's slot group from it as a schematic
+/** upgrade_slots_background (ours): haven-create-ui-ux draws every upgrade tab's slot group from it as a schematic
  *  scroll (TabSlots.java; tabScroll() mirrors it). Layout, logical:
  *    (0, 0) 218 x 218: blueprint paper, its 1 px edge all round, slot marks at (1 + 18 c, 1 + 18 r) for 12 x 12 cells.
  *      The group is cut from (0, 0) at w + 1 x h + 1 (left and top edges included), its right and bottom edges from the

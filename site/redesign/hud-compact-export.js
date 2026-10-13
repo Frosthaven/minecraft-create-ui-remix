@@ -1,5 +1,5 @@
 // Compact HUD textures for the game (createhud:textures/gui/compact/*), drawn by the same functions as the page so
-// the game shows exactly the preview. Create Dark Inventory's hud/ classes draw from them in 1/8 GUI px (one texel), so
+// the game shows exactly the preview. haven-create-ui-ux's hud/ classes draw from them in 1/8 GUI px (one texel), so
 // every position here is a whole multiple of 1/8. KEEP IN STEP with CompactAtlas.java.
 //   plate_{bars,bars_meka,orbs,orbs_meka}: 332 x 34 at (-166, 17) of the bar (bottom at 50). Orbs: with the housings.
 //     _meka: the left wing widened for the MekaSuit gauge's slot (right-handed only; ccEnds).

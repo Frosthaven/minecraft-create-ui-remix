@@ -1,9 +1,9 @@
-"""Builds the Create-HUD resource pack from the redesign pages' file lists (their PNG links): the compact action bar's
+"""Builds the haven-create-hud resource pack from the redesign pages' file lists (their PNG links): the compact action bar's
 textures, the player's inventory and the Sophisticated Backpacks screens.
 
     python3 -I tools/hudpack.py    (with the site served on 127.0.0.1:18777)
 
-Writes the repo's resourcepacks/Create-HUD from scratch (the pages are the source; nothing is edited by hand there),
+Writes the repo's resourcepacks/haven-create-hud from scratch (the pages are the source; nothing is edited by hand there),
 plus the hand-written files in tools/pack-static (Dark Mode Everywhere's shaders fixed for Veil).
 ./install.sh copies it into the instance, tools/release.sh into the release zip.
 
@@ -30,7 +30,7 @@ def target(name):
     return f'assets/{ns}/textures/gui/{path}.png'
 
 
-pack = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resourcepacks', 'Create-HUD')
+pack = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resourcepacks', 'haven-create-hud')
 files = []
 for page, n in PAGES.items():
     dom = subprocess.run(['google-chrome-stable', '--headless', '--incognito', '--disable-gpu', '--virtual-time-budget=20000',

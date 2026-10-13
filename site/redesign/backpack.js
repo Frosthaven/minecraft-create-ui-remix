@@ -52,7 +52,7 @@ function toggleButton(put, T, x, y, [u, v]) {
 
 /** The whole screen for layout L and texture set T at scale.
  *  state: { open: null | 'crafting' | 'pump', results, showSlots }. */
-/** A tab's slot group (cols x rows at x, y): before, the mod's cells; after, Create Dark Inventory's scroll (see
+/** A tab's slot group (cols x rows at x, y): before, the mod's cells; after, haven-create-ui-ux's scroll (see
  *  upgradeSlotsBackground). */
 function tabSlots(put, T, x, y, cols, rows) {
   const w = cols * 18, h = rows * 18;

@@ -1,0 +1,8 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.frosthaven.havencreateuiux.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["RollHudMixin"],
+  "injectors": { "defaultRequire": 0 }
+}

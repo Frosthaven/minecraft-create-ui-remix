@@ -7,8 +7,8 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 description='''
-Lets Dark Mode Everywhere darken Create's player inventory, the frogport and mailbox screens and the clipboard,
-following its toggle. Client only.
+Haven's Create UI: the compact action bar (orbs or bars), floating mob health bars, and Dark Mode Everywhere fixes
+for Create and the haven-create-hud screens. Client only.
 '''
 
 [[mixins]]

@@ -1,4 +1,4 @@
-# mod/: Create Dark Inventory (`createdarkinventory`)
+# mod/: haven-create-ui-ux (`haven_create_ui_ux`)
 
 Fixes for Dark Mode Everywhere (DME, `darkmodeeverywhere-neoforge-1.21.1-1.4.0`, MIT, by Buuz135) in
 Create Ultimate Selection 2 (NeoForge 21.1.243, Create 6.0.10). Client only. Part of the
@@ -24,7 +24,7 @@ black mid-line cursor white while DME is on (`DarkMode.on()`, DME's `SELECTED_SH
 Build: `./install.sh` at the repo root. Gradle runs on JDK 17 locally (system default is 27, too new; CI uses 21);
 the toolchain gets JDK 21.
 
-## DME settings carried by the mod (`CreateDarkInventory`)
+## DME settings carried by the mod (`HavenCreateUiUx`)
 
 No player config edits needed; the instance config stays at DME's defaults.
 - IMC `dme-shaderblacklist` -> `StockKeeperRequestScreen:drawItemCount`: the Stock Keeper's item
@@ -32,17 +32,17 @@ No player config edits needed; the instance config stays at DME's defaults.
 - DME's inventory button (60x20 "Dark Mode", default X 32) overlapped the bottom-left icon
   buttons; the mod raises it 32 px (above the 28 px icons) on container screens, only while it is at the default X and Y.
 - Title screen: no dark mode (the pack's FancyMenu layout). `DarkModeClientProxyMixin`
-  (`createdarkinventory.dme.mixins.json`, optional) answers DME's `isElementNameBlacklisted`
+  (`haven_create_ui_ux.dme.mixins.json`, optional) answers DME's `isElementNameBlacklisted`
   with true while `TitleScreen` is open; the mod removes DME's title button there.
 - DME's button kept focus after a click, and a focused widget stops Create's "hold W to ponder";
   the mod clears that focus on mouse release.
-- Main HUD with a Create HUD pack: while a selected pack id contains "create-hud" (`file/Create-HUD`),
+- Main HUD with a Create HUD pack: while a selected pack id contains "create-hud" (`file/haven-create-hud`),
   `HudLayers` flags NeoForge's hotbar, health, armor, food, air, experience bar/level, action bar
   layers and Create's `remaining_air`; `DarkModeClientProxyMixin` skips DME while one draws.
   ImmediatelyFast `hud_batching` (on in this pack) draws the whole HUD later in
   `BatchingBuffers.endHudBatching`, where DME sees ImmediatelyFast as the caller (so DME's own
   `net.minecraft.client.gui.Gui` blacklist never matched either). `BatchingBuffersMixin`
-  (`createdarkinventory.immediatelyfast.mixins.json`, optional) flags that flush and
+  (`haven_create_ui_ux.immediatelyfast.mixins.json`, optional) flags that flush and
   `tryForceDrawHudBuffers` (AppleSkin and minimap compat flush mid-HUD); DME callers starting with
   `BatchingRenderLayers` (ImmediatelyFast's HUD render types, seen with `METHOD_SHADER_DUMP` in
   debug.log as "Considering ...") are skipped too. With the pack on, DME skips the whole batched HUD.
@@ -62,7 +62,7 @@ No player config edits needed; the instance config stays at DME's defaults.
   (vanilla-like); perfect dark: about the art's greys. No DME installed: no layer. Layers are looked up once per texture
   or sprite (cleared on resource reload) and logged once (`[dark split]`); a failing layer logs once and is dropped.
 - Sophisticated upgrade tabs: Sophisticated Core draws the storage grid and tab slots from one
-  texture (`slots_background.png`). `TabSlots` (`createdarkinventory.sophisticated.mixins.json`,
+  texture (`slots_background.png`). `TabSlots` (`haven_create_ui_ux.sophisticated.mixins.json`,
   optional) draws tab slots from `sophisticatedcore:textures/gui/upgrade_slots_background.png`
   when a pack has it; the storage grid is told apart by caller (`StorageScreenBase`,
   `SettingsScreen`).
@@ -74,7 +74,7 @@ No player config edits needed; the instance config stays at DME's defaults.
 The HUD designed on the redesign page `hud-compact.html`, drawn by the mod while the pack's textures
 (`createhud:textures/gui/compact/{parts,plate_*}.png`, exported by `hud-compact-export.js`) are present and the player is
 not a spectator.
-- `CompactHud`: the layer `createdarkinventory:compact_hud` (above vanilla's HOTBAR). Hides what it replaces in
+- `CompactHud`: the layer `haven_create_ui_ux:compact_hud` (above vanilla's HOTBAR). Hides what it replaces in
   `RenderGuiLayerEvent.Pre`: vanilla hotbar, health, armor, food, vehicle health, air, XP bar and level, jump meter;
   `irons_spellbooks:mana_overlay`, `ars_nouveau:mana_hud`, `create:remaining_air`, AppleSkin's four layers. Draws at 1/8
   GUI px (pose scale) so the 8x textures land texel for texel; positions are the page's layout (x from the screen
@@ -95,7 +95,7 @@ not a spectator.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
   (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank
   (persistent `VisualBacktankAir`, `BacktankUtil.maxAir` over `getAllWithAir`), by reflection: a missing mod hides its row.
-- `RollHudMixin` (`createdarkinventory.bosses.mixins.json`, optional): cancels Block Factory's Bosses' own roll icon
+- `RollHudMixin` (`haven_create_ui_ux.bosses.mixins.json`, optional): cancels Block Factory's Bosses' own roll icon
   (`ClientEvents.renderGUI`, a RenderGuiEvent.Pre we cannot hide as a layer) while the bar is active.
 - `Followers`: Haven Link's web map followers from its chat lines; reset on logout.
 - `HudLog`: logging in latest.log, all lines prefixed `[compact HUD]`, never per frame: once per event or when a value

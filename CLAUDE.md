@@ -29,7 +29,7 @@ the page's `Last-Modified`, on localhost only).
   1. vanilla client jar;
   2. every mod jar in the instance's `mods/` (and jars nested inside them, two levels);
   3. the active resource packs from `options.txt` (`resourcePacks`, `file/...` entries, zips or folders), except
-     `Create-HUD` (our own output: "before" must stay the game without it).
+     `haven-create-hud` (our own output: "before" must stay the game without it).
 - Paths taken (plus `assets/minecraft/textures/font/ascii.png`, the GUI font, for the mockups):
   - `assets/<ns>/textures/{gui,guis,hud,screen,screens,jei,contextmenu,waystones_gui,slot,crosshair}/**`;
   - `assets/<ns>/gui/**` (Mekanism keeps its screen art there).
@@ -122,7 +122,7 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
 level window centred on it; the vitals and mana either as two orbs in housings on the wing plates (default) or as three
 rows of bars per wing (client config "Meter display"). Shipping the page exports its textures (`hud-compact-export.js`,
-6 files under `createhud:textures/gui/compact/`: 4 plates, `parts`, `orbs`) and Create Dark Inventory draws the layout
+6 files under `createhud:textures/gui/compact/`: 4 plates, `parts`, `orbs`) and haven-create-ui-ux draws the layout
 from them, piece by piece in the page's order (the page and the export draw with the same functions, so preview and
 game match). The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is not packed), so other
 mods that reuse vanilla hearts look vanilla.
@@ -234,7 +234,7 @@ Three kinds: hostile red, not hostile green, players blue; each toggled in the c
   buttons draw a 9.6 px face inset 1.2 px, with glyphs about 4.4 x 5.6, so they do not crowd slot rows.
 - The search box is the mod's flat #777777 square with a magnifier hint; the texture frames it like the
   sort buttons beside it. Gauges have no reflection stripe.
-- Upgrade tab slots: `upgrade_slots_background` (ours, blueprint cells like the armor column); Create Dark Inventory's
+- Upgrade tab slots: `upgrade_slots_background` (ours, blueprint cells like the armor column); haven-create-ui-ux's
   `TabSlots` makes the mod draw tab slots from it. The storage grid keeps `slots_background`.
 - Not restylable (drawn in code by the mod): the scrollbar, the search box (a bezel frames its collapsed
   spot), slot highlights. Upgrade item icons are item art; the mockup uses placeholders.
@@ -271,13 +271,13 @@ One monorepo for everything a player installs (repo and folder were `minecraft-c
 mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
 
 - `site/`, `tools/extract.py`: the almanac and the redesign pages (the art source).
-- `resourcepacks/Create-HUD`: **generated**, never edited by hand. `python3 -I tools/hudpack.py` (site served)
+- `resourcepacks/haven-create-hud`: **generated**, never edited by hand. `python3 -I tools/hudpack.py` (site served)
   rewrites it from the file lists of the HUD page (the meter set; it records its count in `#sheet[data-count]`),
   Inventory and Backpack pages. Every user scales UVs by the logical size, so 8x textures work.
-- `tools/pack-static/`: hand-written pack files that `hudpack.py` copies into Create-HUD: DME's two core shaders
+- `tools/pack-static/`: hand-written pack files that `hudpack.py` copies into haven-create-hud: DME's two core shaders
   without bodiless function declarations, so Veil's shader processor can parse them (was its own pack,
-  DarkModeEverywhere-Veil-Fix). So Create-HUD must stay at the top of the pack order.
-- `mod/`: Create Dark Inventory, the DME fixes (its own `mod/CLAUDE.md`).
+  DarkModeEverywhere-Veil-Fix). So haven-create-hud must stay at the top of the pack order.
+- `mod/`: haven-create-ui-ux, the DME fixes (its own `mod/CLAUDE.md`).
 - `./install.sh [instance/minecraft]`: builds the mod, copies it and both packs into the Prism instance.
 - `tools/release.sh`: `dist/create-ui-remix.zip` with `mods/` (our jar, DME from Modrinth checked against
   `tools/dme.sha512`, DME's license), `resourcepacks/` (each pack zipped) and `INSTALL.txt` (`tools/INSTALL.txt`).

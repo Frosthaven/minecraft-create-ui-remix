@@ -2,7 +2,7 @@
 // harmful in the second, newest leftmost, 25 px apart; Gui.renderEffects) and restyled to match the action bar: each
 // effect a small iron socket, brass-bezeled for a buff, rust for a debuff, dimmer for an ambient (beacon) effect.
 // Instead of vanilla's blinking under 10 s, a bright border drains clockwise from the top as the effect runs out.
-// Uses sprites.js. Shipping it: Create Dark Inventory replaces the MOB_EFFECTS layer (the frame from the pack, the
+// Uses sprites.js. Shipping it: haven-create-ui-ux replaces the MOB_EFFECTS layer (the frame from the pack, the
 // border drawn as fills).
 
 // Buffs read green, debuffs red: the draining border (and its glow) in that colour, on a brass or rust bezel.

@@ -81,8 +81,8 @@ for jar in sorted(os.listdir(mods_dir)):
 opts = open(os.path.join(inst, "options.txt"), encoding="utf8", errors="replace").read()
 packs = json.loads(re.search(r"^resourcePacks:(.*)$", opts, re.M).group(1))
 for p in packs:
-    # Create-HUD is this repo's own output (the pages' "after"): leave it out so "before" stays the game as it was.
-    if not p.startswith("file/") or p == "file/Create-HUD":
+    # haven-create-hud is this repo's own output (the pages' "after"): leave it out so "before" stays the game as it was.
+    if not p.startswith("file/") or p == "file/haven-create-hud":
         continue
     path = os.path.join(inst, "resourcepacks", p[5:])
     label = re.sub(r"§.", "", p[5:]).removesuffix(".zip")

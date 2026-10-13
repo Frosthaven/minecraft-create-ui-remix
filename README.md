@@ -13,17 +13,17 @@ screens. Client only; nothing to install on the server.
 
 1. Copy everything in the zip's `mods/` into your instance's `mods` folder
    (Prism: right-click the instance > Folder, then `minecraft/mods`). Replace Dark Mode Everywhere if asked.
-2. Copy `resourcepacks/Create-HUD.zip` into the instance's `resourcepacks` folder (delete an old
-   `DarkModeEverywhere-Veil-Fix` pack: it is now inside Create-HUD).
-3. Start the game. Options > Resource Packs: enable **Create-HUD** at the top of the list.
+2. Copy `resourcepacks/haven-create-hud.zip` into the instance's `resourcepacks` folder (from an older
+   version, delete the old `Create-HUD` and `DarkModeEverywhere-Veil-Fix` packs and the `createdarkinventory` jar).
+3. Start the game. Options > Resource Packs: enable **haven-create-hud** at the top of the list.
 4. The "Dark Mode" button on inventory screens turns dark mode on and off.
 
 To update, download the zip again and replace the files.
 
 ## What is in it
 
-- **Create-HUD** (resource pack): the HUD (hotbar, hearts, food, armor, air, XP, mod meters), the inventory
+- **haven-create-hud** (resource pack): the HUD (hotbar, hearts, food, armor, air, XP, mod meters), the inventory
   and the backpack screens, and Dark Mode Everywhere's shaders fixed so they load next to Veil.
-- **Create Dark Inventory** (mod): dark mode for Create's panels, and it leaves the screens Create-HUD
+- **haven-create-ui-ux** (mod): dark mode for Create's panels, and it leaves the screens haven-create-hud
   restyles alone.
 - **Dark Mode Everywhere** by Buuz135 (MIT; license included), the mod the fixes are for.

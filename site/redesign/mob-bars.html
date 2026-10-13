@@ -11,7 +11,7 @@
 <header>
   <h1>Mob health bars (concept)</h1>
   <p>A flat, dim bar half a block above every mob within 10 blocks, facing the camera. The fill is the mob's health in
-     its kind's colour; recent damage stays as a pale trail that drains away. Config (Create Dark Inventory): which kinds get bars (below) and the range (default 10 blocks).</p>
+     its kind's colour; recent damage stays as a pale trail that drains away. Config (haven-create-ui-ux): which kinds get bars (below) and the range (default 10 blocks).</p>
 </header>
 <div class="bar">
   <button id="hit" title="Hit the zombie for 3">Damage</button>
@@ -21,7 +21,7 @@
   <div class="scene" style="grid-column:1/-1"><span class="label after">Night, a zombie 4 blocks away</span><canvas id="scene" width="860" height="520" style="width:100%;height:auto"></canvas></div>
 </div>
 <h2>Kinds (config: which get bars)</h2>
-<p style="color:var(--muted);margin:0 24px 10px">Hostile is the game's own test (Enemy); players are players (magenta for 30 s after they hit any player); every other mob is not hostile.</p>
+<p style="color:var(--muted);margin:0 24px 10px">Hostile is the game's own test (Enemy); players are friendly, or hostile (magenta) for 30 s after they hit any player; every other mob is not hostile.</p>
 <div id="kinds" class="kinds"></div>
 <style>
   .kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; padding: 0 24px 40px; }

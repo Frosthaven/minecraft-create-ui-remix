@@ -11,7 +11,7 @@ work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 out="$work/create-ui-remix"; mkdir -p "$out/mods" "$out/resourcepacks"
 
 (cd "$here/mod" && JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}" ./gradlew build -q --no-configuration-cache)
-cp "$here"/mod/build/libs/createdarkinventory-*.jar "$out/mods/"
+cp "$here"/mod/build/libs/haven-create-ui-ux-*.jar "$out/mods/"
 
 dme="$out/mods/$(basename "$DME_URL")"
 curl -fsSL "$DME_URL" -o "$dme"
