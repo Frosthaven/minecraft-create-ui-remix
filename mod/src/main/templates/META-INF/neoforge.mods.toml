@@ -14,6 +14,10 @@ following its toggle. Client only.
 [[mixins]]
 config="${mod_id}.mixins.json"
 
+# Targets DME, so optional: without DME it does nothing.
+[[mixins]]
+config="${mod_id}.dme.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"

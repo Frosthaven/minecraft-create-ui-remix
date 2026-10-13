@@ -36,4 +36,7 @@ No player config edits needed; the instance config stays at DME's defaults.
 - IMC `dme-shaderblacklist` -> `StockKeeperRequestScreen:drawItemCount`: the Stock Keeper's item
   counts blit directly, so DME inverted them on Create's light panel.
 - DME's inventory button (60x20 "Dark Mode", default X 32) overlapped the bottom-left icon
-  buttons; the mod raises it 22 px (above them) on container screens, only while it is at the default X and Y.
+  buttons; the mod raises it 32 px (above the 28 px icons) on container screens, only while it is at the default X and Y.
+- Title screen: no dark mode (the pack's FancyMenu layout). `DarkModeClientProxyMixin`
+  (`createdarkinventory.dme.mixins.json`, optional) answers DME's `isElementNameBlacklisted`
+  with true while `TitleScreen` is open; the mod removes DME's title button there.
