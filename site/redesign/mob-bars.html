@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mob Health Bars</title>
+<link rel="stylesheet" href="page.css">
+</head>
+<body>
+<nav><a href="./">HUD</a><a href="hud-compact.html">Compact HUD</a><a href="mob-bars.html" aria-current="page">Mob bars</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="../">Almanac</a></nav>
+<header>
+  <h1>Mob health bars (concept)</h1>
+  <p>A flat, dim bar half a block above every mob within 10 blocks, facing the camera. The fill is the mob's health in
+     its kind's colour; recent damage stays as a pale trail that drains away. Config (Create Dark Inventory): which kinds get bars (below) and the range (default 10 blocks).</p>
+</header>
+<div class="bar">
+  <button id="hit" title="Hit the zombie for 3">Damage</button>
+  <button id="kind" title="The bar's colour for each kind (cycles)">Kind: Hostile</button>
+</div>
+<div class="compare">
+  <div class="scene" style="grid-column:1/-1"><span class="label after">Night, a zombie 4 blocks away</span><canvas id="scene" width="860" height="520" style="width:100%;height:auto"></canvas></div>
+</div>
+<h2>Kinds (config: which get bars)</h2>
+<p style="color:var(--muted);margin:0 24px 10px">A mob takes the first kind that fits, top to bottom (an iron golem is neutral, a tamed wolf is your pet).
+   Ticked: on by default. Bosses are off by default because they already have the boss bar; bats are off by default
+   because they are only clutter.</p>
+<div id="kinds" class="kinds"></div>
+<style>
+  .kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; padding: 0 24px 40px; }
+  .kinds div { display: grid; grid-template-columns: 18px 84px 1fr; gap: 8px; align-items: center; padding: 8px 10px;
+               background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+  .kinds small { display: block; color: var(--muted); font-size: 11px; }
+  .kinds canvas { background: #0c1226; border-radius: 3px; }
+</style>
+<script src="material.js"></script>
+<script src="sprites.js"></script>
+<script src="meters.js"></script>
+<script src="mcfont.js"></script>
+<script src="screen-page.js"></script>
+<script src="mob-bars.js"></script>
+<script>
+const kinds = Object.keys(MOB_KINDS);
+for (const [id, k] of Object.entries(MOB_KINDS)) {
+  const row = document.createElement('div'), c = document.createElement('canvas');
+  c.width = 84; c.height = 16; mobBar(c.getContext('2d'), 42, 8, 70, 7, id, 13, 20, 16);
+  row.innerHTML = `<input type="checkbox" ${k.on ? 'checked' : ''} disabled>`;
+  row.append(c);
+  row.insertAdjacentHTML('beforeend', `<span>${k.name}<small>${k.test}: ${k.ex}</small></span>`);
+  document.getElementById('kinds').append(row);
+}
+const st = { kind: 'hostile', hp: 13, max: 20, trail: 13, hitAt: 0 };
+let art = null;
+function render() {
+  if (!art) return;
+  const k = Math.min(1, Math.max(0, (performance.now() - st.hitAt - 400) / 600));   // the trail waits, then drains
+  mobScene(document.getElementById('scene'), { ...art, kind: st.kind, hp: st.hp, max: st.max, trail: st.hp + (st.trail - st.hp) * (1 - k) });
+  if (k < 1) requestAnimationFrame(render); else st.trail = st.hp;
+}
+document.getElementById('hit').onclick = () => { st.trail = st.hp; st.hp = st.hp > 3 ? st.hp - 3 : st.max; if (st.hp === st.max) st.trail = st.max; st.hitAt = performance.now(); render(); };
+document.getElementById('kind').onclick = e => {
+  st.kind = kinds[(kinds.indexOf(st.kind) + 1) % kinds.length]; e.target.textContent = 'Kind: ' + MOB_KINDS[st.kind].name; render();
+};
+(async () => {
+  const tex = await packTextures();
+  const skin = await tex('textures/entity/zombie/zombie'), grass = await tex('textures/block/grass_block_top');
+  if (!skin || !grass) { document.querySelector('header').insertAdjacentHTML('beforeend', '<p>Missing textures: run tools/extract.py.</p>'); return; }
+  art = { skin, grass: tintedGrass(grass) };
+  render();
+})();
+</script>
+<script src="../live.js"></script>
+</body>
+</html>
