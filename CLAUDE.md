@@ -138,8 +138,8 @@ not packed), so other mods that reuse vanilla hearts look vanilla.
   the XP pipe is shared: a charging spell (Iron's), a
   camel's dash cooldown and a jump charge take it over, the level window showing their icon; attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
 - Width (`ccLayout`, CompactHud): no mana mod drops the right wing, no dodge roll the dash's spot (the bar ends just
-  past what is there); with no right wing it grows back out while breath shows. The hotbar always stays centred
-  (vanilla's spots), so a narrower bar is lopsided. In game the full-width plate
+  past what is there); with no right wing it grows back out while breath shows. A narrower bar stays centred on the
+  screen (shifted by whole pixels, so the hotbar is off vanilla's spot by that shift). In game the full-width plate
   textures are drawn trimmed, their rounded end caps copied to the new ends. Creative's empty vitals wing: pressed-in
   cogs; one mana mod: the other row an empty groove.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight

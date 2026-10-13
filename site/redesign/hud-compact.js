@@ -221,6 +221,9 @@ function compactHud(s, font) {
   const rightExt = showBreath ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = showArmor || (!s.creative && s.mekasuit);
   const lay = CC.lay = ccLayout(s, !!rightExt);
+  // A narrower bar stays centred on the screen: shift everything (whole pixels, so items stay sharp).
+  CC.shift = Math.round(-(lay.x0 + lay.x1) / 2);
+  g.translate(CC.shift, 0);
   ccPlate(g, { left: leftExt, right: !!rightExt }, lay.x0, lay.x1);
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.

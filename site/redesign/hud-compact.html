@@ -124,7 +124,7 @@ function swim(on, diving) {
 tap('water', () => swim(!st.underwater || st.diving, false));
 tap('dive', () => swim(!st.diving, true));
 document.getElementById('hud').addEventListener('mousemove', e => {
-  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
+  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX - (CC.shift || 0), y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
   const id = Object.keys(CC.hit).find(k => { const [bx, by, bw, bh] = CC.hit[k]; return x >= bx - 9 && x <= bx + bw && y >= by - 1 && y <= by + bh + 1; }) || null;
   if (id !== st.hover) { st.hover = id; render(); }
 });
@@ -135,7 +135,7 @@ tip.hidden = true;
 tip.style.cssText = 'position:fixed;pointer-events:none;padding:4px 8px;border-radius:6px;font-size:12px;background:var(--raised);border:1px solid var(--border);color:var(--text);z-index:5';
 document.body.append(tip);
 document.getElementById('hud').addEventListener('mousemove', e => {
-  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
+  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX - (CC.shift || 0), y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
   const hit = (st.effects || []).find(f => { const b = CC.hit['effect:' + f.id]; return b && x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3]; });
   tip.hidden = !hit;
   if (!hit) return;

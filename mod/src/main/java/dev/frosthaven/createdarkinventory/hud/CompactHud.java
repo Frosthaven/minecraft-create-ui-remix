@@ -163,6 +163,9 @@ public final class CompactHud {
         if (showBreath) x1 = Math.max(x1, 152);
         double x0 = leftEnd ? -165 : -152;
         double ox = lefty ? rightStart : -161, rollX = lefty ? -164.5 : rightStart - 3.5;
+        // A narrower bar stays centred on the screen: everything shifts by whole pixels (items stay sharp).
+        int shift = (int) Math.round(-(x0 + x1) / 2);
+        pose.translate(shift * K, 0, 0);
         plateTrimmed(g, plate(showArmor, showBreath), x(x0), x(x1));
 
         // Hotbar sockets, the offhand socket (its shield ghost while empty), the selection frame.
@@ -272,8 +275,8 @@ public final class CompactHud {
         }
         pose.popPose();
 
-        // Items at vanilla's exact spots (mods that mark hotbar slots line up), then the roll count in the game font.
-        int bx = cx;   // the hotbar is always centred on the screen (vanilla's spots); a narrower bar is lopsided
+        // Items at vanilla's spots relative to the bar (exactly vanilla's while the bar is full width), then the roll count.
+        int bx = cx + shift;   // the bar's centre
         for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), bx - 88 + 20 * i, bottom - 19, i + 1);
         slotItem(g, mc, p, p.getOffhandItem(), bx + (int) ox + 1, bottom - 19, 10);
         if (tier >= 0) {
