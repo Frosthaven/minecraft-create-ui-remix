@@ -177,13 +177,15 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
   }
   const since = s.t - (s.hurtAt || -1e9);
   if (since < 400) { g.fillStyle = `rgba(255,40,40,${0.55 * (1 - since / 400)})`; leftHalf(); g.fill(); }   // damage: a red flash
-  const sweep = (period, col) => {   // a soft band of light rising through the health half
-    const y = level(hp) + (1 - (s.t / period) % 1) * (cy + r - level(hp) + 6) - 3;
-    g.save(); leftHalf(); g.clip(); g.beginPath(); g.rect(cx - r, level(hp), r, cy + r - level(hp)); g.clip();
-    g.fillStyle = vgrad(g, y - 3, y + 3, [[0, col + '00'], [0.5, col + '99'], [1, col + '00']]); g.fillRect(cx - r, y - 3, r, 6);
-    g.restore();
-  };
-  if (s.regen) sweep(1400, '#ffe6dc');
+  if (s.regen && hp > 0) {   // Regeneration: small bright motes rising through the health liquid, fading at its surface
+    const top = level(hp), depth = cy + r - top;
+    for (let i = 0; i < 10; i++) {
+      const h = Math.sin((i + 1) * 91.7) * 43758.5453, u = h - Math.floor(h), sp = 0.6 + (h * 3.1 - Math.floor(h * 3.1)) * 0.6;
+      const k = ((s.t / 1600) * sp + u * 3.7) % 1, y = cy + r - k * depth, x = cx - r + 1 + u * (r - 2) + Math.sin(s.t / 300 + i) * 0.4;
+      const a = Math.sin(Math.PI * k) * 0.9;
+      circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,220,225,${a})`; g.fill();
+    }
+  }
   if (s.comfort && s.saturation <= 0 && hp < 1 && !s.regen) {   // Comfort: a slow pink glow rising through the health half's whole glass
     const y = cy + r + 4 - ((s.t / 2600) % 1) * (2 * r + 8);
     g.fillStyle = vgrad(g, y - 5, y + 5, [[0, '#ff9ec400'], [0.5, '#ff9ec488'], [1, '#ff9ec400']]); g.fillRect(cx - r, y - 5, r, 10);
