@@ -100,8 +100,8 @@ CC_DIGITS['+'] = '000010111010000';
 CC_DIGITS.s = '000000011010110'; CC_DIGITS.h = '100100110101101'; CC_DIGITS.m = '0000000000111101010110101';
 const CC_GLYPH_W = { m: 5 };
 const ccGlyphW = ch => CC_GLYPH_W[ch] || 3;
-/** Text colours by hue: bright, leaning toward a hue (the value), and a dimmer shade of it (the max). */
-const ccTint = hue => mixHex(hue, '#ffffff', 0.6), ccTintDim = hue => mixHex(mixHex(hue, '#ffffff', 0.35), '#5a5e66', 0.45);
+/** Text colours by hue: bright, leaning toward a hue (value and max alike). */
+const ccTint = hue => mixHex(hue, '#ffffff', 0.6);
 const ccNumberWidth = (s, k = 1) => ([...s].reduce((a, ch) => a + ccGlyphW(ch) + 1, 0) - 1) * k;
 /** s in the small font at (x, y) (glyphs 5 tall, 3 wide but m 5, 1 apart), each pixel k units; col a colour or a
  *  function of the character index (to colour parts); shadow: a dark copy one font pixel down-right, first. */
@@ -256,7 +256,7 @@ function compactHud(s, font) {
       // Dim the liquid behind the digits; not on the slim extension pipes (thinner than the digits: the shadow does).
       if (h >= 4) { rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.fillStyle = 'rgba(4,5,6,0.6)'; g.fill(); }
       const v = typeof value === 'string' ? value : String(Math.round(value)), t = max == null ? v : `${v}/${max}`;
-      ccNumber(g, t, x + w / 2 - ccNumberWidth(t, NK) / 2, y + h / 2 - 2.5 * NK, i => i < v.length ? ccTint(liq[1]) : ccTintDim(liq[1]),
+      ccNumber(g, t, x + w / 2 - ccNumberWidth(t, NK) / 2, y + h / 2 - 2.5 * NK, ccTint(liq[1]),
         'rgba(0,0,0,0.85)', NK);
     }
   };

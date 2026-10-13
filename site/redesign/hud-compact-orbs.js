@@ -122,7 +122,16 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     if (!f || f.frac <= 0) return;
     g.save(); g.beginPath(); g.rect(x0, cy - r, w, 2 * r); g.clip();
     const top = level(f.frac);
-    liquid(liq, top, cy + r, style);
+    if (f.wave) {   // low health: the surface sloshes in a rolling wave (the liquid clipped to it), the orb stays put
+      const A = f.wave, ph = (f.t || 0) / 180, surf = x => top + A * Math.sin(x * 0.9 + ph) + A * 0.5 * Math.sin(x * 2.1 - ph * 1.7);
+      g.save(); g.beginPath(); g.moveTo(x0, cy + r);
+      for (let x = x0; x <= x0 + w + 0.01; x += 0.5) g.lineTo(x, surf(x));
+      g.lineTo(x0 + w, cy + r); g.closePath(); g.clip();
+      liquid(liq, top - 2 * A, cy + r, style);
+      g.restore();
+      g.beginPath(); for (let x = x0; x <= x0 + w + 0.01; x += 0.5) x === x0 ? g.moveTo(x, surf(x)) : g.lineTo(x, surf(x));
+      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.4; g.stroke();   // the moving surface catching the light
+    } else liquid(liq, top, cy + r, style);
     if (overTo && overTo.to > overTo.from) {   // absorption: golden cloud with a few sparkles
       const ya = level(overTo.to), yb = level(overTo.from);
       liquid(overTo.liq, ya, yb, 'cloud');
@@ -133,7 +142,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       }
     }
     const surfaceY = overTo && overTo.to > overTo.from ? level(overTo.to) : top;
-    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, surfaceY, w, 0.4);   // the surface catching the light
+    if (!f.wave || (overTo && overTo.to > overTo.from)) { g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, surfaceY, w, 0.4); }   // the surface catching the light
     g.restore();
   };
   const split = crescent != null;
@@ -157,6 +166,10 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
   const r = ORB.r, level = f => cy + r - 2 * r * Math.max(0, Math.min(1, f));
   g.save(); circle(g, cx, cy, r); g.clip();
   const leftHalf = () => { g.beginPath(); g.rect(cx - r, cy - r, r, 2 * r); };
+  if (s.health <= 4) {   // low health: the empty glass above the liquid pulses a faint red
+    const a = 0.12 + 0.12 * Math.sin(s.t / 220);
+    g.fillStyle = `rgba(200,20,30,${a})`; g.fillRect(cx - r, cy - r, r, level(hp) - (cy - r));
+  }
   const since = s.t - (s.hurtAt || -1e9);
   if (since < 400) { g.fillStyle = `rgba(255,255,255,${0.6 * (1 - since / 400)})`; leftHalf(); g.fill(); }
   const sweep = (period, col) => {   // a soft band of light rising through the health half
@@ -240,7 +253,7 @@ function ccOrbNumbers(g, cx, cy, lines) {
   const k = 0.6;
   lines.forEach(([v, max, col], i) => {
     const t = `${v}/${max}`, y = cy - (lines.length * 4) / 2 + i * 4.2;
-    ccNumber(g, t, cx - ccNumberWidth(t, k) / 2, y, j => j < String(v).length ? ccTint(col) : ccTintDim(col), 'rgba(0,0,0,0.9)', k);
+    ccNumber(g, t, cx - ccNumberWidth(t, k) / 2, y, ccTint(col), 'rgba(0,0,0,0.9)', k);
   });
 }
 
@@ -254,10 +267,11 @@ function ccOrbs(g, s) {
     const riding = !!s.riding;
     const food = riding ? { frac: s.mount / s.mountMax, liq: CC_MOUNT, style: 'cloud' }
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : s.nourished ? CC_GILDED : LIQUID.broth, style: 'broth' };
-    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud' }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
+    const low = s.health <= 4;   // vanilla shakes the hearts here; the orb's liquid sloshes instead
+    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.9 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
       crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
-      shake: ccShake(s)[1] });
-    ccOrbFx(g, s, ORB.lx, ORB.y + ccShake(s)[1], hp, max, riding);
+    });
+    ccOrbFx(g, s, ORB.lx, ORB.y, hp, max, riding);
     CC.hit.orbL = [ORB.lx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
     if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, liq[1]], riding ? [s.mount, s.mountMax, CC_MOUNT[1]] : [s.food, 20, LIQUID.broth[1]]]);
   } else ccHousingCog(g, ORB.lx, ORB.y);   // creative: a cog pressed into the housing's face
