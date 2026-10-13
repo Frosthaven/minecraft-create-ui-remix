@@ -165,7 +165,11 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     g.beginPath(); g.rect(x0, level(f.frac) - 1.5, w, cy + r + 4 - level(f.frac)); g.clip();
     g.globalCompositeOperation = 'screen';
     // Only the rim's inner edge catches it: a faint band fading out within about a pixel.
-    g.fillStyle = radial(g, cx, cy, r + 1.2, [[(r - 0.2) / (r + 1.2), liq[1] + '38'], [1, liq[1] + '00']]);
+    // Equal strength for every colour: dimmer colours (red, orange) get more alpha than bright ones (blue), by luminance.
+    const [cr, cg, cb] = [1, 3, 5].map(i => parseInt(liq[1].slice(i, i + 2), 16) / 255);
+    const lum = 0.3 * cr + 0.59 * cg + 0.11 * cb, a = Math.max(0.2, Math.min(0.75, 0.16 / Math.max(lum, 0.05)));
+    const hex = Math.round(a * 255).toString(16).padStart(2, '0');
+    g.fillStyle = radial(g, cx, cy, r + 1.4, [[(r - 0.2) / (r + 1.4), liq[1] + hex], [1, liq[1] + '00']]);
     g.fillRect(cx - ORB.housing, cy - ORB.housing, 2 * ORB.housing, 2 * ORB.housing);
     g.restore();
   };
