@@ -28,11 +28,10 @@ rule catches it; check other dark-panel text against the same rule.
 
 Build: Gradle runs on JDK 17 (system default is 27, too new); the toolchain gets JDK 21.
 
-## Instance config (not in this repo)
+## DME settings carried by the mod (`CreateDarkInventory`)
 
-`config/darkmodeeverywhere-client.toml` `METHOD_SHADER_BLACKLIST` also has
-`StockKeeperRequestScreen:drawItemCount`: the Stock Keeper's item counts blit directly, so DME
-inverted them on Create's light panel.
-
-`["Inventory Button"] X = 56` (default 32): at 32 DME's toggle button overlapped another mod's
-button at the bottom left of the inventory.
+No player config edits needed; the instance config stays at DME's defaults.
+- IMC `dme-shaderblacklist` -> `StockKeeperRequestScreen:drawItemCount`: the Stock Keeper's item
+  counts blit directly, so DME inverted them on Create's light panel.
+- DME's inventory button (60x20 "Dark Mode", default X 32) overlapped the bottom-left icon
+  buttons; the mod moves it to X 56 on container screens, only while it is at the default.

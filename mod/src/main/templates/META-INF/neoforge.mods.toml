@@ -34,3 +34,10 @@ config="${mod_id}.mixins.json"
     versionRange="[6.0,)"
     ordering="AFTER"
     side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="darkmodeeverywhere"
+    type="optional"
+    versionRange="[1.4,)"
+    ordering="AFTER"
+    side="CLIENT"
