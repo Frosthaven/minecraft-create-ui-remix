@@ -67,6 +67,7 @@
   <button id="noMagic" aria-pressed="false" title="A pack without Iron's Spellbooks or Ars Nouveau">No mana mods</button>
   <button id="noRoll" aria-pressed="false" title="A pack without the dodge roll">No dodge roll</button>
   <button id="effectsBtn" aria-pressed="false" title="Buffs and debuffs above the bar, with their time left">Buffs and debuffs</button>
+  <button id="manyEffects" aria-pressed="false" title="A long list: 13 buffs and 5 debuffs">Many effects</button>
   <button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
 </div>
 <div class="compare">
@@ -195,15 +196,20 @@ let effectIcons = {}, effectsOn = false, effectsT0 = 0;
 function tickEffects() {
   if (!effectsOn) { st.effects = []; return; }
   const el = (performance.now() - effectsT0) / 1000 * 6;   // six times real time
-  st.effects = EFFECT_DEMO.map(e => ({ ...e, secs: e.total ? e.total - (el % e.total) : 0 }));
+  st.effects = (manyOn ? MANY : EFFECT_DEMO).map(e => ({ ...e, secs: e.total ? e.total - (el % e.total) : 0 }));
   st.effectIcons = effectIcons;
 }
+const MANY = ['speed', 'strength', 'regeneration', 'haste', 'resistance', 'fire_resistance', 'water_breathing', 'night_vision',
+  'absorption', 'jump_boost', 'luck', 'dolphins_grace', 'conduit_power'].map((id, i) => ({ id, kind: 'buff', total: 30 + 25 * i }))
+  .concat(['poison', 'slowness', 'weakness', 'mining_fatigue', 'hunger'].map((id, i) => ({ id, kind: 'debuff', total: 20 + 15 * i })));
+let manyOn = false;
+tap('manyEffects', () => { manyOn = !manyOn; press('manyEffects', manyOn); if (!effectsOn) { effectsOn = true; press('effectsBtn', true); effectsT0 = performance.now(); } tickEffects(); });
 tap('effectsBtn', () => { effectsOn = !effectsOn; effectsT0 = performance.now(); press('effectsBtn', effectsOn); tickEffects(); });
 setInterval(() => { if (effectsOn) { tickEffects(); render(); } }, 100);
 (async () => {
   let tex = null;
   try { tex = await packTextures(); font = SCREEN.font; } catch (e) {}
-  if (tex) for (const e of EFFECT_DEMO) effectIcons[e.id] = await tex('textures/mob_effect/' + e.id);
+  if (tex) for (const e of EFFECT_DEMO.concat(MANY)) effectIcons[e.id] = await tex('textures/mob_effect/' + e.id);
   render(); fileList(compactExports());
 })();
 render();

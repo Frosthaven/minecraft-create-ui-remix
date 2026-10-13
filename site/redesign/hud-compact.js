@@ -6,7 +6,7 @@
 // worn; under water), extend the raised hotbar band sideways over their wing only then, in a darker iron, as slim
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
-const CX = 172, BOTTOM = 50, TOPM = 30;   // TOPM: room above the bar for the game's text (item name, action bar)
+const CX = 172, BOTTOM = 50, TOPM = 66;   // TOPM: room above the bar for the game's text (item name, action bar)
 // Horizontal rhythm: one gap (GAP) between every group, out from the centred hotbar (sockets x -89..89): meters
 // (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
 const GAP = 4;

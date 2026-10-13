@@ -13,7 +13,7 @@ const CC_EFFECT = {
 
 /** One effect at (x, y), 24 x 24: socket, icon (14 x 14 at +5), the draining border (thick, ~1 px when drawn at 11). frac: time left / starting time
  *  (1 for infinite), ambient: a beacon's (dimmer). */
-function ccEffect(g, x, y, kind, icon, frac, ambient = false) {
+function ccEffect(g, x, y, kind, icon, frac, ambient = false, frameOnly = false) {
   const k = CC_EFFECT[kind], r = 2.2;
   rrect(g, x + 0.5, y + 0.9, 23, 23, r); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill();          // shadow
   rrect(g, x + 0.5, y + 0.5, 23, 23, r);
@@ -22,6 +22,7 @@ function ccEffect(g, x, y, kind, icon, frac, ambient = false) {
   g.fillStyle = vgrad(g, y + 1.6, y + 22.4, [[0, '#08090a'], [1, '#1a1a1c']]); g.fill();
   if (icon) { g.save(); if (ambient) g.globalAlpha = 0.7; g.imageSmoothingEnabled = false; g.drawImage(icon, x + 5, y + 5, 14, 14); g.restore(); }
   if (ambient) { rrect(g, x + 0.5, y + 0.5, 23, 23, r); g.fillStyle = 'rgba(10,12,16,0.35)'; g.fill(); return; }
+  if (frameOnly) return;   // the game draws the time border itself (fills), over this frame
   // The time border: a dark track, then the time left drawn clockwise from the top centre.
   const w = 20.4, rr = r - 0.4, per = 4 * (w - 2 * rr) + 2 * Math.PI * rr;
   const border = () => {
@@ -49,29 +50,32 @@ function ccEffectsCorner(effects, icons, w = 180) {
   return c;
 }
 
-/** Effects in the action bar area: two floating rows above the bar's right wing (no plate), buffs on top and debuffs
- *  below as vanilla stacks them, right-aligned to the bar's edge (newest at the right); each effect an 11 x 11 socket
- *  with the draining border and its time left under it in the bar's digits (seconds, or m:ss from a minute; red
- *  under 10 s; none when infinite). effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
+/** Effects in the action bar area: floating rows above the bar's right wing (no plate), right-aligned to the bar's
+ *  edge (newest at the right), debuffs nearest the bar and buffs above them, as vanilla stacks them. Each effect a
+ *  10 x 10 socket with the draining border and its time left under it in the bar's digits (seconds, or m:ss from a
+ *  minute; red under 10 s; none when infinite). At most PER_ROW in a row (the right wing's width, clear of the centre),
+ *  more wrap onto another row above, so a long list grows upward instead of sideways into anything.
+ *  effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
+const CC_EFFECTS = { size: 10, cell: 13, rowH: 19, k: 0.75, perRow: 9 };
 function ccEffectsRail(g, s, icons) {
-  const list = s.effects || [];
-  const size = 11, cell = 15, rowH = 20, k = 0.75, right = CC.plate.x1;   // rowH: socket, time, 3.5 between the rows
-  const rows = { buff: list.filter(e => e.kind === 'buff'), debuff: list.filter(e => e.kind === 'debuff') };
-  const debuffTop = CC.plate.mid - 2 - rowH, buffTop = rows.debuff.length ? debuffTop - rowH : debuffTop;
-  for (const [kind, top] of [['buff', buffTop], ['debuff', debuffTop]]) {
-    rows[kind].forEach((e, i) => {
-      const x = right - size - 1 - cell * i - (cell - size) / 2, y = top;
-      g.save(); g.translate(x, y); g.scale(size / 24, size / 24);
-      ccEffect(g, 0, 0, kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
-      g.restore();
-      CC.hit['effect:' + e.id] = [x, y, size, size];
-      if (!e.total) return;
-      const sec = Math.ceil(e.secs), t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : String(sec);
-      ccNumber(g, t, x + size / 2 - ccNumberWidth(t, k) / 2, y + size + 1.2, sec <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.95)', k);
-    });
+  const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, right = CC.plate.x1;
+  let top = CC.plate.mid - 2 - rowH;   // the lowest row's top; rows go up from there
+  for (const kind of ['debuff', 'buff']) {
+    const all = list.filter(e => e.kind === kind);
+    for (let r = 0; r * perRow < all.length; r++, top -= rowH) {
+      all.slice(r * perRow, (r + 1) * perRow).forEach((e, i) => {
+        const x = right - size - 1 - cell * i, y = top;
+        g.save(); g.translate(x, y); g.scale(size / 24, size / 24);
+        ccEffect(g, 0, 0, kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
+        g.restore();
+        CC.hit['effect:' + e.id] = [x, y, size, size];
+        if (!e.total) return;
+        const sec = Math.ceil(e.secs), t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : String(sec);
+        ccNumber(g, t, x + size / 2 - ccNumberWidth(t, k) / 2, y + size + 1.2, sec <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.95)', k);
+      });
+    }
   }
 }
-
 /** An effect's name as the game shows it: words capitalised, the level in Roman numerals from II. */
 function ccEffectName(e) {
   const name = e.id.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
