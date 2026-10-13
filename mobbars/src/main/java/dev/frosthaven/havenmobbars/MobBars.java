@@ -19,7 +19,7 @@ import org.joml.Matrix4f;
 /**
  * Floating health bars (designed on the redesign page mob-bars.html): a flat, dim bar above every living entity within
  * {@link MobBarsConfig#RANGE} blocks, facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
- * other mob), with recent damage as a pale trail that waits, then drains.
+ * other mob), with recent damage as a half-opacity trail of its colour that waits, then drains.
  *
  * Drawn from {@link RenderLivingEvent.Post} into the entity pass's own buffers with the name tag background's render
  * type, like a name tag: Iris shader packs and Sodium handle it as they handle name tags, it is depth-tested (walls
@@ -36,6 +36,16 @@ public final class MobBars {
     private static final Map<Player, Long> ATTACKERS = new WeakHashMap<>();
     private static final java.util.Set<Integer> LOGGED_KINDS = new java.util.HashSet<>();   // a first-draw line per colour
     private static final long TRAIL_WAIT = 400, TRAIL_DRAIN = 600;   // ms
+    /** The trail: the bar's colour at half opacity over the backing, flattened to one quad (pieces never overlap). */
+    private static final java.util.function.IntUnaryOperator TRAIL_OVER_BACK = col -> {
+        float ab = (BACK >>> 24) / 255f, a = 0.5f + ab * 0.5f;
+        int out = Math.round(a * 255) << 24;
+        for (int s = 0; s <= 16; s += 8) {
+            float c = (col >> s & 0xff) * 0.5f + (BACK >> s & 0xff) * ab * 0.5f;
+            out |= Math.round(c / a) << s;
+        }
+        return out;
+    };
     private static final Map<LivingEntity, Trail> TRAILS = new WeakHashMap<>();
     private static Method shadowPass;   // Iris: IrisApi.getInstance().isRenderingShadowPass(), when Iris is installed
     private static Object irisApi;
@@ -110,7 +120,7 @@ public final class MobBars {
             quad(vc, m, x0, y0, fx, y0 + EDGE, 0xff000000 | mix(col, 0xffffff, 0.08f), light);
             quad(vc, m, x0, y0 + EDGE, fx, y1, 0xff000000 | col, light);
         }
-        if (tx > fx) quad(vc, m, fx, y0, tx, y1, 0xaa000000 | mix(col, 0xc8c0b0, 0.55f), light);
+        if (tx > fx) quad(vc, m, fx, y0, tx, y1, TRAIL_OVER_BACK.applyAsInt(col), light);
         if (x1 > tx) quad(vc, m, tx, y0, x1, y1, BACK, light);
         pose.popPose();
     }
