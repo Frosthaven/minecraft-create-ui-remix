@@ -8,6 +8,8 @@ public final class MobBarsConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue ENABLED;
     public static final ModConfigSpec.IntValue RANGE;
+    public static final ModConfigSpec.BooleanValue LOOKED_AT;
+    public static final ModConfigSpec.IntValue LOOK_RANGE;
     public static final ModConfigSpec.BooleanValue HOSTILE;
     public static final ModConfigSpec.BooleanValue NOT_HOSTILE;
     public static final ModConfigSpec.BooleanValue FRIENDLY_PLAYERS;
@@ -19,6 +21,10 @@ public final class MobBarsConfig {
                 .translation("haven_mob_health_bars.config.enabled").define("enabled", true);
         RANGE = b.comment("How far away (blocks) a mob still gets a bar.")
                 .translation("haven_mob_health_bars.config.range").defineInRange("range", 10, 2, 64);
+        LOOKED_AT = b.comment("Also a bar on the entity under the crosshair beyond the range, when no block is in between (only that one).")
+                .translation("haven_mob_health_bars.config.looked_at").define("lookedAt", true);
+        LOOK_RANGE = b.comment("How far away (blocks) the looked-at entity still gets a bar.")
+                .translation("haven_mob_health_bars.config.look_range").defineInRange("lookRange", 64, 8, 128);
         HOSTILE = b.comment("Bars on hostile mobs (red).")
                 .translation("haven_mob_health_bars.config.hostile").define("hostile", true);
         NOT_HOSTILE = b.comment("Bars on every other mob: animals, villagers, pets, golems, neutral mobs (green).")

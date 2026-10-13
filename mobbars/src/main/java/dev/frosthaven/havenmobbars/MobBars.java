@@ -19,7 +19,7 @@ import org.joml.Matrix4f;
 
 /**
  * Floating health bars (designed on the redesign page mob-bars.html): a flat, dim bar above every living entity within
- * {@link MobBarsConfig#RANGE} blocks, facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
+ * {@link MobBarsConfig#RANGE} blocks (and the one under the crosshair further out, {@link LookTarget}), facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
  * other mob), with recent damage as a trail of its colour at 50% opacity that waits, then drains.
  *
  * Drawn from {@link RenderLivingEvent.Post} into the entity pass's own buffers with the name tag background's render
@@ -53,7 +53,7 @@ public final class MobBars {
     private static final Map<LivingEntity, Trail> TRAILS = new WeakHashMap<>();
     private static Method shadowPass;   // Iris: IrisApi.getInstance().isRenderingShadowPass(), when Iris is installed
     private static Object irisApi;
-    private static boolean irisChecked;
+    private static boolean irisChecked, loggedFar;
 
     private MobBars() {}
 
@@ -81,7 +81,8 @@ public final class MobBars {
         if (!on || mc.player == null || mc.options.hideGui || e == mc.player || e instanceof ArmorStand) return;
         if (e.isInvisibleTo(mc.player) || e.isDeadOrDying() || inShadowPass()) return;
         int range = MobBarsConfig.RANGE.get();
-        if (e.distanceToSqr(mc.player) > (double) range * range) return;
+        boolean far = e.distanceToSqr(mc.player) > (double) range * range;
+        if (far && e != LookTarget.get()) return;   // beyond the range only the looked-at entity (LookTarget) gets a bar
         int col;
         if (e instanceof Player) {
             if (isWebGhost(e)) return;   // Haven Link's web map viewers: never a bar
@@ -100,6 +101,8 @@ public final class MobBars {
         float max = Math.max(1, e.getMaxHealth()), hp = Math.max(0, Math.min(max, e.getHealth()));
         float trail = trail(e, hp);
 
+        if (far && !loggedFar) { loggedFar = true; LOG.once("far", "first bar on a looked-at entity beyond the range: {} ({} blocks away)", e.getType().getDescriptionId(),
+                String.format("%.1f", Math.sqrt(e.distanceToSqr(mc.player)))); }
         if (LOGGED_KINDS.add(col)) LOG.once("drawn:" + col, "first bar of colour #{} drawn: {} ({} of {} hp, {} blocks away)",
                 Integer.toHexString(col), e.getType().getDescriptionId(), hp, max, String.format("%.1f", Math.sqrt(e.distanceToSqr(mc.player))));
         PoseStack pose = event.getPoseStack();

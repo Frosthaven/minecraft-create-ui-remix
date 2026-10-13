@@ -28,7 +28,8 @@ Mods:
   energy, Mekanism jetpack (and MekaSuit jetpack unit) hydrogen, Mekanism scuba tank oxygen, Ad Astra space suit
   oxygen and Jet Suit energy, Creating Space O2 backtanks; the Create backtank shows on the bar with its time left,
   while diving and while a Create Jetpack drains it.
-- **haven-mob-health-bars** (built here): floating health bars over nearby mobs and players, with its own config.
+- **haven-mob-health-bars** (built here): floating health bars over mobs and players within 10 blocks, and on the one
+  you look at up to 64 blocks away when nothing blocks the view, with its own config.
   Works on its own.
 - **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified (not part of the modpack): a
   button on inventory screens cycles 4 shades, from vanilla light mode through toasted light and less perfect dark to perfect dark.

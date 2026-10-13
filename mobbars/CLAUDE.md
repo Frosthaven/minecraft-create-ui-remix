@@ -10,6 +10,10 @@ Classes: `HavenMobHealthBars` (registers config, config screen, the RenderLiving
 Designed on the redesign page `mob-bars.html`. A flat, dim bar over every living entity within `MobBarsConfig` `range`
 blocks (default 10): hostile (`Enemy`, bosses included) #a83a3a, players #4a76b8, every other mob #5c9a46, each kind
 toggled in the client config (`haven_mob_health_bars-client.toml`). Not the player, armor stands, invisible or dying entities.
+- Beyond the range, only the entity under the crosshair gets a bar (`LookTarget`, config `lookedAt` default true,
+  `lookRange` default 64, 8-128): once per client tick a vanilla-style pick (`ProjectileUtil.getEntityHitResult`,
+  boxes inflated by pick radius) from the camera, then a block raycast (`ClipContext` OUTLINE, fluid NONE) eye to hit
+  point; a block in between means no target. Same kind toggles and filters as the normal bars.
 - `RenderLivingEvent.Post`, drawn into the entity pass's buffers with `RenderType.textBackground()` (as a name tag
   background: same quad order, which matters for culling), billboarded with `cameraOrientation()`, in model px (1/16
   block). Placed like vanilla's name tag (`NameTags`): at the NAME_TAG attachment plus half a block (riders, babies, scaled and modded mobs line up); when the tag is drawn this frame (`RenderNameTagEvent` result at LOWEST priority, else the renderer's own `shouldShowName` via `EntityRendererInvoker`, within the nameplate distance), just above the tag's background (anchor + 0.025) with a 0.04 gap, so it never covers the text. Depth-tested, so walls hide it (no

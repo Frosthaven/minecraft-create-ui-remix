@@ -5,5 +5,7 @@
   "haven_mob_health_bars.config.hostile": "Hostile mobs",
   "haven_mob_health_bars.config.not_hostile": "Other mobs",
   "haven_mob_health_bars.config.friendly_players": "Friendly players",
-  "haven_mob_health_bars.config.hostile_players": "Hostile players"
+  "haven_mob_health_bars.config.hostile_players": "Hostile players",
+  "haven_mob_health_bars.config.looked_at": "Bar on the entity you look at",
+  "haven_mob_health_bars.config.look_range": "Look range (blocks)"
 }

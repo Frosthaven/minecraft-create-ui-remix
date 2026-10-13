@@ -10,8 +10,8 @@
 <nav><a href="./">HUD</a><a href="hud-compact.html">Compact HUD</a><a href="mob-bars.html" aria-current="page">Mob bars</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="../">Almanac</a></nav>
 <header>
   <h1>Mob health bars (concept)</h1>
-  <p>A flat, dim bar half a block above every mob within 10 blocks, facing the camera. The fill is the mob's health in
-     its kind's colour; recent damage stays as a trail of its colour at 50% opacity that drains away. Config (haven-mob-health-bars): which kinds get bars (below) and the range (default 10 blocks).</p>
+  <p>A flat, dim bar half a block above every mob within 10 blocks, and above the one you look at up to 64 blocks away (no block in between), facing the camera. The fill is the mob's health in
+     its kind's colour; recent damage stays as a trail of its colour at 50% opacity that drains away. Config (haven-mob-health-bars): which kinds get bars (below), the range (default 10 blocks), and the looked-at bar and its range (default on, 64 blocks).</p>
 </header>
 <div class="bar">
   <button id="hit" title="Hit the zombie for 3">Damage</button>
