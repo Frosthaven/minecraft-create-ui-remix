@@ -145,10 +145,10 @@ not packed), so other mods that reuse vanilla hearts look vanilla.
   bar. Followers come from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped
   following"): followers already watching at login are missed until Haven Link sends the current list on join.
 - Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`): two floating lines (no plate) above the bar's left
-  wing, left-aligned to its edge: buffs and always-on effects on top, timed debuffs below at 1.5x; at most 10 a line (6 debuffs) (wrapping upward: the pack
+  wing, left-aligned to its edge: buffs nearest the bar, debuffs at 1.5x above, each line always-on first; at most 10 a line (6 debuffs) (wrapping upward: the pack
   has 39 vanilla + 116 mod effects); each effect a 10 x 10 socket (brass bezel buff, rust debuff,
   dimmer ambient) with a border draining clockwise from the top, and its time left under it in the bar's small digits
-  (45s, 3m, 1h; red under 10 s; none when infinite). Buffs' draining border is green, debuffs' red.
+  (45, 3m, 1h; red under 10 s; none when infinite). Buffs' draining border is green, debuffs' red.
   Hover (page) shows the name, level and time; in game: names while the numbers key is held or a screen is open.
   Not in game yet (it would replace MOB_EFFECTS).
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):

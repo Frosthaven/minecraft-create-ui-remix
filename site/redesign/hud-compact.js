@@ -96,16 +96,21 @@ const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111
 CC_DIGITS['/'] = '001001010100100';
 CC_DIGITS[':'] = '000010000010000';
 CC_DIGITS['+'] = '000010111010000';
-CC_DIGITS.s = '000011100001110'; CC_DIGITS.m = '000110111101101'; CC_DIGITS.h = '100100110101101';   // time units
-const ccNumberWidth = (s, k = 1) => (s.length * 4 - 1) * k;
-/** s in the 3 x 5 digits at (x, y), each pixel k units; col a colour or a function of the character index (to colour
- *  parts); shadow: a dark copy offset by half a pixel first (readable over liquid). */
+// Time units, lowercase on the baseline (x-height 3): s and h 3 wide, m 5 wide (two arches).
+CC_DIGITS.s = '000000011010110'; CC_DIGITS.h = '100100110101101'; CC_DIGITS.m = '0000000000111101010110101';
+const CC_GLYPH_W = { m: 5 };
+const ccGlyphW = ch => CC_GLYPH_W[ch] || 3;
+const ccNumberWidth = (s, k = 1) => ([...s].reduce((a, ch) => a + ccGlyphW(ch) + 1, 0) - 1) * k;
+/** s in the small font at (x, y) (glyphs 5 tall, 3 wide but m 5, 1 apart), each pixel k units; col a colour or a
+ *  function of the character index (to colour parts); shadow: a dark copy offset by half a pixel first. */
 function ccNumber(g, s, x, y, col, shadow, k = 1) {
   if (shadow) ccNumber(g, s, x + 0.5 * k, y + 0.5 * k, shadow, null, k);
+  let cx = 0;
   for (const [i, ch] of [...s].entries()) {
-    const bits = CC_DIGITS[ch in CC_DIGITS ? ch : +ch];
+    const bits = CC_DIGITS[ch in CC_DIGITS ? ch : +ch], w = ccGlyphW(ch);
     g.fillStyle = typeof col === 'function' ? col(i) : col;
-    for (let q = 0; q < 15; q++) if (bits[q] === '1') g.fillRect(x + (i * 4 + (q % 3)) * k, y + Math.floor(q / 3) * k, k, k);
+    for (let q = 0; q < w * 5; q++) if (bits[q] === '1') g.fillRect(x + (cx + (q % w)) * k, y + Math.floor(q / w) * k, k, k);
+    cx += w + 1;
   }
 }
 

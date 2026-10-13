@@ -51,22 +51,23 @@ function ccEffectsCorner(effects, icons, w = 180) {
 }
 
 /** Effects in the action bar area, floating above the bar's left wing (no plate), left-aligned to the bar's edge,
- *  in two lines: buffs and always-on effects on top (green), timed debuffs below (red, at 1.5x). Each effect a
- *  10 x 10 socket with the draining border and its time left under it in the bar's small digits (45s, 3m, 1h; red
+ *  in two lines: buffs nearest the bar (green), debuffs above them (red, at 1.5x), each always-on first. Each effect a
+ *  10 x 10 socket with the draining border and its time left under it in the bar's small digits (45, 3m, 1h; red
  *  under 10 s; none when infinite). At most PER_ROW in a row (the right wing's width, clear of the centre),
  *  more wrap onto another row above, so a long list grows upward instead of sideways into anything.
  *  effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
 const CC_EFFECTS = { size: 10, cell: 13, rowH: 17.5, k: 0.625, perRow: 10 };   // a line: the bar's left edge to x -32
-/** Time left, short: seconds under a minute ("45s"), minutes under an hour ("3m"), else hours ("1h"). */
+/** Time left, short: plain seconds under a minute ("45"), minutes under an hour ("3m"), else hours ("1h"). */
 function ccEffectTime(secs) {
   const sec = Math.ceil(secs);
-  return sec < 60 ? sec + 's' : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
+  return sec < 60 ? String(sec) : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
 }
 function ccEffectsRail(g, s, icons) {
   const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, left = CC.plate.x0;
-  // Two lines: buffs and always-on effects (infinite or a beacon's, whatever their kind) on top, timed debuffs below,
-  // nearest the bar. A line that runs out of room wraps upward.
-  const green = list.filter(e => e.kind === 'buff' || !e.total), red = list.filter(e => e.kind === 'debuff' && e.total);
+  // Two lines: buffs nearest the bar, debuffs above them at 1.5x. A line that runs out of room wraps upward.
+  // Each line starts with its always-on effects (infinite or a beacon's), then the timed ones.
+  const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));
+  const green = line('buff'), red = line('debuff');
   // Debuffs at 1.5x (socket, spacing, digits): the ones to act on stand out.
   const draw = (e, x, y, m) => {
     const sz = size * m, kk = k * m;
@@ -76,10 +77,11 @@ function ccEffectsRail(g, s, icons) {
     CC.hit['effect:' + e.id] = [x, y, sz, sz];
     if (!e.total) return;
     const t = ccEffectTime(e.secs);
-    ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, e.secs <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.95)', kk);
+    const n = /[mh]$/.test(t) ? t.length - 1 : t.length, hot = e.secs <= 10;   // the number bright, its unit (m, h) dimmer
+    ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, i => i < n ? (hot ? '#ffb0a0' : '#ffffff') : (hot ? '#d08a80' : '#b8bec6'), 'rgba(0,0,0,0.95)', kk);
   };
   let top = CC.plate.mid - 2;
-  for (const [all, m] of [[red, 1.5], [green, 1]]) {
+  for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top
     const per = Math.floor(perRow / m);
     for (let r = 0; r * per < all.length; r++) {
       top -= rowH * m;
