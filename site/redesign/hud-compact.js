@@ -6,7 +6,7 @@
 // worn; under water), extend the raised hotbar band sideways over their wing only then, in a darker iron, as slim
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
-const CX = 172, BOTTOM = 50, TOPM = 66;
+const CX = 192, BOTTOM = 50, TOPM = 90;
 const CC_TANK = ['#c98a5a', '#7a3e1c', '#2e1206'];   // Create's backtank: copper   // TOPM: room above the bar for the game's text (item name, action bar)
 // Three floating plates: the centre (hotbar and XP band, -91..91) and a wing plate each side (±96..±165), 5 px apart. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
 // socket / the dodge roll (18), 4, the plate's edge.
@@ -191,7 +191,7 @@ function ccDashFiller(g, cx, cy) {
  *  dash (dial centre x), meka (gauge centre x) }. */
 function ccEnds(s) {
   // Orb mode: the item tucks in close to the housing's curve (1.5 px) with 3 px of plate past it; meter mode: 4 and 4.
-  const G = s.orbs ? 1.5 : 4, E = s.orbs ? 3 : 4, inner = s.orbs ? ORB.rx + ORB.housing : 131, dialW = 14.6, slotW = 18;
+  const G = s.orbs ? 1.5 : 4, E = s.orbs ? 3 : 4, inner = s.orbs ? ORB.rx + ORB_H() : 131, dialW = 14.6, slotW = 18;
   const meka = !s.creative && s.mekasuit;
   const left = inner + G + (meka ? 3.4 : 0), right = inner + G;   // meka: its gauge's slot   // the vitals (left) side holds the gauge
   const leftW = s.leftHanded ? dialW : slotW, rightW = s.leftHanded ? slotW : dialW;
@@ -271,9 +271,9 @@ function ccPlate(g, ears = {}) {
   for (const [path, top] of [left, right, centre]) rim(g, path, top, b, P.brassHi, 0.35);
 }
 
-/** The whole action bar for a state; a canvas of logical 344 x 50. */
+/** The whole action bar for a state; a canvas of logical 2 CX x (BOTTOM + TOPM). */
 function compactHud(s, font) {
-  const [c, g] = hires(344, BOTTOM + TOPM);
+  const [c, g] = hires(2 * CX, BOTTOM + TOPM);
   g.translate(CX, TOPM);
   ccGameText(g, s, font);   // the game's own text above the bar (not ours; shown for spacing)
   if (s.spectator) return c;   // spectator: vanilla draws no hotbar or vitals (only its own menu when opened)
@@ -284,7 +284,7 @@ function compactHud(s, font) {
   const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = !s.creative && s.armor > 0, showBreath = !s.creative && (s.underwater || s.air < 1);
   const ends = CC.lay = ccEnds(s);
   ccPlate(g, { left: false, right: false,   // no raised tabs: bar mode puts armor and breath in a third row
-    inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB.housing : undefined });
+    inner: s.orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: s.orbs ? ORB.y - ORB_H() : undefined });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.

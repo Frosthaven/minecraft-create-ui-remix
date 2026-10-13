@@ -119,6 +119,9 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 
 ## Compact HUD (`site/redesign/hud-compact.html`, `hud-compact*.js`): in game via the mod (`mod/CLAUDE.md`, hud/)
 
+- Orbs are drawn at `ORB.S` (2) x their own units around (ORB.lx | ORB.rx, ORB.y) (`ccOrbScaled`); the hotbar keeps its
+  size. The housings (`ORB_H()`), wing ends and the effects rail use the scaled size. Plates export 372 x 66 at (-186, -15).
+
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
 level window centred on it; the vitals and mana either as two orbs in housings on the wing plates (default) or as three
 rows of bars per wing (client config "Meter display"). Shipping the page exports its textures (`hud-compact-export.js`,
@@ -144,7 +147,7 @@ mods that reuse vanilla hearts look vanilla.
 - Hardcore: a skull on a small floating plate above the offhand socket (no trims).
 - Breath and the backtank move smoothly in game (`Smooth`: eased between the game's steps; the tank time stays exact).
 - Statuses (`hud-compact-status.js`): heart effects recolour health (poison, wither, frozen); Hunger spoils the broth;
-  attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
+  attack cooldown shades the selected socket (attack indicator crosshair or hotbar; per frame); creative hides health, food, armor, air.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
   Nourishment and Comfort; MekaSuit energy; Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
   liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns, Immersive Armors steampunk
@@ -155,7 +158,7 @@ mods that reuse vanilla hearts look vanilla.
   line (6 debuffs), wrapping upward; each effect a 10 x 10 socket with a border draining clockwise from the top (green
   buff, red debuff) and its time left under it (45, 3m, 1h; red under 10 s; none when infinite).
 - Client config (`UiConfig`, Mods > Config in game): meter display Orbs | Bars (default Orbs), primary mana pool
-  Iron's | Ars, action bar size (1.1).
+  Iron's | Ars, action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
 

@@ -112,7 +112,7 @@ final class HudFrame {
         final boolean wide;
 
         Ends(boolean orbs, boolean mekaSlot, boolean lefty) {
-            double gap = orbs ? 1.5 : 4, end = orbs ? 3 : 4, inner = orbs ? OrbHud.RX + OrbHud.HOUSING : 131, dialW = 14.6, slotW = 18;
+            double gap = orbs ? 1.5 : 4, end = orbs ? 3 : 4, inner = orbs ? OrbHud.RX + OrbHud.HOUSING * OrbHud.S : 131, dialW = 14.6, slotW = 18;
             double left = inner + gap + (mekaSlot ? 3.4 : 0), right = inner + gap;
             double leftW = lefty ? dialW : slotW, rightW = lefty ? slotW : dialW;
             double span = Math.max(left + leftW, right + rightW);

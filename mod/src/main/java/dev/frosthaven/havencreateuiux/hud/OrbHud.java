@@ -13,7 +13,8 @@ import net.minecraft.client.gui.GuiGraphics;
  * in the page's order: bezel, ring, glass, liquids, divider, glass front, glow, effects, numbers.
  */
 final class OrbHud {
-    static final double R = 13, LX = -112, RX = 112, OY = 32.5, HOUSING = 15.5;
+    /** The orb in its own units (r, housing...), drawn S x around (LX | RX, OY): twice the hotbar's scale. */
+    static final double R = 13, LX = -127.5, RX = 127.5, OY = 17, HOUSING = 15.5, S = 2;
     private static final double TAU = Math.PI * 2, TOP = -Math.PI / 2;
 
     private OrbHud() {}
@@ -29,8 +30,36 @@ final class OrbHud {
     }
 
     static void draw(GuiGraphics g, HudFrame f) {
-        left(g, f);
-        right(g, f);
+        scaled(g, LX, () -> left(g, f));
+        scaled(g, RX, () -> right(g, f));
+        // Numbers and the tank's time at the bar's own scale (not doubled with the orb).
+        if (f.nums && f.hurtable) numbers(g, LX, new String[][] {
+                {Math.round(f.hp) + "/" + Math.round(f.maxHp), f.healthLiquid},
+                f.mount != null ? new String[] {Math.round(f.mountHp) + "/" + Math.round(f.mountMax), "mount"} : new String[] {f.food + "/20", "broth"}});
+        var pools = f.pools();
+        if (f.nums && !pools.isEmpty()) {
+            String[][] lines = new String[pools.size()][];
+            for (int i = 0; i < pools.size(); i++) {
+                var p = pools.get(i);
+                lines[i] = new String[] {Math.round(p.cur()) + "/" + Math.round(p.max()), p.name()};
+            }
+            numbers(g, RX, lines);
+        }
+        // The backtank's time, always on (players rely on it), above the right orb's housing.
+        if (f.showBreath && f.tank != null && f.tank[0] > 0) {
+            String t = HudFrame.mmss(f.tank[0]);
+            text(g, t, tx(RX) - textWidth(t, 0.6) / 2, ty(OY - HOUSING * S - 4.2), 0.6, tintV("tank"), tintV("black"));
+        }
+    }
+
+    /** Draws an orb S x around its centre (ox, OY). */
+    private static void scaled(GuiGraphics g, double ox, Runnable draw) {
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(tx(ox), ty(OY), 0);
+        pose.scale((float) S, (float) S, 1);
+        pose.translate(-tx(ox), -ty(OY), 0);
+        try { draw.run(); } finally { pose.popPose(); }
     }
 
     // ---- Left: health, food (or the mount), armor ----
@@ -53,9 +82,6 @@ final class OrbHud {
         glow(g, LX, LX - HOUSING, HOUSING, health);
         glow(g, LX, LX, HOUSING, food);
         effects(g, f, hp, f.mount != null);
-        if (f.nums) numbers(g, LX, new String[][] {
-                {Math.round(f.hp) + "/" + Math.round(f.maxHp), f.healthLiquid},
-                f.mount != null ? new String[] {Math.round(f.mountHp) + "/" + Math.round(f.mountMax), "mount"} : new String[] {f.food + "/20", "broth"}});
     }
 
     // ---- Right: the mana pools, the ring ----
@@ -85,20 +111,7 @@ final class OrbHud {
             orbCell(g, "front", cx, cy);
             glow(g, RX, RX - HOUSING, split ? HOUSING : 2 * HOUSING, a);
             if (split) glow(g, RX, RX, HOUSING, new Fill(pools.get(1).name(), pools.get(1).frac(), 0, 0));
-            if (f.nums) {
-                String[][] lines = new String[pools.size()][];
-                for (int i = 0; i < pools.size(); i++) {
-                    var p = pools.get(i);
-                    lines[i] = new String[] {Math.round(p.cur()) + "/" + Math.round(p.max()), p.name()};
-                }
-                numbers(g, RX, lines);
-            }
         } else orbCell(g, "front", cx, cy);
-        // The backtank's time, always on (players rely on it), above the right orb's housing.
-        if (f.showBreath && f.tank != null && f.tank[0] > 0) {
-            String t = HudFrame.mmss(f.tank[0]);
-            text(g, t, tx(RX) - textWidth(t, 0.6) / 2, ty(OY - HOUSING - 4.2), 0.6, tintV("tank"), tintV("black"));
-        }
     }
 
     /** Armor: ten bolted plates, the full ones (and a half one for an odd value), revealed by angle. */

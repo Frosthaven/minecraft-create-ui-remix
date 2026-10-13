@@ -81,7 +81,7 @@ not a spectator.
   centre, the bar's bottom at 50) times 8. Items at vanilla's exact spots (bottom - 19, centre - 88 + 20 i), so mods that
   mark hotbar slots line up. Sets `gui.leftHeight/rightHeight` to 33 for later layers. Key "Show HUD numbers (hold)",
   Left Alt by default (Controls); numbers also show while a screen is open. No dark mode on it (`HudLayers.MAIN`).
-- In game the whole bar (items included) is drawn at the config's size (`UiConfig.HUD_SCALE`, 1.1) around the screen's
+- In game the whole bar (items included) is drawn at the config's size (`UiConfig.HUD_SCALE`, 1.0) around the screen's
   bottom centre.
 - Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, MekaSuit gauge, floating plates,
   items), `HudFrame` (one frame's state, the wing ends), `OrbHud` (orb mode), `BarHud` (bar mode), `HudDraw` (blits,
@@ -91,7 +91,15 @@ not a spectator.
   HUD batching keeps the blend state (`RenderSystemState`).
 - Exhaustion: `FoodData.getExhaustionLevel()` (NeoForge): bars a hairline under food; orbs cracks in the food half,
   flakes when it drops (a point taken).
-- `CompactAtlas`: the textures' layout; KEEP IN STEP with `hud-compact-export.js`.
+- `CompactAtlas`: the textures' layout; KEEP IN STEP with `hud-compact-export.js`. `checkLayout` logs any overlap between
+  parts-atlas pieces once (a cell reaching into a neighbour draws a stray bit of it: the wing casing once sat inside the
+  selection cell and showed under the selected item).
+- `MipTexture`: the bar's textures load with 3 mip levels (alpha-weighted, transparent texels bled with their
+  neighbours' colour) and linear filtering. With vanilla's nearest sampling, 8x textures drawn at 1/8 skip texels at GUI
+  scale 2 to 4, so thin bright lines (rims, rivets, plate edges) showed as white specks. Logged once per texture.
+- `OrbHud`: the orbs at `S` (2) x around their centres (pose scale); numbers and the tank time at the bar's scale.
+- Attack cooldown: on the selected socket whenever the attack indicator is not OFF, from `getAttackStrengthScale(partial
+  tick)`; the indicator mode is logged on change.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
   (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank
   (persistent `VisualBacktankAir`, `BacktankUtil.maxAir` over `getAllWithAir`), by reflection: a missing mod hides its row.

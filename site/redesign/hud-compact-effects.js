@@ -80,7 +80,7 @@ function ccEffectsRail(g, s, icons) {
     const n = /[mh]$/.test(t) ? t.length - 1 : t.length, hot = e.secs <= 10;   // the number bright, its unit (m, h) dimmer
     ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, i => { const hue = hot ? '#ff3a2a' : e.kind === 'buff' ? '#3fd060' : '#ff5a4a'; return ccTint(hue); }, 'rgba(0,0,0,0.95)', kk);
   };
-  let top = CC.plate.mid - 2 - (s.orbs ? 4 : 0);   // with orbs, clear of the housings' domes
+  let top = s.orbs ? ORB.y - ORB_H() - 2 : CC.plate.mid - 2;   // with orbs, above the housings' domes
   for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top
     const per = Math.floor(perRow / m);
     for (let r = 0; r * per < all.length; r++) {

@@ -50,10 +50,12 @@ public final class CompactHud {
             id("immersive_armors", "ia_overlay"), id("artifacts", "helium_flamingo_charge"), id("artifacts", "artifact_cooldowns"),
             id("farmersdelight", "comfort"), id("farmersdelight", "nourishment"));
 
-    /** The bar's size in game (the config's "action bar size", 1.1 by default: its designed, vanilla-matched size
-     *  reads small on large screens). */
+    /** The bar's size in game (the config's "action bar size", 1.0 by default: the hotbar at vanilla's size). */
     public static float scale() { return (float) (double) UiConfig.HUD_SCALE.get(); }
 
+    /** Everything the bar draws from (mipmapped, {@link MipTexture}). */
+    private static final List<ResourceLocation> TEXTURES = List.of(PARTS, ORBS, plate(true, false), plate(true, true), plate(false, false), plate(false, true));
+    static { CompactAtlas.checkLayout(); }
     private static List<String> packIds = List.of();
     private static boolean present;
 
@@ -162,6 +164,7 @@ public final class CompactHud {
 
     private static void render(GuiGraphics g, DeltaTracker delta) {
         if (!active()) return;
+        MipTexture.install(TEXTURES);
         var pose = g.pose();
         pose.pushPose();
         try {
@@ -189,7 +192,7 @@ public final class CompactHud {
                 "mode: {}{}{}", f.hurtable ? "survival" : "creative (vitals hidden)", f.lefty ? ", left-handed (offhand on the right)" : "", f.hardcore ? ", hardcore (skull)" : "");
         // Mod extras, each read as the mod's own HUD reads it (HudExtras); null / -1 when absent or not showing.
         Float cast = HudExtras.ironsCast(), engine = HudExtras.aircraftEngine(p), train = HudExtras.trainSpeed();
-        Float attack = HudExtras.attackCharge(mc, p);
+        Float attack = HudExtras.attackCharge(mc, p, delta);
         boolean[] toolbox = HudExtras.toolboxSlots(p);
         int schematic = HudExtras.schematicSlot();
         HudLog.changed("extras", (cast != null) + "/" + (f.meka != null) + "/" + (f.hull != null) + "/" + (engine != null) + "/" + (train != null) + "/" + (f.flamingo != null) + "/" + (f.apple != null) + "/" + schematic,
@@ -230,7 +233,7 @@ public final class CompactHud {
         dash(g, f);
         instruments(g, mc, p, delta);
         if (f.hardcore) part(g, SKULL_U, 0, SKULL_W, SKULL_H, x(f.ends.offhand + 9 - 4.5), y(28 - 9 - 2.5));   // a skull above the offhand
-        HudEffects.draw(g, p, cx, bottom, scale, f.ends.x0 + 1, MID - 2 - (f.orbs ? 4 : 0));
+        HudEffects.draw(g, p, cx, bottom, scale, f.ends.x0 + 1, f.orbs ? OrbHud.OY - OrbHud.HOUSING * OrbHud.S - 2 : MID - 2);   // orbs: above the domes
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.

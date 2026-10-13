@@ -121,10 +121,13 @@ final class HudExtras {
         return BuiltInRegistries.ITEM.getKey(chest.getItem()).equals(ResourceLocation.fromNamespaceAndPath("immersive_armors", "steampunk_chestplate"));
     }
 
-    /** Vanilla: the attack strength 0..1 while recharging in "hotbar" indicator mode, or null. */
-    static Float attackCharge(Minecraft mc, Player p) {
-        if (mc.options.attackIndicator().get() != AttackIndicatorStatus.HOTBAR) return null;
-        float f = p.getAttackStrengthScale(0);
+    /** Vanilla: the attack strength 0..1 while recharging, or null. Shown on the selected socket whenever the attack
+     *  indicator is on (crosshair or hotbar: vanilla still draws its own at the crosshair), per frame (partial tick). */
+    static Float attackCharge(Minecraft mc, Player p, float delta) {
+        var mode = mc.options.attackIndicator().get();
+        HudLog.changed("attackIndicator", mode, "attack indicator: {} ({})", mode, mode == AttackIndicatorStatus.OFF ? "no cooldown on the selected socket" : "cooldown shades the selected socket");
+        if (mode == AttackIndicatorStatus.OFF) return null;
+        float f = p.getAttackStrengthScale(delta);
         return f < 1 ? f : null;
     }
 

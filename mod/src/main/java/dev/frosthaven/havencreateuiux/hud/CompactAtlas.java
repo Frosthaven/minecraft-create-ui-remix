@@ -13,7 +13,7 @@ final class CompactAtlas {
     static final int K = 8;   // texels per GUI pixel
     static final ResourceLocation PARTS = tex("parts"), ORBS = tex("orbs");
     static final int PARTS_SIZE = 256 * K, ORBS_W = 384 * K, ORBS_H = 320 * K;
-    static final int PLATE_W = 332 * K, PLATE_H = 34 * K, PLATE_X = -166 * K, PLATE_Y = (17 - 50) * K;
+    static final int PLATE_W = 372 * K, PLATE_H = 66 * K, PLATE_X = -186 * K, PLATE_Y = (-15 - 50) * K;
 
     static final List<String> WIN_ICONS = List.of("flask", "horse", "camel", "train", "engine");
     static final List<String> WING_LIQUIDS = List.of("blood", "poison", "wither", "frozen", "absorb", "broth", "hunger", "saturation",
@@ -34,11 +34,36 @@ final class CompactAtlas {
     static final int WINDOW_U = 78 * K, WINDOW_W = 10 * K, WINDOW_CAP = 2 * K, ICON_WIN_U = 90 * K;
     static final int WIN_ICON_U = 100 * K, WIN_ICON = 7 * K;
     static final int MEKA_CASE_U = 136 * K, MEKA_FILL_U = 140 * K, MEKA_W = 19, MEKA_H = 18 * K;   // 2.4 x 18
-    static final int WING_CASE_V = 20 * K, XP_CASE_V = 26 * K;
+    static final int WING_CASE_V = 236 * K, XP_CASE_V = 26 * K;   // the wing casing below everything: in rows 20..24 it
+    // sat inside the selection cell (20, 0, 24 x 23), which drew a piece of it under the selected item
     static final int WING_W = 32 * K, WING_H = 4 * K, XP_W = 177 * K, XP_H = 3 * K;
     static final int INSET = K / 2;   // the glass inside a casing
 
     private CompactAtlas() {}
+
+    /** Every piece of the parts atlas {x, y, w, h} (units), checked once for overlaps: a cell that reaches into its
+     *  neighbour draws a stray bit of it in game. */
+    private static final Object[][] PARTS_PIECES = {
+            {"socket", 0, 0, 18, 18}, {"selection", 20, 0, 24, 23}, {"offhand ghost", 46, 0, 18, 18}, {"skull plate", 66, 0, 9, 10},
+            {"level window", 78, 0, 10, 5}, {"icon window", 90, 0, 9, 7}, {"window icons", 100, 0, 35, 7}, {"MekaSuit casing", 136, 0, 3, 18},
+            {"MekaSuit fill", 140, 0, 3, 18}, {"XP casing", 0, 26, 177, 3}, {"wing liquids", 0, 30, 32, 80}, {"XP liquids", 0, 112, 177, 24},
+            {"digits 0.625", 0, 140, 56, 20}, {"glyphs 0.6", 180, 20, 39, 53}, {"glyphs 0.55", 180, 76, 39, 11},
+            {"follower plate", 0, 190, 24, 9}, {"gear row", 30, 190, 32, 12}, {"groove", 80, 190, 32, 4}, {"dash cog", 120, 190, 18, 18},
+            {"effect frames", 140, 190, 34, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
+            {"toolbox selection", 40, 210, 24, 23}, {"schematic frame", 66, 210, 18, 18}, {"instrument plate", 86, 210, 24, 9},
+            {"clock", 112, 210, 9, 9}, {"compass", 122, 210, 9, 9}, {"wing casing", 0, 236, 32, 4}};
+
+    static void checkLayout() {
+        for (int i = 0; i < PARTS_PIECES.length; i++) {
+            for (int j = i + 1; j < PARTS_PIECES.length; j++) {
+                Object[] a = PARTS_PIECES[i], b = PARTS_PIECES[j];
+                int ax = (int) a[1], ay = (int) a[2], bx = (int) b[1], by = (int) b[2];
+                if (ax < bx + (int) b[3] && bx < ax + (int) a[3] && ay < by + (int) b[4] && by < ay + (int) a[4]) {
+                    HudLog.once("overlap:" + a[0] + "/" + b[0], "atlas pieces overlap in parts.png: {} and {} (one draws a bit of the other)", a[0], b[0]);
+                }
+            }
+        }
+    }
 
     static ResourceLocation tex(String name) {
         return ResourceLocation.fromNamespaceAndPath("createhud", "textures/gui/compact/" + name + ".png");

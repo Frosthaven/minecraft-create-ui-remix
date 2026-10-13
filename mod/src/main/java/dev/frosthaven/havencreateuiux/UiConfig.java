@@ -29,7 +29,7 @@ public final class UiConfig {
         PRIMARY_MANA = b.comment("With both Iron's Spellbooks and Ars Nouveau installed: the mana pool shown first (the orb's left half, the top bar).")
                 .translation("haven_create_ui_ux.config.primary_mana").defineEnum("primaryMana", PrimaryMana.IRONS);
         HUD_SCALE = b.comment("The action bar's size, relative to the GUI scale.")
-                .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.1, 0.5, 2.0);
+                .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.0, 0.5, 2.0);
         b.pop();
         b.push("mobBars");
         MOB_BARS = b.comment("Floating health bars above nearby mobs.")

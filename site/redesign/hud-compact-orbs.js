@@ -7,9 +7,14 @@
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
 const ORB = { tex: 0.67, housing: 15.5,   // housing: the housing's radius (r + bezel + 1.4: a dome hugging the orb)
     // tex: the orbs' texture strength (a third less than first drawn)
-  r: 13, y: 32.5, lx: -112, rx: 112, innerEnd: 97.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
+  S: 2,   // the orbs are drawn at S x their own units (r, housing, bezel...) around (lx|rx, y): twice the hotbar's scale
+  r: 13, y: 17, lx: -127.5, rx: 127.5, innerEnd: 97.6, pull: 8,   // innerEnd: the wing plates' inner ends, past the
   // housings (5 px from the centre plate); pull: how far the wings moved in from their meter-bar layout
-  bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
+  bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)
+/** The housing's radius on the bar (scaled). */
+const ORB_H = () => ORB.housing * ORB.S;
+/** Draw f scaled S x around the orb at (cx, ORB.y). */
+function ccOrbScaled(g, cx, f) { g.save(); g.translate(cx, ORB.y); g.scale(ORB.S, ORB.S); g.translate(-cx, -ORB.y); f(); g.restore(); }
 
 /** One orb at (cx, cy): fill {frac, liq, style, wave, t, sat} (sat: the saturation level, food only), over {from, to,
  *  liq} (absorption, above the fill), crescent (the right half's pool, as fill), ring {frac, on, smooth}. Drawn from
@@ -324,7 +329,7 @@ function ccNebula() {
  *  iron and texture, so they read as one casting), its brass rim continuing over the top where it rises above the
  *  plate, and a dark seat line where the orb sits recessed. Drawn after the plate, before the orb. */
 function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the right, -1 to the left
-  const R = ORB.housing, wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
+  const R = ORB_H(), S = ORB.S, wing = CC.plate.wing, b = BOTTOM, f = 3;   // f: the fillets' radius
   // The boss's outline above the plate: the plate's top edge, a concave fillet into the circle, over the top, a fillet
   // back down to the edge, so the outline flows from the straight edge into the curve without a corner.
   const fy = wing - f, dy = fy - cy, dx = Math.sqrt((R + f) ** 2 - dy ** 2);
@@ -349,8 +354,8 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
   outline(false); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.6; g.stroke();   // an even dark edge (no shifted shadow: it read as a flat top)
   rim(g, () => outline(false), cy - R, cy + R, P.brassHi, 0.35);
   // The seat: a recessed groove the orb's bezel drops into.
-  circle(g, cx, cy, ORB.r + ORB.bezel + 0.4); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.7; g.stroke();
-  g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 0.8); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
+  circle(g, cx, cy, (ORB.r + ORB.bezel + 0.4) * S); g.strokeStyle = 'rgba(0,0,0,0.75)'; g.lineWidth = 0.7 * S; g.stroke();
+  g.save(); g.translate(0, 0.45 * S); circle(g, cx, cy, (ORB.r + ORB.bezel + 0.8) * S); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3 * S; g.stroke(); g.restore();
 }
 
 /** The dodge roll dial at (cx, cy): a stone-rimmed glass with the dash chevrons in the tier colour, and around the rim a
@@ -424,13 +429,16 @@ function ccOrbs(g, s) {
       : { frac: s.food / 20, liq: s.hunger ? LIQUID.hunger : LIQUID.broth, style: 'broth',
           wave: s.food <= 6 ? 0.35 : 0, t: s.t, sat: s.food > 0 ? Math.min(s.saturation, s.food) / 20 : 0 };   // low food (no sprinting): the broth sloshes too
     const low = s.health <= 4;   // vanilla shakes the hearts here; the orb's liquid sloshes instead
-    ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.35 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
-      crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
+    ccOrbScaled(g, ORB.lx, () => {
+      ccOrb(g, ORB.lx, ORB.y, { fill: { frac: hp, liq, style: 'cloud', wave: low ? 0.35 : 0, t: s.t }, over: s.absorb ? { from: hp, to: hp + s.absorb / max, liq: LIQUID.absorb } : null,
+        crescent: food, ring: s.armor > 0 ? { frac: Math.min(1, s.armor / 20), on: ['#eef1f4', '#9aa0a6', '#3a3d41'] } : null,
+      });
+      ccOrbFx(g, s, ORB.lx, ORB.y, hp, max, riding);
     });
-    ccOrbFx(g, s, ORB.lx, ORB.y, hp, max, riding);
-    CC.hit.orbL = [ORB.lx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
+    const hr = ORB.r * ORB.S;
+    CC.hit.orbL = [ORB.lx - hr, ORB.y - hr, 2 * hr, 2 * hr];
     if (showNums) ccOrbNumbers(g, ORB.lx, ORB.y, [[Math.round(s.health), max, liq[1]], riding ? [s.mount, s.mountMax, CC_MOUNT[1]] : [s.food, 20, LIQUID.broth[1]]]);
-  } else ccHousingCog(g, ORB.lx, ORB.y);   // creative: a cog pressed into the housing's face
+  } else ccOrbScaled(g, ORB.lx, () => ccHousingCog(g, ORB.lx, ORB.y));   // creative: a cog pressed into the housing's face
   // Right: the mana pools (primary the liquid, the other the crescent), breath as the ring under water.
   const pools = [['irons', s.irons, MANA.irons, 200], ['ars', s.ars, MANA.ars, 150]].filter(p => p[1] != null);
   if (s.manaPrimary === 'ars') pools.reverse();
@@ -440,14 +448,15 @@ function ccOrbs(g, s) {
     : s.flamingo != null ? { frac: s.flamingo, on: CC_FLAMINGO, smooth: true }
     : s.aircraft ? { frac: s.hull, on: CC_HULL, smooth: true } : null;
   if (pools.length) {
-    ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring });
-    CC.hit.orbR = [ORB.rx - ORB.r, ORB.y - ORB.r, 2 * ORB.r, 2 * ORB.r];
+    ccOrbScaled(g, ORB.rx, () => ccOrb(g, ORB.rx, ORB.y, { fill: { frac: pools[0][1], liq: pools[0][2], style: 'mana' }, crescent: pools[1] ? { frac: pools[1][1], liq: pools[1][2], style: 'mana' } : null, ring }));
+    const hr = ORB.r * ORB.S;
+    CC.hit.orbR = [ORB.rx - hr, ORB.y - hr, 2 * hr, 2 * hr];
     if (showNums) ccOrbNumbers(g, ORB.rx, ORB.y, pools.map(p => [Math.round(p[1] * p[3]), p[3], p[2][1]]));
-  } else if (ring) ccOrb(g, ORB.rx, ORB.y, { ring });   // no mana mod: an empty orb still carries the ring
-  else ccHousingCog(g, ORB.rx, ORB.y);                 // no mana mod: a cog pressed into the housing's face
+  } else if (ring) ccOrbScaled(g, ORB.rx, () => ccOrb(g, ORB.rx, ORB.y, { ring }));   // no mana mod: an empty orb still carries the ring
+  else ccOrbScaled(g, ORB.rx, () => ccHousingCog(g, ORB.rx, ORB.y));                 // no mana mod: a cog pressed into the housing's face
   // The backtank's time, always on (players rely on it), just above the right orb's housing.
   if (breath && tank > 0) {
     const t = `${Math.floor(Math.ceil(tank) / 60)}:${String(Math.ceil(tank) % 60).padStart(2, '0')}`;
-    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y - ORB.housing - 4.2, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6);   // above the housing's dome
+    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y - ORB_H() - 4.2, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6);   // above the housing's dome
   }
 }

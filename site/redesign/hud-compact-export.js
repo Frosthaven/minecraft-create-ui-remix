@@ -1,14 +1,15 @@
 // Compact HUD textures for the game (createhud:textures/gui/compact/*), drawn by the same functions as the page so
 // the game shows exactly the preview. haven-create-ui-ux's hud/ classes draw from them in 1/8 GUI px (one texel), so
 // every position here is a whole multiple of 1/8. KEEP IN STEP with CompactAtlas.java.
-//   plate_{bars,bars_meka,orbs,orbs_meka}: 332 x 34 at (-166, 17) of the bar (bottom at 50). Orbs: with the housings.
+//   plate_{bars,bars_meka,orbs,orbs_meka}: 372 x 66 at (-186, -15) of the bar (bottom at 50). Orbs: with the housings
+//     (the orbs are drawn at ORB.S x, so their domes rise to y -14).
 //     _meka: the left wing widened for the MekaSuit gauge's slot (right-handed only; ccEnds).
 //   parts (256 x 256):
 //     (0, 0) socket 18x18; (20, 0) selection 24x23; (46, 0) offhand ghost 18x18; (66, 0) the hardcore skull plate 9x10
 //     (shadow included); (78, 0) the level window 10 x 4.6 (caps 2 | middle | 2); (90, 0) the icon window 9x7;
 //     (100 + 7 k, 0) window icons 7x7 (icon 5 tall, centred): flask, horse, camel, train, engine;
 //     (136, 0) MekaSuit gauge casing 2.4 x 18, (140, 0) its fill.
-//     (0, 20) wing casing 32x4; (0, 26) XP casing 177x3.
+//     (0, 236) wing casing 32x4 (clear of the selection cell's rows 0..23); (0, 26) XP casing 177x3.
 //     (0, 30 + 5 k) full wing meters (the game crops their inner 0.5-inset area), WING_LIQUIDS;
 //     (0, 112 + 4 k) full XP pipes, XP_LIQUIDS.
 //     (0, 140 + 4 r) digits "0123456789/:+smh" at 0.625, 3.5 apart (m is 5 wide): white, dim, green, black, red.
@@ -107,10 +108,10 @@ function ccxOrbs() {
 function compactExports() {
   const files = [];
   for (const [name, orbs, meka] of [['bars', false, false], ['bars_meka', false, true], ['orbs', true, false], ['orbs_meka', true, true]]) {
-    const [c, g] = hires(332, 34);
-    g.translate(166, -17);
+    const [c, g] = hires(372, 66);
+    g.translate(186, 15);
     const ends = ccEnds({ orbs, mekasuit: meka ? 1 : 0 });
-    ccPlate(g, { inner: orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: orbs ? ORB.y - ORB.housing : undefined });
+    ccPlate(g, { inner: orbs ? ORB.innerEnd : 0, x0: ends.x0, x1: ends.x1, gradTop: orbs ? ORB.y - ORB_H() : undefined });
     if (orbs) { ccHousing(g, ORB.lx, ORB.y, 1); ccHousing(g, ORB.rx, ORB.y, -1); }
     files.push(['createhud: compact/plate_' + name, c]);
   }
@@ -125,7 +126,7 @@ function compactExports() {
   CCX.winIcons.forEach((n, k) => ccIcon(g, ccxIcon(n), 100 + 7 * k + 3.5, 3.5, CC_LEVEL.icon));
   ccMekaCasing(g, 136, 0); ccMekaFill(g, 140, 0);
   const MW = CC.meterW;
-  ccMeter(g, 0, 20, MW, 4, 0, CCX_LIQ.blood, 10);
+  ccMeter(g, 0, 236, MW, 4, 0, CCX_LIQ.blood, 10);
   ccMeter(g, 0, 26, CC.xp.x1 - CC.xp.x0, CC.xp.h, 0, CCX_LIQ.xp, 18);
   // Full meters: the liquid with its style but without the parts that move with the level (mana stars, broth
   // bubbles: the game draws those), the segment lines over it.
