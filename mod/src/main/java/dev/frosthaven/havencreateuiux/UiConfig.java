@@ -26,7 +26,7 @@ public final class UiConfig {
         HUD_SCALE = b.comment("The action bar's size, relative to the GUI scale.")
                 .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.0, 0.5, 2.0);
         SIDE_SCALE = b.comment("The side bars' size (orbs or meters, the offhand, the dash), relative to their design; they stay attached to the action bar.")
-                .translation("haven_create_ui_ux.config.side_scale").defineInRange("sideScale", 1.0, 0.5, 2.0);
+                .translation("haven_create_ui_ux.config.side_scale").defineInRange("sideScale", 1.0, 0.6, 2.0);
         b.pop();
         SPEC = b.build();
     }

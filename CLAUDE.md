@@ -125,7 +125,7 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
   a separate parts piece so the plate does not depend on the hand). The hotbar, XP pipe and centre plate keep their
   size. Plates export 424 x 66 at (-212, -15).
 - Sizes: config "Action bar size" scales everything around the bottom centre; "Side bars size" scales each wing
-  around (±`CC_SIDE` 93.5, the bottom), so the wings stay attached (page buttons Side size / Bar size).
+  around (±`CC_SIDE` 93.5, the bottom), so the wings stay attached (page buttons Side size / Bar size). Side bars size is 0.6 to 2: below 0.6 the joint dips into the left dome.
 - Exhaustion: orbs: a soft screen-blended crescent glow on the food half's edge, full at 0 and draining from the top
   as exhaustion rises, refilling smoothly at the reset; bars: a slim solid strip under the food meter (`CC_EXH_STRIP`:
   0.5 below it, 0.6 tall, the meter's length, muted tan on a dark track), draining from the right. Numbers on the orbs and meters are doubled with them; the level digits are 0.85, effect times 1.5x.
