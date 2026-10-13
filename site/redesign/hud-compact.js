@@ -11,16 +11,16 @@ const CX = 172, BOTTOM = 50;
 // (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
 const GAP = 4;
 const CC = {
-  plate: { x0: -165, x1: 165, wing: 26, mid: 21, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
+  plate: { x0: -165, x1: 165, wing: 26, mid: 19.4, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
   slot: i => [-89 + 20 * i, 29],          // socket top left (item at +1); centred on x 0
   offhand: [-161, 29],
   rows: [32.5, 39.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 38)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 93 },           // magic: Iron's mana, Ars mana (breath extends the band above)
-  ext: { l: [-140, -85], r: [85, 140], y: 22.6, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
+  ext: { l: [-140, -85], r: [85, 140], y: 21, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 29],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 22.6, h: 3.2, x0: -84, x1: 84 },   // the level window, then the pipe (inside the section)
+  xp: { y: 21, h: 3.2, x0: -84, x1: 84 },   // 1.6 under the band's top, 1.8 above the wings   // the level window, then the pipe (inside the section)
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
