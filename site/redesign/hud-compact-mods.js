@@ -11,6 +11,8 @@
 //   Artifacts: Helium Flamingo charge (a row on the right column) takes the right extension; item cooldown icons (right
 //     of the hotbar in vanilla, over our wing) and Immersive Armors' steampunk clock and compass (either side of the
 //     hotbar, over our wings) move to a small instrument plate above the bar, shown only while there is one.
+//   Haven Link (our server mod): web map viewers following you; Haven Link tells you in chat ("[Web] Name is following
+//     you on the web map" / "... stopped following ..."); the client counts them: a ghost and the count on the plate.
 
 const CC_MEKA = ['#c8ffd8', '#3fcf7a', '#0e4a26'];       // Mekanism energy
 const CC_HULL = ['#e8eef4', '#8a9aa8', '#2a323a'];        // aircraft hull
@@ -54,15 +56,25 @@ function ccDial(g, cx, cy, r, a, kind) {
 /** The instrument plate above the bar: steampunk clock and compass, then Artifacts cooldown icons. Only when needed. */
 function ccInstruments(g, s) {
   const items = [];
+  if (s.followers) items.push('ghost');
   if (s.steampunk) items.push('clock', 'compass');
   for (const cd of s.artifactCooldowns || []) items.push(cd);
   if (!items.length) return;
-  const cell = 9, w = items.length * cell + 3, h = 9, x = -w / 2, y = CC.plate.mid - h - 2.5, r = CC.plate.r;
+  const cellW = it => it === 'ghost' ? 9 + ccNumberWidth(String(s.followers), 0.625) + 1 : 9;
+  const cell = 9, w = items.reduce((a, it) => a + cellW(it), 0) + 3, h = 9, x = -w / 2, y = CC.plate.mid - h - 2.5, r = CC.plate.r;
   const plate = () => rrect(g, x, y, w, h, r);
   g.save(); g.translate(0, 0.6); plate(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill(); g.restore();
   plate(); g.fillStyle = iron(g, y, y + h); g.fill(); ironSurface(g, plate); rim(g, plate, y, y + h, P.brassHi, 0.35);
-  items.forEach((it, i) => {
-    const cx = x + 2 + cell * i + cell / 2 - 0.5, cy = y + h / 2;
+  let cur = x + 2;
+  items.forEach((it) => {
+    const cx = cur + cell / 2 - 0.5, cy = y + h / 2; cur += cellW(it);
+    if (it === 'ghost') {   // a pale ghost (web map viewers) and how many
+      g.beginPath(); g.moveTo(cx - 2.6, cy + 3); g.lineTo(cx - 2.6, cy - 0.6); g.arc(cx, cy - 0.6, 2.6, Math.PI, 0); g.lineTo(cx + 2.6, cy + 3);
+      for (let k = 0; k < 3; k++) { const bx = cx + 2.6 - (k + 0.5) * (5.2 / 3); g.lineTo(bx, cy + 2.1); g.lineTo(bx - 5.2 / 6, cy + 3); }
+      g.closePath(); g.fillStyle = 'rgba(220,235,255,0.92)'; g.fill();
+      g.fillStyle = '#152030'; g.fillRect(cx - 1.4, cy - 1.2, 0.8, 1.1); g.fillRect(cx + 0.6, cy - 1.2, 0.8, 1.1);
+      return ccNumber(g, String(s.followers), cx + 4, cy - 1.6, '#dcebff', 'rgba(0,0,0,0.8)', 0.625);
+    }
     if (it === 'clock') return ccDial(g, cx, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
     if (it === 'compass') return ccDial(g, cx, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
     // An artifact on cooldown: its icon (placeholder gem) in a small well, shaded by what is left of the cooldown.

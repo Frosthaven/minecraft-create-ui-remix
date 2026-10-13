@@ -135,6 +135,13 @@ it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws 
   preview (what held food restores) pulses past the fill; riding swaps food for the mount's health (horse icon) and a
   the XP pipe is shared: a charging spell (Iron's), a
   camel's dash cooldown and a jump charge take it over, the level window showing their icon; attack cooldown (hotbar mode) shades the selected socket; creative hides health, food, armor, air.
+- Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
+  Nourishment (gilded broth) and Comfort (health sheen); MekaSuit energy (second pipe in the armor extension);
+  Immersive Aircraft hull (right extension) and engine (XP pipe); Create train speed (XP pipe), toolbox slots (red
+  liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo (right extension) and cooldowns, Immersive
+  Armors steampunk clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the
+  bar. Followers come from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped
+  following"): followers already watching at login are missed until Haven Link sends the current list on join.
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
   while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
   screen is open.
