@@ -9,6 +9,7 @@ instance="${1:-$HOME/.local/share/PrismLauncher/instances/Create Ultimate Select
 (cd "$here/mod" && JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}" ./gradlew build -q --no-configuration-cache)
 rm -f "$instance"/mods/createdarkinventory-*.jar
 cp "$here"/mod/build/libs/createdarkinventory-*.jar "$instance/mods/"
+rm -rf "$instance/resourcepacks/DarkModeEverywhere-Veil-Fix"   # merged into Create-HUD
 for pack in "$here"/resourcepacks/*/; do
   name="$(basename "$pack")"
   rm -rf "$instance/resourcepacks/$name"

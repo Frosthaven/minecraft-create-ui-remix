@@ -1,6 +1,0 @@
-{
-  "pack": {
-    "pack_format": 34,
-    "description": "Dark Mode Everywhere shaders without bodiless function declarations, so Veil's shader processor can parse them"
-  }
-}

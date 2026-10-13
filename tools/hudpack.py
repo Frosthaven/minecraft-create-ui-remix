@@ -3,7 +3,8 @@ textures, the player's inventory and the Sophisticated Backpacks screens.
 
     python3 -I tools/hudpack.py    (with the site served on 127.0.0.1:18777)
 
-Writes the repo's resourcepacks/Create-HUD from scratch (the pages are the source; nothing is edited by hand there).
+Writes the repo's resourcepacks/Create-HUD from scratch (the pages are the source; nothing is edited by hand there),
+plus the hand-written files in tools/pack-static (Dark Mode Everywhere's shaders fixed for Veil).
 ./install.sh copies it into the instance, tools/release.sh into the release zip.
 
 All textures are R x (8) the originals; every user scales UVs by the logical size (the GUI sprite atlas, vanilla's
@@ -47,12 +48,16 @@ for name, b64 in files:
     with open(out, 'wb') as f:
         f.write(base64.b64decode(b64))
 
+# Static files: Dark Mode Everywhere's two core shaders without bodiless function declarations, so Veil's shader
+# processor can parse them (this pack must be at the top of the pack list to win over DME's own).
+shutil.copytree(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pack-static', 'assets'), os.path.join(pack, 'assets'), dirs_exist_ok=True)
+
 # The search box's hint (Sophisticated Core writes U+1F50D): our glyph, merged into the default font by a bitmap provider.
 os.makedirs(os.path.join(pack, 'assets/minecraft/font'), exist_ok=True)
 with open(os.path.join(pack, 'assets/minecraft/font/default.json'), 'w', encoding='utf-8') as f:
     json.dump({'providers': [{'type': 'bitmap', 'file': 'createhud:font/search.png', 'ascent': 7, 'height': 8, 'chars': ['\U0001F50D']}]}, f, ensure_ascii=False, indent=2)
 with open(os.path.join(pack, 'pack.mcmeta'), 'w') as f:
-    json.dump({'pack': {'pack_format': 34, 'description': 'Create GUI: dark steampunk HUD, inventory and backpacks'}}, f, indent=2)
+    json.dump({'pack': {'pack_format': 34, 'description': 'Create UI Remix: action bar, inventory, backpacks, Dark Mode Everywhere fix for Veil'}}, f, indent=2)
 print(f'{len(files)} files in {pack}')
 for name, _ in files:
     print(' ', target(name))

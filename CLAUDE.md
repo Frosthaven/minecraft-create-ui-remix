@@ -272,8 +272,9 @@ mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
 - `resourcepacks/Create-HUD`: **generated**, never edited by hand. `python3 -I tools/hudpack.py` (site served)
   rewrites it from the file lists of the HUD page (the meter set; it records its count in `#sheet[data-count]`),
   Inventory and Backpack pages. Every user scales UVs by the logical size, so 8x textures work.
-- `resourcepacks/DarkModeEverywhere-Veil-Fix`: DME's two core shaders without bodiless function declarations,
-  so Veil's shader processor can parse them. Must stay at the top of the pack order.
+- `tools/pack-static/`: hand-written pack files that `hudpack.py` copies into Create-HUD: DME's two core shaders
+  without bodiless function declarations, so Veil's shader processor can parse them (was its own pack,
+  DarkModeEverywhere-Veil-Fix). So Create-HUD must stay at the top of the pack order.
 - `mod/`: Create Dark Inventory, the DME fixes (its own `mod/CLAUDE.md`).
 - `./install.sh [instance/minecraft]`: builds the mod, copies it and both packs into the Prism instance.
 - `tools/release.sh`: `dist/create-ui-remix.zip` with `mods/` (our jar, DME from Modrinth checked against
