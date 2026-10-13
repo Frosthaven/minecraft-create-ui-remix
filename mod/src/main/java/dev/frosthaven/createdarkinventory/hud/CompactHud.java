@@ -211,8 +211,8 @@ public final class CompactHud {
         }
 
         // Left wing: health (effects, absorption, damage flash, shake at 4 or less), then food or the mount's health.
-        int lx = x(-131), rx = x(93), row0 = y(33.5), row1 = y(40.5);
-        if (!hurtable) gears(g, x(-116), y(39));   // creative: the vitals wing's pressed-in gears
+        int lx = x(-131), rx = x(99), row0 = y(33.5), row1 = y(40.5);
+        if (!hurtable) gears(g, x(-119), y(39));   // creative: the vitals wing's pressed-in gears
         if (hurtable) {
             float max = p.getMaxHealth(), hp = p.getHealth(), abs = p.getAbsorptionAmount();
             String eff = p.hasEffect(MobEffects.POISON) ? "poison" : p.hasEffect(MobEffects.WITHER) ? "wither" : p.isFullyFrozen() ? "frozen" : null;
@@ -252,7 +252,7 @@ public final class CompactHud {
         HudLog.changed("mana", (irons != null) + "/" + (ars != null), "mana mods: Iron's Spellbooks {}, Ars Nouveau {}",
                 irons != null ? "found (" + (int) irons[0] + "/" + (int) irons[1] + ")" : "not found", ars != null ? "found (" + (int) ars[0] + "/" + (int) ars[1] + ")" : "not found");
         // No mana mod: gears pressed into the wing; one: the other row is an empty groove.
-        if (irons == null && ars == null) gears(g, x(116), y(39));
+        if (irons == null && ars == null) gears(g, x(119), y(39));
         if (irons != null) {
             icon(g, wingIconU("flask"), WING_ICON_V, x(136), y(35.5));
             meter(g, rx, row0, false, "irons", irons[0] / Math.max(1, irons[1]));

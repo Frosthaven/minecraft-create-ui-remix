@@ -7,17 +7,18 @@
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
 const CX = 172, BOTTOM = 50, TOPM = 66;   // TOPM: room above the bar for the game's text (item name, action bar)
-// Horizontal rhythm: one gap (GAP) between every group, out from the centred hotbar (sockets x -89..89): meters
-// (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
+// Three plates bolted together: the centre (hotbar and XP band, -91..91), a wing plate each side (±96..±165), the
+// 5 px gaps bridged by riveted steel straps. In a wing, out from the gap: meter (32), 2, icon (6), 4, the offhand
+// socket / the dodge roll (18), 4, the plate's edge.
 const GAP = 4;
 const CC = {
-  plate: { x0: -165, x1: 165, wing: 28, mid: 21.4, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
+  plate: { x0: -165, x1: 165, wing: 28, mid: 21.4, step: 8, r: 2.5, sec: 91, inner: 96 },   // sec: the centre plate's half width; inner: the wings' inner edges
   slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
   offhand: [-161, 30],
-  rows: [33.5, 40.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 39)
+  rows: [33.5, 40.5], meterH: 4, meterW: 32, icon: 5.6,   // centred on the sockets' middle (y 39)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
-  right: { iconC: 136, x: 93 },           // magic: Iron's mana, Ars mana (breath extends the band above)
-  ext: { l: [-140, -85], r: [85, 140], y: 23, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
+  right: { iconC: 136, x: 99 },           // magic: Iron's mana, Ars mana (breath extends the band above)
+  ext: { l: [-140, -96], r: [96, 140], y: 23, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
   xp: { y: 23, h: 3.2, x0: -84, x1: 84 },   // 1.6 under the band's top, 1.8 above the wings   // the level window, then the pipe (inside the section)
@@ -158,41 +159,52 @@ function ccDashFiller(g, cx, cy) {
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
-  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM;
-  // The top edge as level runs [x from, x to, y], joined by S curves: the raised band (the hotbar section, plus any
-  // extension over a wing) between the two wing runs.
-  const E = CC.ext, sec = CC.plate.sec, b0 = ears.left ? E.l[0] : -sec, b1 = ears.right ? E.r[1] : sec;
-  const runs = [[x0, b0 - step, wing], [b0, b1, mid], [b1 + step, x1, wing]];
-  const top = Math.min(...runs.map(q => q[2]));
-  const path = () => {
-    const [, , y0] = runs[0], yl = runs[runs.length - 1][2];
-    g.beginPath(); g.moveTo(x0, b - r); g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0);
-    runs.forEach(([, xe, y], i) => {
-      if (i === runs.length - 1) return;
-      const [xs, , ny] = runs[i + 1], k = (xs - xe) / 2;
-      g.lineTo(xe, y); g.bezierCurveTo(xe + k, y, xs - k, ny, xs, ny);
-    });
-    g.lineTo(x1 - r, yl); g.quadraticCurveTo(x1, yl, x1, yl + r); g.lineTo(x1, b - r);
-    g.quadraticCurveTo(x1, b, x1 - r, b); g.lineTo(x0 + r, b); g.quadraticCurveTo(x0, b, x0, b - r); g.closePath();
+  const { x0, x1, wing, mid, step, r, sec, inner } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
+  // One plate: a top edge of level runs [x from, x to, y] joined by S curves, rounded corners, its shadow, iron, a
+  // lit brass rim. Returns its path.
+  const plate = (runs) => {
+    const xa = runs[0][0], xb = runs[runs.length - 1][1], top = Math.min(...runs.map(q => q[2]));
+    const path = () => {
+      const y0 = runs[0][2], yl = runs[runs.length - 1][2];
+      g.beginPath(); g.moveTo(xa, b - r); g.lineTo(xa, y0 + r); g.quadraticCurveTo(xa, y0, xa + r, y0);
+      runs.forEach(([, xe, y], i) => {
+        if (i === runs.length - 1) return;
+        const [xs, , ny] = runs[i + 1], kk = (xs - xe) / 2;
+        g.lineTo(xe, y); g.bezierCurveTo(xe + kk, y, xs - kk, ny, xs, ny);
+      });
+      g.lineTo(xb - r, yl); g.quadraticCurveTo(xb, yl, xb, yl + r); g.lineTo(xb, b - r);
+      g.quadraticCurveTo(xb, b, xb - r, b); g.lineTo(xa + r, b); g.quadraticCurveTo(xa, b, xa, b - r); g.closePath();
+    };
+    g.save(); g.translate(0, -0.6); path(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
+    path(); g.fillStyle = iron(g, top, b); g.fill(); ironSurface(g, path);
+    return [path, top];
   };
-  g.save(); g.translate(0, -0.6); path(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
-  path(); g.fillStyle = iron(g, top, b); g.fill(); ironSurface(g, path);
-  // Extensions in a darker tone, bounded on the inside by the hotbar section's own S step (kept as the divider
-  // leading into the experience band), on the outside by the extension's S down to the wing.
-  const k = step / 2, ext = (o0, i0, dir) => {   // o0: outer run end, i0: the section's edge (±sec), dir: -1 left, 1 right
-    const oW = o0 + dir * step, iW = i0 + dir * step;
+  // A wing's raised tab (armor, breath) in a darker tone: from its outer S to the plate's inner edge.
+  const tab = (path, o0, edge, dir) => {
+    g.save(); path(); g.clip();
+    const oW = o0 + dir * step;
     g.beginPath(); g.moveTo(oW, wing); g.bezierCurveTo(oW - dir * k, wing, o0 + dir * k, mid, o0, mid);
-    g.lineTo(i0, mid); g.bezierCurveTo(i0 + dir * k, mid, iW - dir * k, wing, iW, wing); g.closePath();
-    g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
-    g.beginPath(); g.moveTo(i0, mid); g.bezierCurveTo(i0 + dir * k, mid, iW - dir * k, wing, iW, wing);
-    g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.5; g.stroke();
-    g.save(); g.translate(-dir * 0.4, 0); g.strokeStyle = 'rgba(244,216,152,0.35)'; g.lineWidth = 0.25; g.stroke(); g.restore();
+    g.lineTo(edge, mid); g.lineTo(edge, wing); g.closePath(); g.fillStyle = 'rgba(0,0,0,0.38)'; g.fill();
+    g.restore();
   };
-  g.save(); path(); g.clip();
-  if (ears.left) ext(E.l[0], -sec, -1);
-  if (ears.right) ext(E.r[1], sec, 1);
-  g.restore();
-  rim(g, path, top, b, P.brassHi, 0.35);
+  const left = plate(ears.left ? [[x0, E.l[0] - step, wing], [E.l[0], -inner, mid]] : [[x0, -inner, wing]]);
+  if (ears.left) tab(left[0], E.l[0], -inner, -1);
+  const right = plate(ears.right ? [[inner, E.r[1], mid], [E.r[1] + step, x1, wing]] : [[inner, x1, wing]]);
+  if (ears.right) tab(right[0], E.r[1], inner, 1);
+  const centre = plate([[-sec, sec, mid]]);
+  for (const [path, top] of [left, right, centre]) rim(g, path, top, b, P.brassHi, 0.35);
+  // The joints: riveted steel straps across each gap (a third at band height where a raised tab meets the centre).
+  for (const dir of [-1, 1]) {
+    const xs = [dir * (sec - 2.5), dir * (inner + 2)], xa = Math.min(...xs), xb = Math.max(...xs);   // clear of the meters
+    const ys = [34, 43.5].concat((dir < 0 ? ears.left : ears.right) ? [22.6] : []);
+    for (const y of ys) {
+      rrect(g, xa, y + 0.4, xb - xa, 3, 0.8); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fill();
+      const strap = () => rrect(g, xa, y, xb - xa, 3, 0.8);
+      strap(); g.fillStyle = vgrad(g, y, y + 3, [[0, '#8b9198'], [0.3, '#4a4f55'], [1, '#1c1e21']]); g.fill();
+      rim(g, strap, y, y + 3, '#d6dade', 0.25);
+      for (const bx of [xa + 1.5, xb - 1.5]) hexBolt(g, bx, y + 1.5, 0.95);
+    }
+  }
 }
 
 /** The whole action bar for a state; a canvas of logical 344 x 50. */

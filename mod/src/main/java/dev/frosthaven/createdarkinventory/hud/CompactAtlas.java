@@ -25,7 +25,7 @@ final class CompactAtlas {
 
     // Parts, in texels.
     static final int SOCKET_U = 0, SELECTION_U = 20 * K, GHOST_U = 46 * K, WINDOW_U = 66 * K, DASH_U = 80 * K;
-    static final int WING_W = 38 * K, WING_H = 4 * K, EXT_W = 38 * K, EXT_H = 26, XP_W = 157 * K, XP_H = 26;
+    static final int WING_W = 32 * K, WING_H = 4 * K, EXT_W = 32 * K, EXT_H = 26, XP_W = 157 * K, XP_H = 26;
     static final int WING_CASE_V = 50 * K, EXT_CASE_U = 40 * K, XP_CASE_V = 56 * K;
     static final int INSET = K / 2;   // the glass inside a casing
 
