@@ -156,6 +156,21 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.beginPath(); g.ellipse(cx - r * 0.32, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
+  // The liquids cast a slight glow onto the stone rim and anything on it (armor plates, rings): each half's colour,
+  // below its level, fading outward across the rim.
+  const glowHalf = (x0, w, f, liq) => {
+    if (!f || f.frac <= 0) return;
+    g.save();
+    g.beginPath(); g.arc(cx, cy, ORB.housing, 0, Math.PI * 2); g.arc(cx, cy, r - 0.2, 0, Math.PI * 2, true); g.clip('evenodd');
+    g.beginPath(); g.rect(x0, level(f.frac) - 1.5, w, cy + r + 4 - level(f.frac)); g.clip();
+    g.globalCompositeOperation = 'screen';
+    g.fillStyle = radial(g, cx, cy, ORB.housing, [[(r - 0.2) / ORB.housing, liq[1] + '44'], [1, liq[1] + '00']]);
+    g.fillRect(cx - ORB.housing, cy - ORB.housing, 2 * ORB.housing, 2 * ORB.housing);
+    g.restore();
+  };
+  const split2 = crescent != null;
+  glowHalf(cx - ORB.housing, split2 ? ORB.housing : 2 * ORB.housing, fill, fill && fill.liq);
+  if (split2) glowHalf(cx, ORB.housing, crescent, crescent.liq);
 }
 
 /** The health orb's status effects (the meters had them; same rules): the damage flash, Regeneration's rising light,
@@ -189,8 +204,14 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
   if (!riding && s.saturation > 0 && s.food > 0) {   // saturation: a lighter cream broth at the bottom of the food half,
     // up to its level (never past the food), as the bar's cream segments
     const ys = level(Math.min(s.saturation, s.food) / 20);
-    // A soft, mostly see-through cream tint over the broth below that level (no hard line), so it reads as part of it.
-    g.fillStyle = vgrad(g, ys - 1.5, ys + 2, [[0, 'rgba(255,240,215,0)'], [1, 'rgba(255,240,215,0.22)']]); g.fillRect(cx, ys - 1.5, r, cy + r - ys + 1.5);
+    // A solid layer with a clear top, a little lighter and paler than the broth (low contrast: it reads as richer broth).
+    const sl = LIQUID.broth.map(c => mixHex(c, '#ffe6c0', 0.16));
+    g.save(); g.beginPath(); g.rect(cx, ys, r, cy + r - ys); g.clip();
+    g.fillStyle = vgrad(g, cy - r, cy + r, [[0, sl[0]], [0.45, sl[1]], [1, sl[2]]]); g.fillRect(cx, ys, r, cy + r - ys);
+    surface(g, () => { g.beginPath(); g.rect(cx, ys, r, cy + r - ys); }, TEX.blotch, 0.4 * ORB.tex, 'overlay');
+    g.fillStyle = vgrad(g, ys, cy + r, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.3)']]); g.fillRect(cx, ys, r, cy + r - ys);
+    g.restore();
+    g.fillStyle = 'rgba(255,240,215,0.75)'; g.fillRect(cx, ys - 0.2, r, 0.4);   // its clear top
   }
   if (!riding && s.nourished && s.food > 0) {   // Nourishment: the broth keeps its level, glazed gold with slow sparkles
     const top = level(s.food / 20);
