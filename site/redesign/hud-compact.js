@@ -158,7 +158,8 @@ function ccDashFiller(g, cx, cy) {
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
-  const { x0, x1, wing, mid, step, r, sec, inner } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
+  const { x0, x1, wing, mid, step, r, sec } = CC.plate, b = BOTTOM, E = CC.ext, k = step / 2;
+  const inner = ears.inner || CC.plate.inner;   // the wings' inner ends (with orbs: just past the orb housings)
   // One plate: a top edge of level runs [x from, x to, y] joined by S curves, rounded corners, its shadow, iron, a
   // lit brass rim. Returns its path.
   const plate = (runs) => {
@@ -208,7 +209,7 @@ function compactHud(s, font) {
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
   const rightExt = showBreath && !s.orbs ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = (showArmor && !s.orbs) || (!s.creative && s.mekasuit);
-  ccPlate(g, { left: leftExt, right: !!rightExt });
+  ccPlate(g, { left: leftExt, right: !!rightExt, inner: s.orbs ? ORB.innerEnd : 0 });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
