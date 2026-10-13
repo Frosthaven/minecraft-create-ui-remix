@@ -145,8 +145,8 @@ mods that reuse vanilla hearts look vanilla.
   orb the mana pools (primary on the left half; one mod fills the orb), breath / the backtank / Helium Flamingo /
   aircraft hull as a smooth ring. Statuses in the glass: low health and food pulses in sync, sloshing waves, damage
   flash, Regeneration motes, a soft natural-heal pulse (health rises without Regeneration; also on the
-  bar health meter), Comfort glow, Nourishment glaze, AppleSkin previews (half strength), exhaustion as the
-  crescent glow above. Creative or no mana mod: a cog in the empty housing.
+  bar health meter), Comfort glow, Nourishment as a soft gold glow up to the food level, breathing over 2 s
+  (also on the bar food meter), AppleSkin previews (half strength), exhaustion as the crescent glow above. Creative or no mana mod: a cog in the empty housing.
 - Bars: no icons; left rows health, food (or the mount), armor; right rows breath (the backtank while it holds air,
   with its m:ss time) / Helium Flamingo / aircraft hull or a groove, then the mana pools (primary first; one mod: the
   last row a groove; none: gears). Liquids carry the orbs' looks (cloud, broth, galaxy at half strength); AppleSkin's

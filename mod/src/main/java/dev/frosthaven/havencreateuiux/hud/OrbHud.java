@@ -191,15 +191,11 @@ final class OrbHud {
                 if (Math.hypot(mx - LX, my - OY) < R) dot(g, tx(mx), ty(my), (0.35 + (i % 3) * 0.12) * K, argb(Math.sin(Math.PI * k) * 0.9, 0xFF78AF));
             }
         }
-        if (!riding && f.nourished && f.food > 0) {   // Nourishment: the broth glazed gold with slow sparkles, a gold surface
-            double top = level(f.food / 20.0);
-            discGradient(g, cx, cy, r, tx(gm), tx(gr), ty(top), ty(gb), ty(top), argb(0.28, 0xFFD75A), ty(gb), argb(0.1, 0xFFC83C));
-            for (int i = 0; i < 8; i++) {
-                double h = Math.sin((i + 3) * 47.3) * 43758.5453, u = h - Math.floor(h), v = h * 2.9 - Math.floor(h * 2.9);
-                double sx = gm + 0.6 + u * (R - 1.2), sy = top + 0.8 + v * (gb - top - 1.6);
-                discFill(g, cx, cy, r, tx(sx), tx(sx + 0.4), ty(sy), ty(sy + 0.4), argb(0.45 + 0.45 * Math.sin(t / 260.0 + i * 1.7), 0xFFF0A0));
-            }
-            discFill(g, cx, cy, r, tx(gm), tx(gr), ty(top - 0.15), ty(top + 0.35), argb(0.95, 0xFFDC6E));
+        if (!riding && f.nourished && f.food > 0) {   // Nourishment: a soft gold glow filling the food half up to its level, breathing
+            double top = level(f.food / 20.0), e = HudFrame.NOURISH_EDGE;
+            int gold = argb(f.nourishGlow(), HudFrame.NOURISH);
+            discGradient(g, cx, cy, r, tx(gm), tx(gr), ty(top), ty(top + e), ty(top), gold & 0xFFFFFF, ty(top + e), gold);
+            discFill(g, cx, cy, r, tx(gm), tx(gr), ty(top + e), ty(gb), gold);
         }
         if (f.comfort && f.saturation <= 0 && hp < 1) {   // Comfort: a slow pink glow rising through the health half's glass
             double y = gb + 4 - ((t / 2600.0) % 1) * (2 * R + 8);

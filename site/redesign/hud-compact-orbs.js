@@ -273,17 +273,10 @@ function ccOrbFx(g, s, cx, cy, hp, max, riding) {
       circle(g, x, y, 0.35 + (i % 3) * 0.12); g.fillStyle = `rgba(255,120,175,${a})`; g.fill();   // pink
     }
   }
-  if (!riding && s.nourished && s.food > 0) {   // Nourishment: the broth keeps its level, glazed gold with slow sparkles
-    const top = level(s.food / 20);
-    g.save(); g.beginPath(); g.rect(cx, top, r, cy + r - top); g.clip();
-    g.fillStyle = vgrad(g, top, cy + r, [[0, 'rgba(255,215,90,0.28)'], [1, 'rgba(255,200,60,0.1)']]); g.fillRect(cx, top, r, cy + r - top);
-    for (let i = 0; i < 8; i++) {
-      const h = Math.sin((i + 3) * 47.3) * 43758.5453, u = h - Math.floor(h), v = h * 2.9 - Math.floor(h * 2.9);
-      const a = 0.45 + 0.45 * Math.sin(s.t / 260 + i * 1.7);
-      g.fillStyle = `rgba(255,240,160,${a})`; g.fillRect(cx + 0.6 + u * (r - 1.2), top + 0.8 + v * (cy + r - top - 1.6), 0.4, 0.4);
-    }
-    g.restore();
-    g.fillStyle = 'rgba(255,220,110,0.95)'; g.fillRect(cx, top - 0.15, r, 0.5);   // a gold surface line
+  if (!riding && s.nourished && s.food > 0) {   // Nourishment: a soft gold glow filling the food half up to its level, breathing (CC_NOURISH)
+    const top = level(s.food / 20), a = ccNourishGlow(s), e = CC_NOURISH.edge;
+    g.fillStyle = vgrad(g, top, top + e, [[0, `rgba(${CC_NOURISH.rgb},0)`], [1, `rgba(${CC_NOURISH.rgb},${a})`]]); g.fillRect(cx, top, r, e);
+    g.fillStyle = `rgba(${CC_NOURISH.rgb},${a})`; g.fillRect(cx, top + e, r, cy + r - top - e);
   }
   if (s.comfort && s.saturation <= 0 && hp < 1) {   // shows alongside Regeneration's motes   // Comfort: a slow pink glow rising through the health half's whole glass
     const y = cy + r + 4 - ((s.t / 2600) % 1) * (2 * r + 8);

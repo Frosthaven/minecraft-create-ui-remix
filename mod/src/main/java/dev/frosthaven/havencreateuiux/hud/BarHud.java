@@ -79,15 +79,11 @@ final class BarHud {
             meter(g, f, LEFT_X, y1, liq, ff);
             span(g, LEFT_X, y1, "saturation", 0, Math.min(f.saturation, f.food) / 20.0);
             if (f.food <= 6) inner(g, LEFT_X, y1, ix + ffill, ix + iw, argb(warn(t), 0xDC7814));
-            if (f.nourished && ffill > 0) {   // Nourishment: a gold glaze, sparkles, a gold edge
-                inner(g, LEFT_X, y1, ix, ix + ffill, argb(0.28, 0xFFD75A));
-                for (int i = 0; i < 6; i++) {
-                    double hh = Math.sin((i + 3) * 47.3) * 43758.5453, u = hh - Math.floor(hh);
-                    double sx = ix + u * (ffill - 0.4), sy = y1 + MH * (0.25 + 0.5 * ((i * 0.37) % 1));
-                    use(g, FILL);
-                    g.fill(x(sx), (int) Math.round((sy - 50) * K), x(sx + 0.4), (int) Math.round((sy + 0.4 - 50) * K), argb(0.45 + 0.45 * Math.sin(t / 260.0 + i * 1.7), 0xFFF0A0));
-                }
-                inner(g, LEFT_X, y1, ix + ffill - 0.25, ix + ffill + 0.25, argb(0.95, 0xFFDC6E));
+            if (f.nourished && ffill > 0) {   // Nourishment: a soft gold glow up to the food level, breathing, its end faded
+                double a = f.nourishGlow(), e = Math.min(HudFrame.NOURISH_EDGE, ffill / 2), x1 = ix + ffill;
+                inner(g, LEFT_X, y1, ix, x1 - e, argb(a, HudFrame.NOURISH));
+                for (int i = 0; i < 4; i++)   // the fade in four steps (inner fills solid)
+                    inner(g, LEFT_X, y1, x1 - e + e * i / 4, x1 - e + e * (i + 1) / 4, argb(a * (1 - (i + 0.5) / 4), HudFrame.NOURISH));
             }
             if (f.apple != null && f.apple[0] > 0)   // AppleSkin: what the held food restores
                 inner(g, LEFT_X, y1, ix + ffill, ix + iw * Math.min(20, f.food + f.apple[0]) / 20.0, argb(0.35 + 0.25 * Math.sin(t / 160.0), 0xFFE6B4));

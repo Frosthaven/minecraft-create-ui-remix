@@ -56,19 +56,23 @@ function ccHealthFx(g, s, [x, y, w, h]) {
 }
 /** The shared warning pulse (low health, low food): one timing so they flash in sync. */
 function ccWarn(s) { return 0.12 + 0.12 * Math.sin(s.t / 220); }
-/** The food meter's effects, as on the orb: Nourishment's gold glaze, surface line and sparkles over the broth, and at
- *  6 food or less the empty glass pulsing amber. */
+/** Farmer's Delight Nourishment: a soft gold glow filling the food glass up to the food level (its top edge faded over
+ *  edge, inside the level), breathing slowly (period ms) at a low alpha so it is plain where it is. Returns the alpha now. The game:
+ *  HudFrame.nourishGlow. */
+const CC_NOURISH = { ms: 2000, base: 0.16, amp: 0.08, edge: 1.5, rgb: '255,210,90' };
+function ccNourishGlow(s) { return CC_NOURISH.base + CC_NOURISH.amp * Math.sin(2 * Math.PI * s.t / CC_NOURISH.ms); }
+/** The food meter's effects, as on the orb: Nourishment's breathing gold glow up to the food level with a soft edge,
+ *  and at 6 food or less the empty glass pulsing amber. */
 function ccFoodFx(g, s, [x, y, w, h]) {
   const fill = (w - 1) * Math.max(0, Math.min(1, s.food / 20));
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
   if (s.food <= 6) { g.fillStyle = `rgba(220,120,20,${ccWarn(s)})`; g.fillRect(x + 0.5 + fill, y, w - 1 - fill, h); }
   if (s.nourished && fill > 0) {
-    g.fillStyle = 'rgba(255,215,90,0.28)'; g.fillRect(x + 0.5, y, fill, h);
-    for (let i = 0; i < 6; i++) {
-      const hh = Math.sin((i + 3) * 47.3) * 43758.5453, u = hh - Math.floor(hh);
-      g.fillStyle = `rgba(255,240,160,${0.45 + 0.45 * Math.sin(s.t / 260 + i * 1.7)})`; g.fillRect(x + 0.5 + u * (fill - 0.4), y + h * (0.25 + 0.5 * ((i * 0.37) % 1)), 0.4, 0.4);
-    }
-    g.fillStyle = 'rgba(255,220,110,0.95)'; g.fillRect(x + 0.5 + fill - 0.25, y, 0.5, h);   // the gold surface edge
+    const a = ccNourishGlow(s), e = Math.min(CC_NOURISH.edge, fill / 2), x1 = x + 0.5 + fill;
+    g.fillStyle = `rgba(${CC_NOURISH.rgb},${a})`; g.fillRect(x + 0.5, y, fill - e, h);
+    const grad = g.createLinearGradient(x1 - e, 0, x1, 0);
+    grad.addColorStop(0, `rgba(${CC_NOURISH.rgb},${a})`); grad.addColorStop(1, `rgba(${CC_NOURISH.rgb},0)`);
+    g.fillStyle = grad; g.fillRect(x1 - e, y, e, h);
   }
   g.restore();
 }

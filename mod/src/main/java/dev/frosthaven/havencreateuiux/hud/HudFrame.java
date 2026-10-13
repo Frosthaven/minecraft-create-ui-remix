@@ -126,6 +126,12 @@ final class HudFrame {
         return healSince >= 0 && healSince < HEAL_MS ? Math.pow(Math.sin(Math.PI * healSince / HEAL_MS), 2) * HEAL_ALPHA : 0;
     }
 
+    /** Farmer's Delight Nourishment: the alpha of its soft gold glow up to the food level (top edge faded over
+     *  NOURISH_EDGE), breathing over 2 s (the page's ccNourishGlow). */
+    static final int NOURISH = 0xFFD25A;
+    static final double NOURISH_EDGE = 1.5;
+    double nourishGlow() { return 0.16 + 0.08 * Math.sin(2 * Math.PI * now / 2000.0); }
+
     static String mmss(float secs) {
         int s = (int) Math.ceil(secs);
         return s / 60 + ":" + String.format("%02d", s % 60);
