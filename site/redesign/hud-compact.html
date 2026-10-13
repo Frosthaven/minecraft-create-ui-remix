@@ -21,7 +21,10 @@
      a light sweep under Regeneration. Saturation shows as the first food segments in cream (vanilla's yellow outline); the Hunger effect spoils the broth; holding food shows what it would restore
      (AppleSkin). Riding swaps food for the mount's health and a charging jump turns the XP pipe into the jump gauge,
      as vanilla swaps them. A charging spell (Iron's) shows in its own small plate above the bar; the attack cooldown shades the
-     selected socket; creative hides the vitals. A Create backtank shows alone in the breath segment, a darker copper
+     selected socket; creative hides the vitals, spectator the whole bar. Health uses the real maximum (Max health 40), absorption
+     continues past it in gold; left-handed players get the offhand on the right; a camel's dash cooldown refills the
+     XP pipe in grey; AppleSkin's exhaustion is a hairline under the food glass. The held item's name (keys 1-9) and
+     action bar text appear where vanilla draws them, clear of the bar. A Create backtank shows alone in the breath segment, a darker copper
      meter with its time left always on it. Preview only: shipping it needs Create Dark Inventory to replace the HUD
      layers and draw this layout itself.</p>
 </header>
@@ -34,9 +37,12 @@
   <button id="effect" title="Cycle the heart effect">Effect: none</button><button id="hardcore" aria-pressed="false">Hardcore</button>
   <button id="regen" aria-pressed="false">Regeneration</button><button id="hunger" aria-pressed="false">Hunger effect</button>
   <button id="holdFood" aria-pressed="false" title="AppleSkin: what the held food would restore">Hold food</button>
-  <button id="riding" aria-pressed="false">Riding</button><button id="jump" title="Charge a mount jump (while riding)">Jump</button>
+  <button id="riding" title="Cycle: on foot, horse, camel">Riding: no</button><button id="dashBtn" title="Camel dash (while riding a camel)">Camel dash</button><button id="jump" title="Charge a mount jump (while riding)">Jump</button>
   <button id="castBtn" title="Iron's: charge a spell">Cast spell</button><button id="attack" title="Attack cooldown, hotbar mode">Attack</button>
-  <button id="creative" aria-pressed="false">Creative</button>
+  <button id="creative" aria-pressed="false">Creative</button><button id="spectator" aria-pressed="false">Spectator</button>
+  <button id="maxHp" aria-pressed="false" title="Health Boost or gear: 40 max health">Max health 40</button>
+  <button id="lefty" aria-pressed="false" title="Options: Main Hand: Left">Left-handed</button>
+  <button id="actionBar" aria-pressed="false" title="An action bar message (e.g. a jukebox's Now Playing)">Action bar text</button>
 </div>
 <div class="compare">
   <div class="scene" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
@@ -52,7 +58,9 @@
 <script>
 const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, underwater: false, tank: 0, tankMax: 900,
   effect: '', hardcore: false, regen: false, hurtAt: -1e9, hunger: false, holdFood: 0, riding: false, mount: 22, mountMax: 30,
-  jump: null, cast: null, attack: null, creative: false, t: 0 };
+  jump: null, cast: null, attack: null, creative: false, t: 0,
+  spectator: false, maxHealth: 20, leftHanded: false, dash: null, holdHeal: 4, exhaustion: 2.4, itemName: '', nameAt: -1e9, actionBar: '' };
+const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Pickaxe', 'Bread', 'Torch', 'Water Bucket', 'Goggles'];
 let font = null, waterTimer = null;
 function render() {
   st.t = performance.now();
@@ -83,7 +91,7 @@ function swim(on, diving) {
 tap('water', () => swim(!st.underwater || st.diving, false));
 tap('dive', () => swim(!st.diving, true));
 document.getElementById('hud').addEventListener('mousemove', e => {
-  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * 50;
+  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
   const id = Object.keys(CC.hit).find(k => { const [bx, by, bw, bh] = CC.hit[k]; return x >= bx - 9 && x <= bx + bw && y >= by - 1 && y <= by + bh + 1; }) || null;
   if (id !== st.hover) { st.hover = id; render(); }
 });
@@ -93,7 +101,12 @@ const flag = (id, key, on = v => !v) => tap(id, () => { st[key] = on(st[key]); p
 const EFFECTS = ['', 'poison', 'wither', 'frozen'];
 tap('effect', () => { st.effect = EFFECTS[(EFFECTS.indexOf(st.effect) + 1) % EFFECTS.length]; document.getElementById('effect').textContent = 'Effect: ' + (st.effect || 'none'); });
 flag('hardcore', 'hardcore'); flag('regen', 'regen'); flag('hunger', 'hunger'); flag('creative', 'creative');
-flag('holdFood', 'holdFood', v => v ? 0 : 6); flag('riding', 'riding');
+flag('holdFood', 'holdFood', v => v ? 0 : 6); flag('spectator', 'spectator'); flag('lefty', 'leftHanded');
+flag('maxHp', 'maxHealth', v => v === 40 ? 20 : 40);
+flag('actionBar', 'actionBar', v => v ? '' : 'Now Playing: C418 - cat');
+const MOUNTS = [false, 'horse', 'camel'];
+tap('riding', () => { st.riding = MOUNTS[(MOUNTS.indexOf(st.riding) + 1) % 3]; document.getElementById('riding').textContent = 'Riding: ' + (st.riding || 'no'); });
+tap('dashBtn', () => { if (st.riding === 'camel') ramp('dash', 2750, null); });
 /** Runs a 0..1 ramp on st[key] over ms, then sets it to end. */
 function ramp(key, ms, end, then) {
   const t0 = performance.now();
@@ -105,10 +118,10 @@ tap('castBtn', () => ramp('cast', 1500, null, () => { st.irons = Math.max(0, st.
 tap('attack', () => ramp('attack', 625, null));
 // Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
 setInterval(() => {
-  const moving = st.health <= 4 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || st.jump != null || st.cast != null || st.attack != null;
+  const moving = st.t - st.nameAt < 2100 || st.health <= 4 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || st.jump != null || st.cast != null || st.attack != null;
   if (moving) render();
 }, 60);
-addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; render(); } });
+addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; st.itemName = ITEMS[st.slot]; st.nameAt = performance.now(); render(); } });
 (async () => { try { await packTextures(); font = SCREEN.font; } catch (e) {} render(); })();
 render();
 </script>

@@ -6,7 +6,7 @@
 // worn; under water), extend the raised hotbar band sideways over their wing only then, in a darker iron, as slim
 // pipes level with the experience pipe. Uses sprites.js, meters.js (LIQUID),
 // modhud.js (MANA, rollIcon, rollTier), mcfont.js.
-const CX = 172, BOTTOM = 50;
+const CX = 172, BOTTOM = 50, TOPM = 30;   // TOPM: room above the bar for the game's text (item name, action bar)
 // Horizontal rhythm: one gap (GAP) between every group, out from the centred hotbar (sockets x -89..89): meters
 // (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
 const GAP = 4;
@@ -94,6 +94,7 @@ const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111
   '111100111001111', '111100111101111', '111001010010010', '111101111101111', '111101111001111'];
 CC_DIGITS['/'] = '001001010100100';
 CC_DIGITS[':'] = '000010000010000';
+CC_DIGITS['+'] = '000010111010000';
 const ccNumberWidth = (s, k = 1) => (s.length * 4 - 1) * k;
 /** s in the 3 x 5 digits at (x, y), each pixel k units; col a colour or a function of the character index (to colour
  *  parts); shadow: a dark copy offset by half a pixel first (readable over liquid). */
@@ -148,8 +149,10 @@ function ccPlate(g, ears = {}) {
 
 /** The whole action bar for a state; a canvas of logical 344 x 50. */
 function compactHud(s, font) {
-  const [c, g] = hires(344, 50);
-  g.translate(CX, 0);
+  const [c, g] = hires(344, BOTTOM + TOPM);
+  g.translate(CX, TOPM);
+  ccGameText(g, s, font);   // the game's own text above the bar (not ours; shown for spacing)
+  if (s.spectator) return c;   // spectator: vanilla draws no hotbar or vitals (only its own menu when opened)
   CC.hit = {};
   // Breath shows as the game's air row does: while under water (eyes in water) or while air is still below full
   // (catching your breath after surfacing). Not from the tank or air values alone: when the backtank empties the air
@@ -158,7 +161,8 @@ function compactHud(s, font) {
   ccPlate(g, { left: showArmor, right: showBreath });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
-  const [ox, oy] = CC.offhand;
+  // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
+  const [ox, oy] = s.leftHanded ? [143, CC.offhand[1]] : CC.offhand;
   socket(g, ox, oy);
   g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
@@ -167,8 +171,10 @@ function compactHud(s, font) {
   const X = CC.xp, LK = 0.6, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 3, 8);
   const wh = 5, wy = X.y + X.h / 2 - wh / 2;
   // Riding and charging a jump: the pipe is the jump gauge (vanilla swaps the XP bar for the jump bar).
-  const jumping = s.riding && s.jump != null;
-  ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, jumping ? s.jump : s.xp, jumping ? CC_JUMP : ['#d8ff9a', '#5fd02a', '#1d5a08'], 18);
+  // A camel's dash cooldown uses the same bar (vanilla): a dim gauge refilling until it can dash again.
+  const jumping = s.riding && s.jump != null, cooling = s.riding === 'camel' && s.dash != null;
+  const [xf, xl] = cooling ? [s.dash, CC_COOLDOWN] : jumping ? [s.jump, CC_JUMP] : [s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08']];
+  ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, xf, xl, 18);
   rrect(g, X.x0, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
   rrect(g, X.x0 + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
   ccNumber(g, txt, X.x0 + ww / 2 - tw / 2, wy + wh / 2 - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', null, LK);
@@ -203,12 +209,17 @@ function compactHud(s, font) {
   };
   // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
   if (!s.creative) {
-  row(L, 0, ccHeartIcon(s), s.health / 20, ccHealthLiquid(s), 10, s.health, 20, { shake: ccShake(s), after: ccHealthFx });
-  if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
-  if (s.riding) row(L, 1, ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
-  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20, { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodPreview(g2, s2, box); } });
+  // Health against the real maximum (Health Boost and gear raise it; each segment is a tenth of it); absorption in
+  // gold continues past the health, AppleSkin's regeneration preview (held food) pulses past that.
+  const maxH = s.maxHealth || 20, hpNum = s.absorb ? `${Math.round(s.health)}+${Math.round(s.absorb)}` : s.health;
+  row(L, 0, ccHeartIcon(s), s.health / maxH, ccHealthLiquid(s), 10, hpNum, maxH, { shake: ccShake(s),
+    after: (g2, s2, box) => { ccAbsorb(g2, s2, box, maxH); ccHealthPreview(g2, s2, box, maxH); ccHealthFx(g2, s2, box); } });
+  if (s.riding) row(L, 1, s.riding === 'camel' ? ccCamel() : ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
+  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20,
+    { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodPreview(g2, s2, box); ccExhaustion(g2, s2, box); } });
   }
-  if (showArmor) row(L, 'ear', armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
+  // Armor: the meter shows up to 20 (as vanilla's ten icons); the number gives the real value (up to 30).
+  if (showArmor) row(L, 'ear', armor('full'), Math.min(1, s.armor / 20), ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, s.armor > 20 ? 30 : 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
   // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
@@ -223,7 +234,7 @@ function compactHud(s, font) {
     ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
   } else if (showBreath) row(Rt, 'ear', air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
-  const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
+  const [rx, ry] = s.leftHanded ? [-164.5, CC.roll[1]] : CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
   if (font) {
     const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line

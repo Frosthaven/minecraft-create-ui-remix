@@ -13,6 +13,7 @@
 
 const CC_JUMP = ['#fff2a8', '#e0a020', '#5a3808'];
 const CC_MOUNT = ['#f0c890', '#a8682e', '#3e200a'];
+const CC_COOLDOWN = ['#b8bcc2', '#6a6e74', '#26282b'];
 
 /** The health liquid for the current effect. */
 function ccHealthLiquid(s) {
@@ -100,4 +101,53 @@ function ccAttackShade(g, s, [sx, sy]) {
   g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(sx + 1, sy + 1, 16, h);
   g.fillStyle = 'rgba(255,190,90,0.8)'; g.fillRect(sx + 1, sy + 1 + h - 0.3, 16, 0.3);
   g.restore();
+}
+
+/** Absorption: gold segments from the health's end, as far as they fit (the number gives the rest). */
+function ccAbsorb(g, s, [x, y, w, h], max) {
+  if (!s.absorb) return;
+  const a0 = (w - 1) * Math.min(1, s.health / max), a1 = (w - 1) * Math.min(1, (s.health + s.absorb) / max);
+  g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
+  g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, LIQUID.absorb[0]], [0.45, LIQUID.absorb[1]], [1, LIQUID.absorb[2]]]);
+  g.fillRect(x + 0.5 + a0, y, a1 - a0, h);
+  g.fillStyle = 'rgba(0,0,0,0.55)';
+  for (let k = 1; k < 10; k++) g.fillRect(x + 0.5 + (w - 1) * k / 10 - 0.15, y, 0.3, h);
+  g.restore();
+}
+/** AppleSkin's health preview: what the held food would regenerate, pale and pulsing past the health. */
+function ccHealthPreview(g, s, [x, y, w, h], max) {
+  if (!s.holdFood || !s.holdHeal) return;
+  const from = (w - 1) * Math.min(1, s.health / max), to = (w - 1) * Math.min(1, (s.health + s.holdHeal) / max);
+  g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
+  g.fillStyle = `rgba(255,200,200,${0.3 + 0.25 * Math.sin(s.t / 160)})`; g.fillRect(x + 0.5 + from, y, to - from, h);
+  g.restore();
+}
+/** AppleSkin's exhaustion (0 to 4, a food point lost at 4): a hairline along the food glass's bottom. */
+function ccExhaustion(g, s, [x, y, w, h]) {
+  if (!s.exhaustion) return;
+  g.fillStyle = 'rgba(255,255,255,0.75)';
+  g.fillRect(x + 1, y + h - 0.9, (w - 2) * Math.min(1, s.exhaustion / 4), 0.35);
+}
+/** The mount icon for a camel: a head on a long neck, sandy. 9 x 9. */
+function ccCamel() {
+  const [c, g] = hires(9, 9);
+  const head = () => {
+    g.beginPath(); g.moveTo(2.4, 8.6); g.quadraticCurveTo(2.2, 4.6, 4, 2.6); g.quadraticCurveTo(5.2, 1.2, 7, 1.6);
+    g.quadraticCurveTo(8.6, 2.1, 8.4, 3.3); g.quadraticCurveTo(7.4, 3.8, 6, 3.8); g.quadraticCurveTo(4.6, 5.6, 5, 8.6); g.closePath();
+  };
+  head(); g.fillStyle = vgrad(g, 1.2, 8.6, [[0, '#e8c48a'], [0.5, '#b88a50'], [1, '#6a4a24']]); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 0.35; g.stroke();
+  circle(g, 6.2, 2.4, 0.35); g.fillStyle = '#1a1006'; g.fill();
+  return c;
+}
+/** The game's text above the bar, where vanilla draws it: the held item's name (bottom - 59, 14 lower when the player
+ *  cannot be hurt; it fades after about 2 s) and the action bar message (bottom - 68). Shown for spacing only. */
+function ccGameText(g, s, font) {
+  if (!font) return;
+  const cx = (t) => -mcWidth(font, t) / 2;
+  if (s.itemName && s.t - (s.nameAt || -1e9) < 2000) {
+    const y = BOTTOM - 59 + (s.creative || s.spectator ? 14 : 0);
+    mcText(g, font, s.itemName, cx(s.itemName), y, 1, '#ffffff', true);
+  }
+  if (s.actionBar) mcText(g, font, s.actionBar, cx(s.actionBar), BOTTOM - 68, 1, '#ffffff', true);
 }
