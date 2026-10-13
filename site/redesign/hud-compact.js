@@ -20,7 +20,7 @@ const CC = {
   ext: { l: [-140, -96], r: [96, 140], y: 23, h: 3.2, icon: 4.4 },   // a wing's raised tab: icon to the plate's inner edge   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 23, h: 3.2, x0: -84, x1: 84 },   // 1.6 under the band's top, 1.8 above the wings   // the level window, then the pipe (inside the section)
+  xp: { y: 23, h: 3.2, x0: -88.5, x1: 88.5 },   // the level window, then the pipe: nearly the centre plate's full width (±91)
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */

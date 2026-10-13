@@ -1,8 +1,8 @@
 // Orbs (after Path of Exile, in our style) in place of the wing meters: a glass orb in a brass bezel on each wing.
-// Left orb: health rises as the liquid (absorption in gold above it; the effects recolour it); food is the orb's
-// secondary layer, a crescent sweeping in from the right as PoE's energy shield does (riding: the mount's health
-// instead; saturation is not shown); armor takes over the brass bezel in ten segments, only while worn.
-// Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
+// Left orb, split down the middle: health in the left half (absorption in gold above it; the effects recolour it), food
+// in the right half (riding: the mount's health instead; saturation is not shown); armor takes over the brass bezel in ten segments, only while worn.
+// Right orb: the primary mana pool, split with the other mana mod's pool on the right when both are installed (one: the
+// whole orb);
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
 const ORB = { tex: 0.67, housing: 16.5,   // housing: the housing's radius (r + bezel + 2.4)
@@ -51,35 +51,23 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     g.fillStyle = vgrad(g, cy - r, cy + r, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); area(); g.fill();
     surface(g, area, TEX.blotch, 0.35 * ORB.tex); surface(g, area, TEX.brushed, 0.12 * ORB.tex, 'soft-light');
   };
-  if (fill && fill.frac > 0) {
-    const top = level(fill.frac);
-    liquid(fill.liq, top, cy + r);
-    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(cx - r, top, 2 * r, 0.4);   // the surface catching the light
-  }
-  if (over && over.to > over.from) liquid(over.liq, level(over.to), level(over.from));
-  // The secondary layer: a crescent from the right, the orb minus a circle shifted left by 2r * frac.
-  // At most ORB.band of the orb's width, so the primary stays readable behind it; a little see-through. The inner edge
-  // is one fixed curve (bowing ORB.bow * r toward the orb's edge at mid-height) at any fill, as PoE's shield layer.
-  const edge = (frac, y) => { const t = (y - cy) / r; return cx + r - 2 * r * ORB.band * frac + ORB.bow * r * (1 - t * t) - ORB.bow * r; };
-  const edgePath = (frac, close) => {
-    g.beginPath();
-    for (let i = 0; i <= 24; i++) { const y = cy - r + (2 * r * i) / 24; i ? g.lineTo(edge(frac, y), y) : g.moveTo(edge(frac, y), y); }
-    if (close) { g.lineTo(cx + r + 1, cy + r); g.lineTo(cx + r + 1, cy - r); g.closePath(); }
+  // With a secondary the orb splits down the middle (as Path of Exile does for life and mana): the primary fills the
+  // left half, the secondary the right, each rising from the bottom on its own, a thin dark divider between them.
+  const half = (x0, w, f, liq, overTo) => {
+    if (!f || f.frac <= 0) return;
+    g.save(); g.beginPath(); g.rect(x0, cy - r, w, 2 * r); g.clip();
+    const top = level(f.frac);
+    liquid(liq, top, cy + r);
+    if (overTo && overTo.to > overTo.from) liquid(overTo.liq, level(overTo.to), level(overTo.from));
+    const surfaceY = overTo && overTo.to > overTo.from ? level(overTo.to) : top;
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x0, surfaceY, w, 0.4);   // the surface catching the light
+    g.restore();
   };
-  // The layer: inside the orb, right of the edge. ('evenodd' is kept for the callers: one closed shape fills alike.)
-  const moon = (frac) => edgePath(frac, true);
-  if (crescent && crescent.frac > 0) {
-    g.globalAlpha = 0.88; moon(Math.min(1, crescent.frac)); g.fillStyle = radial(g, cx + r * 0.5, cy, r * 1.4, [[0, crescent.liq[0]], [0.5, crescent.liq[1]], [1, crescent.liq[2]]]); g.fill('evenodd');
-    g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd'); surface(g, () => circle(g, cx, cy, r), TEX.blotch, 0.3 * ORB.tex); g.restore();
-    if (crescent.light && crescent.light.frac > 0) {
-      g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd');
-      moon(Math.min(crescent.frac, crescent.light.frac)); g.fillStyle = radial(g, cx + r * 0.5, cy, r * 1.4, [[0, crescent.light.liq[0]], [1, crescent.light.liq[1]]]); g.fill('evenodd');
-      g.restore();
-    }
-    g.globalAlpha = 1;
-    {   // its inner edge, lit
-      edgePath(Math.min(1, crescent.frac), false); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.35; g.stroke();
-    }
+  const split = crescent != null;
+  half(cx - r, split ? r : 2 * r, fill, fill && fill.liq, over);
+  if (split) {
+    half(cx, r, crescent, crescent.liq);
+    g.fillStyle = vgrad(g, cy - r, cy + r, [[0, '#5a5c60'], [1, '#1c1d20']]); g.fillRect(cx - 0.35, cy - r, 0.7, 2 * r);
   }
   // Glass: a soft dark rim and a highlight top-left.
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy, r, [[0.7, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.55)']]); g.fill();
