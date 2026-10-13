@@ -22,6 +22,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   // The bezel: dark stone grey (not brass), a little lighter where the light falls.
   circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#55575b'], [0.35, '#36383c'], [1, '#1b1c1f']]); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08 * ORB.tex);   // a light brushed finish
+  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);   // its lit edge, under anything on the rim
   // Dark rivets around the stone rim, at the gaps between the ring's segments.
   for (let k = 0; k < 10; k++) {
     const a = -Math.PI / 2 + k * Math.PI / 5, x = cx + Math.cos(a) * (r + B / 2), y = cy + Math.sin(a) * (r + B / 2);
@@ -41,12 +42,27 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
       // Segmented (armor): thick iron plates reaching from the rim across the seat into the housing; smooth: on the rim.
       const p0 = r - 0.35, p1 = ring.smooth ? R1 + 0.45 : R1 + 2.1;
       const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
+      if (!ring.smooth) {   // a plate casts a soft shadow onto the housing it is bolted to
+        g.save(); g.translate(0.35, 0.55); seg(); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill(); g.restore();
+      }
       g.save(); g.shadowColor = ring.on[1]; g.shadowBlur = 2.2;
-      seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill();
+      if (ring.smooth) { seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill(); }
+      else {   // a curved strap: a crest just outside the rim, bending back down onto the housing (shaded across its width)
+        const q = t => (p0 + (p1 - p0) * t) / p1;
+        seg(); g.fillStyle = radial(g, cx, cy, p1, [[q(0), ring.on[1]], [q(0.3), ring.on[0]], [q(0.55), ring.on[1]], [q(1), ring.on[2]]]); g.fill();
+        g.globalCompositeOperation = 'multiply';   // keep the top-lit feel: darker toward the bottom of the orb
+        seg(); g.fillStyle = vgrad(g, cy - p1, cy + p1, [[0, '#ffffff'], [1, '#8a8e94']]); g.fill();
+        g.globalCompositeOperation = 'source-over';
+      }
       g.restore();
       surface(g, seg, TEX.brushed, 0.15 * ORB.tex);
       seg(); g.strokeStyle = 'rgba(0,0,0,0.85)'; g.lineWidth = 0.3; g.stroke();
-      g.beginPath(); g.arc(cx, cy, p1 - 0.25, a0 + 0.02, a2 - 0.02); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.2; g.stroke();
+      const crest = ring.smooth ? p1 - 0.25 : p0 + (p1 - p0) * 0.3;   // the highlight along the crest
+      g.beginPath(); g.arc(cx, cy, crest, a0 + 0.02, a2 - 0.02); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.2; g.stroke();
+      if (!ring.smooth && lit >= 1) {   // two hex bolts holding the plate to the housing
+        const rb = (R1 + 0.6 + p1) / 2;
+        for (const t of [0.25, 0.75]) { const a = a0 + (a1 - a0) * t; hexBolt(g, cx + Math.cos(a) * rb, cy + Math.sin(a) * rb, 0.42); }
+      }
     }
   }
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
@@ -131,7 +147,6 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   g.beginPath(); g.ellipse(cx - r * 0.32, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.32, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.45)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
-  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
 }
 
 /** The health orb's status effects (the meters had them; same rules): the damage flash, Regeneration's rising light,
