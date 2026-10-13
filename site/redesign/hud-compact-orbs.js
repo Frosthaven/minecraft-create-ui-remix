@@ -5,7 +5,7 @@
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, bezel: 1.6, band: 0.36 };   // band: a full crescent's share of the width   // band: a full crescent's share of the width
+const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, bezel: 1.6, band: 0.45, edge: 3 };   // band: a full layer's share of the width; edge: its inner curve's radius (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
 /** One orb at (cx, cy): fill {frac, liq}, over {from, to, liq} (absorption, above the fill), crescent {frac, liq,
  *  light: {frac, liq}} (the secondary layer), ring {frac, on, off} (segments around the bezel). */
@@ -55,8 +55,10 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   }
   if (over && over.to > over.from) liquid(over.liq, level(over.to), level(over.from));
   // The secondary layer: a crescent from the right, the orb minus a circle shifted left by 2r * frac.
-  // At most ORB.band of the orb's width, so the primary stays readable behind it; a little see-through.
-  const moon = (frac) => { g.beginPath(); g.arc(cx, cy, r + 0.1, 0, Math.PI * 2); g.arc(cx - 2 * r * ORB.band * frac, cy, r, 0, Math.PI * 2); };
+  // At most ORB.band of the orb's width, so the primary stays readable behind it; a little see-through. The inner edge
+  // is a gentle curve (a circle ORB.edge times the orb's radius), as PoE's shield layer.
+  const RB = r * ORB.edge, inner = frac => cx + r - 2 * r * ORB.band * frac - RB;   // the cutting circle's centre x
+  const moon = (frac) => { g.beginPath(); g.arc(cx, cy, r + 0.1, 0, Math.PI * 2); g.arc(inner(frac), cy, RB, 0, Math.PI * 2); };
   if (crescent && crescent.frac > 0) {
     g.globalAlpha = 0.88; moon(Math.min(1, crescent.frac)); g.fillStyle = radial(g, cx + r * 0.5, cy, r * 1.4, [[0, crescent.liq[0]], [0.5, crescent.liq[1]], [1, crescent.liq[2]]]); g.fill('evenodd');
     g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd'); surface(g, () => circle(g, cx, cy, r), TEX.blotch, 0.3); g.restore();
@@ -67,7 +69,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     }
     g.globalAlpha = 1;
     {   // its inner edge, lit
-      g.beginPath(); g.arc(cx - 2 * r * ORB.band * Math.min(1, crescent.frac), cy, r, -Math.PI / 2.2, Math.PI / 2.2); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.35; g.stroke();
+      g.beginPath(); g.arc(inner(Math.min(1, crescent.frac)), cy, RB, -0.42, 0.42); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.35; g.stroke();
     }
   }
   // Glass: a soft dark rim and a highlight top-left.
