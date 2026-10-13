@@ -57,7 +57,7 @@ function compactExports() {
   }
   const [c, g] = hires(256, 256);
   socket(g, 0, 0);
-  g.drawImage(selection(), 20, 0, 24, 23);
+  ccSelection(g, 23, 3);   // snug on a socket at (23, 3): the game draws this 24x23 cell at the socket - 3
   g.save(); g.translate(46 + 9, 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
   rrect(g, 66, 0, 10, 5, 1.2); g.fillStyle = steel(g, 0, 5); g.fill();

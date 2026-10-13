@@ -11,26 +11,27 @@ const CX = 172, BOTTOM = 50, TOPM = 30;   // TOPM: room above the bar for the ga
 // (icon 6, 2, meter 38: 46 wide), then the offhand socket / the dodge roll (18 wide), then the plate's edge.
 const GAP = 4;
 const CC = {
-  plate: { x0: -165, x1: 165, wing: 26, mid: 19.4, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
+  plate: { x0: -165, x1: 165, wing: 28, mid: 21.4, step: 8, r: 2.5, sec: 85 },   // sec: the raised section's top edge, ±x
   slot: i => [-89 + 20 * i, 30],          // socket top left; items at (-88 + 20 i, 31): vanilla's exact item spots
   offhand: [-161, 30],
   rows: [33.5, 40.5], meterH: 4, meterW: 38, icon: 5.6,   // centred on the sockets' middle (y 39)
   left: { iconC: -136, x: -131 },         // vitals: health, food (armor extends the band above)
   right: { iconC: 136, x: 93 },           // magic: Iron's mana, Ars mana (breath extends the band above)
-  ext: { l: [-140, -85], r: [85, 140], y: 21, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
+  ext: { l: [-140, -85], r: [85, 140], y: 23, h: 3.2, icon: 4.4 },   // band extensions; the outer S ends 1 px before the icon
   roll: [139.5, 30],                      // the dash's chevrons start at 143 (its art is inset 3.5)
   hit: {},                                // meter boxes by id, for the page's hover
-  xp: { y: 21, h: 3.2, x0: -84, x1: 84 },   // 1.6 under the band's top, 1.8 above the wings   // the level window, then the pipe (inside the section)
+  xp: { y: 23, h: 3.2, x0: -84, x1: 84 },   // 1.6 under the band's top, 1.8 above the wings   // the level window, then the pipe (inside the section)
 };
 
 /** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
 function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left') {
   const r = h / 2;
-  rrect(g, x, y, w, h, r); g.fillStyle = steel(g, y, y + h); g.fill();
+  // Satin, not chrome: a darker steel casing, and the liquid's highlight halfway to its body colour.
+  rrect(g, x, y, w, h, r); g.fillStyle = vgrad(g, y, y + h, [[0, '#9ea4aa'], [0.25, '#6c7278'], [0.65, '#3a3e43'], [1, '#141619']]); g.fill();
   rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5); g.fillStyle = '#060708'; g.fill();
   g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5); g.clip();
   const fw = (w - 1) * Math.max(0, Math.min(1, frac)), fx = from === 'left' ? x + 0.5 : x + w - 0.5 - fw;
-  g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, liq[0]], [0.45, liq[1]], [1, liq[2]]]); g.fillRect(fx, y, fw, h);
+  g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, mixHex(liq[0], liq[1], 0.5)], [0.45, liq[1]], [1, liq[2]]]); g.fillRect(fx, y, fw, h);
   g.fillStyle = 'rgba(0,0,0,0.55)';
   for (let k = 1; k < segs; k++) g.fillRect(x + 0.5 + (w - 1) * k / segs - 0.15, y, 0.3, h);
   g.restore();
@@ -107,6 +108,17 @@ function ccNumber(g, s, x, y, col, shadow, k = 1) {
   }
 }
 
+/** The selected slot, snug on its socket: a steel ring over the brass bezel with an ember glow, and a small amber
+ *  lamp on its top edge (the HUD's selection, without the frame around the socket). */
+function ccSelection(g, x, y) {
+  g.save(); g.shadowColor = 'rgba(255,140,30,1)'; g.shadowBlur = 2.4;
+  rrect(g, x + 0.75, y + 0.75, 16.5, 16.5, 1); g.strokeStyle = steel(g, y, y + 18); g.lineWidth = 0.9; g.stroke();
+  g.restore();
+  rim(g, () => rrect(g, x + 0.3, y + 0.3, 17.4, 17.4, 1.3), y, y + 18, '#f4f6f8', 0.3);
+  rrect(g, x + 1.35, y + 1.35, 15.3, 15.3, 0.7); g.strokeStyle = 'rgba(255,200,110,0.9)'; g.lineWidth = 0.3; g.stroke();
+  rrect(g, x + 7.2, y - 0.1, 3.6, 1.2, 0.4); g.fillStyle = steel(g, y - 0.1, y + 1.1); g.fill();
+  glow(g, x + 9, y + 0.5, 1.8, 'rgba(255,170,50,0.85)', '#fff1b0');
+}
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
 function ccPlate(g, ears = {}) {
@@ -262,7 +274,7 @@ function compactHud(s, font) {
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);
   ccAttackShade(g, s, [sx, sy]);
-  g.drawImage(selection(), sx - 3, sy - 3, 24, 23);
+  ccSelection(g, sx, sy);
   ccInstruments(g, s);
   return c;
 }

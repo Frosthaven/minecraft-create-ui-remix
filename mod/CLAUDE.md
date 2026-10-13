@@ -60,3 +60,25 @@ No player config edits needed; the instance config stays at DME's defaults.
   `SettingsScreen`).
 - Pack textures: keep alpha binary (0 or 255). Many GUI blits run without blending, so a
   half-transparent pixel shows at full color (the bright clumps on the backpack window corners).
+
+## Compact action bar (`hud/`)
+
+The HUD designed on the redesign page `hud-compact.html`, drawn by the mod while the pack's textures
+(`createhud:textures/gui/compact/{parts,plate_*}.png`, exported by `hud-compact-export.js`) are present and the player is
+not a spectator.
+- `CompactHud`: the layer `createdarkinventory:compact_hud` (above vanilla's HOTBAR). Hides what it replaces in
+  `RenderGuiLayerEvent.Pre`: vanilla hotbar, health, armor, food, vehicle health, air, XP bar and level, jump meter;
+  `irons_spellbooks:mana_overlay`, `ars_nouveau:mana_hud`, `create:remaining_air`, AppleSkin's four layers. Draws at 1/8
+  GUI px (pose scale) so the 8x textures land texel for texel; positions are the page's layout (x from the screen
+  centre, the bar's bottom at 50) times 8. Items at vanilla's exact spots (bottom - 19, centre - 88 + 20 i), so mods that
+  mark hotbar slots line up. Sets `gui.leftHeight/rightHeight` to 33 for later layers. Key "Show HUD numbers (hold)",
+  Left Alt by default (Controls); numbers also show while a screen is open. No dark mode on it (`HudLayers.MAIN`).
+- `CompactAtlas`: the textures' layout; KEEP IN STEP with `hud-compact-export.js`.
+- `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
+  (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank
+  (persistent `VisualBacktankAir`, `BacktankUtil.maxAir` over `getAllWithAir`), by reflection: a missing mod hides its row.
+- `RollHudMixin` (`createdarkinventory.bosses.mixins.json`, optional): cancels Block Factory's Bosses' own roll icon
+  (`ClientEvents.renderGUI`, a RenderGuiEvent.Pre we cannot hide as a layer) while the bar is active.
+- `Followers`: Haven Link's web map followers from its chat lines; reset on logout.
+- In the preview but not in game yet: comfort sheen, regen sweep, hardcore trim, AppleSkin previews and exhaustion,
+  Iron's cast takeover, MekaSuit, aircraft, train, Helium Flamingo, instruments plate, attack shade, Create slot marks.

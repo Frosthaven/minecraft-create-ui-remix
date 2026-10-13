@@ -91,14 +91,12 @@ function ccSlotMarks(g, s) {
       const a = [ax + sx * inset, ay + sy * inset], b = [ax + sx * (L - inset * 2.4), ay + sy * inset], c = [ax + sx * inset, ay + sy * (L - inset * 2.4)];
       g.beginPath(); g.moveTo(...a); g.arcTo(...b, ...c, r * (1 - inset)); g.arcTo(...c, ...a, r * (1 - inset)); g.arcTo(...a, ...b, r * (1 - inset)); g.closePath();
     };
-    for (const [ax, ay, sx, sy] of [[x + 18, y, -1, 1], [x, y + 18, 1, -1]]) {
-      // Lit like the slot: its upper wall is in shadow (top-right chip: quiet bronze), its lower lip catches the light
-      // (bottom-left chip: brass casing with a lit bottom edge). A deep red with a soft core in both.
-      const lower = sy < 0;
-      chip(ax, ay, sx, sy, 0.3); g.fillStyle = lower ? brass(g, ay - L, ay) : P.bronze; g.fill();
-      if (lower) { g.strokeStyle = 'rgba(244,216,152,0.55)'; g.lineWidth = 0.3; g.beginPath(); g.moveTo(ax + 0.6, ay - 0.45); g.lineTo(ax + L - 1.4, ay - 0.45); g.stroke(); }
+    for (const [ax, ay, sx, sy] of [[x + 17.5, y + 0.5, -1, 1], [x + 0.5, y + 17.5, 1, -1]]) {
+      // Part of the bezel: both chips in quiet bronze, tucked inside the bezel's rounded corners (not past them), the
+      // same deep red with a soft core.
+      chip(ax, ay, sx, sy, 0.3); g.fillStyle = P.bronze; g.fill();
       chip(ax, ay, sx, sy, 0.95);
-      g.fillStyle = radial(g, ax + sx * 2.2, ay + sy * 2.2, 4.5, [[0, lower ? '#c42a30' : '#b02028'], [1, '#4a0a10']]); g.fill();
+      g.fillStyle = radial(g, ax + sx * 2.2, ay + sy * 2.2, 4.5, [[0, '#b02028'], [1, '#4a0a10']]); g.fill();
     }
   }
   if (s.schematicSlot != null) {

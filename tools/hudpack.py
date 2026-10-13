@@ -1,5 +1,5 @@
-"""Builds the Create-HUD resource pack from the redesign pages' file lists (their PNG links): the HUD (with
-AppleSkin's overlay sheet), the player's inventory and the Sophisticated Backpacks screens.
+"""Builds the Create-HUD resource pack from the redesign pages' file lists (their PNG links): the compact action bar's
+textures, the player's inventory and the Sophisticated Backpacks screens.
 
     python3 -I tools/hudpack.py    (with the site served on 127.0.0.1:18777)
 
@@ -11,7 +11,9 @@ All textures are R x (8) the originals; every user scales UVs by the logical siz
 """
 import base64, json, os, re, shutil, subprocess, sys
 
-PAGES = {'': None, 'inventory.html': 34, 'backpack.html': 9}  # page: files it lists (None: the page records it)
+PAGES = {'hud-compact.html': 5, 'inventory.html': 34, 'backpack.html': 9}  # page: files it lists
+# The HUD page ('') is not packed: the compact action bar (createhud:textures/gui/compact/*, drawn by the mod) replaces
+# the HUD, and vanilla's own HUD sprites stay untouched, so other mods that reuse them (mob health hearts) look vanilla.
 
 
 def target(name):

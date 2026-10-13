@@ -27,7 +27,8 @@ public final class HudLayers {
             VanillaGuiLayers.EXPERIENCE_BAR,
             VanillaGuiLayers.EXPERIENCE_LEVEL,
             VanillaGuiLayers.OVERLAY_MESSAGE,
-            ResourceLocation.fromNamespaceAndPath("create", "remaining_air"));
+            ResourceLocation.fromNamespaceAndPath("create", "remaining_air"),
+            dev.frosthaven.createdarkinventory.hud.CompactHud.LAYER);   // the compact action bar: no dark mode on it
     private static boolean drawing;
     private static boolean anyLayer;
     private static boolean flushing;

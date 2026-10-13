@@ -26,6 +26,10 @@ config="${mod_id}.immediatelyfast.mixins.json"
 [[mixins]]
 config="${mod_id}.sophisticated.mixins.json"
 
+# Targets Block Factory's Bosses (its dodge roll icon), so optional.
+[[mixins]]
+config="${mod_id}.bosses.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"

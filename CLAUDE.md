@@ -117,12 +117,14 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 | Food | `(cx + 91 - 8 i - 9, bottom - 39)`, right to left |
 | Air | one row above the food |
 
-## Compact HUD concept (`site/redesign/hud-compact.html`, `hud-compact.js`): preview only, not packed
+## Compact HUD (`site/redesign/hud-compact.html`, `hud-compact*.js`): in game via the mod (`mod/CLAUDE.md`, hud/)
 
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
 level badge; left wing offhand, health (absorption in gold) with armor plating on top, Iron's mana; right wing food
 with AppleSkin saturation on top, Ars mana, dodge roll charges; air rises out of the right wing under water. Shipping
-it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws this layout (sprites from the pack).
+the page exports its textures (`hud-compact-export.js`, 5 files under `createhud:textures/gui/compact/`) and Create Dark
+Inventory draws the layout from them. The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is
+not packed), so other mods that reuse vanilla hearts look vanilla.
 - Meters: health, food (left wing, vitals); Iron's mana, Ars mana (right wing, magic). Armor and breath show only when
   the game shows them (armor worn; under water), extending the raised hotbar band
   sideways over the left and right wing (same height, darker iron), as slim pipes level with the XP pipe. Breath is the vanilla bubbles;

@@ -13,7 +13,13 @@ import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
+import dev.frosthaven.createdarkinventory.hud.CompactHud;
+import dev.frosthaven.createdarkinventory.hud.Followers;
 import java.util.List;
+import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
 /**
  * Client only. The texture work is in the mixins; here the Dark Mode Everywhere (DME) settings
@@ -26,7 +32,8 @@ import java.util.List;
  *  - DME's button lets go of focus after a click: a focused widget keeps Create's "hold W to
  *    ponder" from working on that screen;
  *  - with a Create HUD pack on, no dark mode on the main HUD ({@link HudLayers}), Sophisticated
- *    Backpacks screens and the inventory ({@link PackScreens}).
+ *    Backpacks screens and the inventory ({@link PackScreens});
+ *  - the compact action bar ({@link CompactHud}) in place of the vanilla and mod HUD rows.
  */
 @Mod(value = CreateDarkInventory.ID, dist = Dist.CLIENT)
 public final class CreateDarkInventory {
@@ -40,6 +47,12 @@ public final class CreateDarkInventory {
         modBus.addListener(InterModEnqueueEvent.class, event ->
                 InterModComms.sendTo(DME, "dme-shaderblacklist", () -> "StockKeeperRequestScreen:drawItemCount"));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, CreateDarkInventory::moveDarkModeButton);
+        // The compact action bar (hud/CompactHud): its layer, the Left Alt numbers key, the layers it replaces.
+        modBus.addListener(RegisterGuiLayersEvent.class, CompactHud::register);
+        modBus.addListener(RegisterKeyMappingsEvent.class, CompactHud::registerKeys);
+        NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, CompactHud::onLayerPre);
+        NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class, Followers::onChat);
+        NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class, Followers::onLogout);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, HudLayers::pre);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Post.class, HudLayers::post);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.MouseButtonReleased.Post.class, event -> {
