@@ -10,10 +10,10 @@
 //     casings (empty meters): wing (0, 50) 38x4, extension (40, 50) 38x3.25, XP (0, 56) 157x3.25.
 //     full meters per liquid (the game crops their inner 0.5-inset area): wing (0, 62 + 5 k), extension
 //     (40, 62 + 4 k), XP (0, 130 + 4 k).
-//     digits "0123456789/:+" at 0.625 size, 2.5 apart, rows 170 + 4 r: white, dim, level green, shadow black.
+//     digits "0123456789/:+smh" at 0.625 size, 2.5 apart, rows 170 + 4 r: white, dim, level green, shadow black, red.
 //     ghost plate (0, 190) 24x9 (the follower count's digits are drawn after the ghost); fillers: gear row centred
-//     at (46, 196), groove (80, 190) 38x4, dash cog centred at (129, 199); effect frames 11x11 at (140|152|164, 190)
-//     (buff, debuff, ambient); 0.75 digits 3 apart, rows 212 white, 216 red, 220 black.
+//     at (46, 196), groove (80, 190) 38x4, dash cog centred at (129, 199); effect frames 10x10 at (140|152|164, 190)
+//     (buff, debuff, ambient).
 const CCX = {
   wingIcons: ['heart', 'heart_poison', 'heart_wither', 'heart_frozen', 'drumstick', 'horse', 'camel', 'flask', 'gem'],
   extIcons: ['armor', 'air', 'air_burst', 'backtank', 'bolt'],
@@ -21,7 +21,7 @@ const CCX = {
   wingLiquids: ['blood', 'poison', 'wither', 'frozen', 'absorb', 'broth', 'hunger', 'gilded', 'saturation', 'irons', 'ars', 'mount'],
   extLiquids: ['armor', 'air', 'tank', 'meka', 'flamingo', 'hull'],
   xpLiquids: ['xp', 'jump', 'cooldown', 'cast', 'train', 'engine'],
-  digits: '0123456789/:+', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000'],
+  digits: '0123456789/:+smh', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0'],
   dashTiers: ['green', 'yellow', 'orange', 'red', 'grey'],
 };
 const CCX_LIQ = {
@@ -84,12 +84,12 @@ function compactExports() {
   ccGearRow(g, 46, 196);
   ccGroove(g, 80, 190, 38, 4);
   ccDashFiller(g, 129, 199);
-  // Effect frames at the bar's 11 x 11 (no icon, no time border: the game draws those): buff (140, 190), debuff
-  // (152, 190), ambient (164, 190). Digits at 0.75 for the effects' time, 3 apart: rows 212 white, 216 red, 220 black.
+  // Effect frames at 10 x 10 (no icon, no time border: the game draws those): buff (140, 190), debuff (152, 190),
+  // ambient (164, 190).
   for (const [kind, ux, amb] of [['buff', 140, false], ['debuff', 152, false], ['buff', 164, true]]) {
-    g.save(); g.translate(ux, 190); g.scale(11 / 24, 11 / 24); ccEffect(g, 0, 0, kind, null, 1, amb, true); g.restore();
+    g.save(); g.translate(ux, 190); g.scale(10 / 24, 10 / 24); ccEffect(g, 0, 0, kind, null, 1, amb, true); g.restore();
   }
-  ['#ffffff', '#ffb0a0', '#000000'].forEach((col, r) => [...CCX.digits].forEach((ch, k) => ccNumber(g, ch, 3 * k, 212 + 4 * r, col, null, 0.75)));
+
   files.push(['createhud: compact/parts', c]);
   return files;
 }

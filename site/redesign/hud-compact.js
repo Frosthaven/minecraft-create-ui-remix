@@ -96,6 +96,7 @@ const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111
 CC_DIGITS['/'] = '001001010100100';
 CC_DIGITS[':'] = '000010000010000';
 CC_DIGITS['+'] = '000010111010000';
+CC_DIGITS.s = '000011100001110'; CC_DIGITS.m = '000110111101101'; CC_DIGITS.h = '100100110101101';   // time units
 const ccNumberWidth = (s, k = 1) => (s.length * 4 - 1) * k;
 /** s in the 3 x 5 digits at (x, y), each pixel k units; col a colour or a function of the character index (to colour
  *  parts); shadow: a dark copy offset by half a pixel first (readable over liquid). */

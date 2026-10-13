@@ -50,29 +50,40 @@ function ccEffectsCorner(effects, icons, w = 180) {
   return c;
 }
 
-/** Effects in the action bar area: floating rows above the bar's right wing (no plate), right-aligned to the bar's
- *  edge (newest at the right), debuffs nearest the bar and buffs above them, as vanilla stacks them. Each effect a
- *  10 x 10 socket with the draining border and its time left under it in the bar's digits (seconds, or m:ss from a
- *  minute; red under 10 s; none when infinite). At most PER_ROW in a row (the right wing's width, clear of the centre),
+/** Effects in the action bar area, floating above the bar's left wing (no plate), left-aligned to the bar's edge,
+ *  in two lines: buffs and always-on effects on top (green), timed debuffs below (red, at 1.5x). Each effect a
+ *  10 x 10 socket with the draining border and its time left under it in the bar's small digits (45s, 3m, 1h; red
+ *  under 10 s; none when infinite). At most PER_ROW in a row (the right wing's width, clear of the centre),
  *  more wrap onto another row above, so a long list grows upward instead of sideways into anything.
  *  effects: [{id, kind: 'buff' | 'debuff', secs, total, ambient}], icons by id. */
-const CC_EFFECTS = { size: 10, cell: 13, rowH: 19, k: 0.75, perRow: 9 };
+const CC_EFFECTS = { size: 10, cell: 13, rowH: 17.5, k: 0.625, perRow: 10 };   // a line: the bar's left edge to x -32
+/** Time left, short: seconds under a minute ("45s"), minutes under an hour ("3m"), else hours ("1h"). */
+function ccEffectTime(secs) {
+  const sec = Math.ceil(secs);
+  return sec < 60 ? sec + 's' : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
+}
 function ccEffectsRail(g, s, icons) {
-  const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, right = CC.plate.x1;
-  let top = CC.plate.mid - 2 - rowH;   // the lowest row's top; rows go up from there
-  for (const kind of ['debuff', 'buff']) {
-    const all = list.filter(e => e.kind === kind);
-    for (let r = 0; r * perRow < all.length; r++, top -= rowH) {
-      all.slice(r * perRow, (r + 1) * perRow).forEach((e, i) => {
-        const x = right - size - 1 - cell * i, y = top;
-        g.save(); g.translate(x, y); g.scale(size / 24, size / 24);
-        ccEffect(g, 0, 0, kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
-        g.restore();
-        CC.hit['effect:' + e.id] = [x, y, size, size];
-        if (!e.total) return;
-        const sec = Math.ceil(e.secs), t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : String(sec);
-        ccNumber(g, t, x + size / 2 - ccNumberWidth(t, k) / 2, y + size + 1.2, sec <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.95)', k);
-      });
+  const list = s.effects || [], { size, cell, rowH, k, perRow } = CC_EFFECTS, left = CC.plate.x0;
+  // Two lines: buffs and always-on effects (infinite or a beacon's, whatever their kind) on top, timed debuffs below,
+  // nearest the bar. A line that runs out of room wraps upward.
+  const green = list.filter(e => e.kind === 'buff' || !e.total), red = list.filter(e => e.kind === 'debuff' && e.total);
+  // Debuffs at 1.5x (socket, spacing, digits): the ones to act on stand out.
+  const draw = (e, x, y, m) => {
+    const sz = size * m, kk = k * m;
+    g.save(); g.translate(x, y); g.scale(sz / 24, sz / 24);
+    ccEffect(g, 0, 0, e.kind, icons[e.id], e.total ? e.secs / e.total : 1, e.ambient);
+    g.restore();
+    CC.hit['effect:' + e.id] = [x, y, sz, sz];
+    if (!e.total) return;
+    const t = ccEffectTime(e.secs);
+    ccNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, e.secs <= 10 ? '#ffb0a0' : '#ffffff', 'rgba(0,0,0,0.95)', kk);
+  };
+  let top = CC.plate.mid - 2;
+  for (const [all, m] of [[red, 1.5], [green, 1]]) {
+    const per = Math.floor(perRow / m);
+    for (let r = 0; r * per < all.length; r++) {
+      top -= rowH * m;
+      all.slice(r * per, (r + 1) * per).forEach((e, i) => draw(e, left + 1 + cell * m * i, top, m));
     }
   }
 }
