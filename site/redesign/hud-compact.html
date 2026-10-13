@@ -14,9 +14,9 @@
      the raised middle with experience as one glass pipe along its top edge, the level in a small window at its left end.
      The left wing is vitals: the offhand (a faint shield marks it when empty), health (absorption in gold) and food. The
      right wing is magic: Iron's mana and Ars mana, then our dash icon and count. Armor and breath appear only when the
-     game would show them, extending the raised band sideways over their wing in a darker tone: armor while you wear some, breath under water, with a
-     Create backtank's air layered on top in copper while diving (it drains first; its time left always shows, as
-     Create's counter does). Every meter is the same size, in ten segments, with the HUD's own icon; hover a meter for
+     game would show them, extending the raised band sideways over their wing in a darker tone: armor while you wear some, breath under water. With a
+     Create backtank the breath segment is the tank alone, a darker copper meter with its time left always shown (as
+     Create's counter does); when it empties, the bubbles take over. Every meter is the same size, in ten segments, with the HUD's own icon; hover a meter for
      its value (current bright, max dim). Preview only: shipping it needs Create Dark Inventory to replace the HUD layers
      and draw this layout itself.</p>
 </header>
@@ -36,7 +36,7 @@
 <script src="screen-page.js"></script>
 <script src="hud-compact.js"></script>
 <script>
-const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, tank: 0, tankMax: 900 };
+const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.55, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, underwater: false, tank: 0, tankMax: 900 };
 let font = null, waterTimer = null;
 function render() {
   const img = compactHud(st, font), out = document.getElementById('hud');
@@ -54,7 +54,7 @@ tap('absorb', () => { st.absorb = st.absorb ? 0 : 6; document.getElementById('ab
 /** Under water: the backtank drains first when diving (seconds, fast-forwarded), then the air. */
 function swim(on, diving) {
   for (const id of ['water', 'dive']) document.getElementById(id).setAttribute('aria-pressed', 'false');
-  clearInterval(waterTimer); st.air = 1; st.diving = on && diving; st.tank = st.diving ? st.tankMax : 0;
+  clearInterval(waterTimer); st.air = 1; st.underwater = on; st.diving = on && diving; st.tank = st.diving ? st.tankMax : 0;
   if (!on) return;
   document.getElementById(diving ? 'dive' : 'water').setAttribute('aria-pressed', 'true');
   waterTimer = setInterval(() => {
@@ -63,7 +63,7 @@ function swim(on, diving) {
     render();
   }, 400);
 }
-tap('water', () => swim(!(st.air < 1 || st.tank > 0) || st.diving, false));
+tap('water', () => swim(!st.underwater || st.diving, false));
 tap('dive', () => swim(!st.diving, true));
 document.getElementById('hud').addEventListener('mousemove', e => {
   const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 344 - CX, y = (e.clientY - r.top) / r.height * 50;

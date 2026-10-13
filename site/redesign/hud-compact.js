@@ -151,7 +151,10 @@ function compactHud(s, font) {
   const [c, g] = hires(344, 50);
   g.translate(CX, 0);
   CC.hit = {};
-  const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = s.armor > 0, showBreath = s.air < 1 || tank > 0;
+  // Breath shows as the game's air row does: while under water (eyes in water) or while air is still below full
+  // (catching your breath after surfacing). Not from the tank or air values alone: when the backtank empties the air
+  // is still full for a moment, and the segment must not blink out.
+  const tank = s.diving ? Math.max(0, s.tank) : 0, showArmor = s.armor > 0, showBreath = s.underwater || s.air < 1;
   ccPlate(g, { left: showArmor, right: showBreath });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
@@ -200,19 +203,17 @@ function compactHud(s, font) {
   if (showArmor) row(L, 'ear', armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
   row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
-  // Breath: the bubbles (full above water, draining under it). A Create backtank adds its air on top, like absorption
-  // on health: a copper layer from the left over tank / capacity, drained first (the vanilla air stays full meanwhile),
-  // then the bubbles drain. The tank's time left (m:ss, as Create shows it) is always on the meter while it has air.
-  // Shown (the right ear) only under water, as the game's air row.
+  // Breath: while a Create backtank holds air, the segment is the tank alone (a darker copper meter, tank / capacity)
+  // with its time left (m:ss, as Create's counter) always on it; the vanilla air stays full meanwhile. When the tank
+  // is empty, the bubbles take over (draining under water, refilling after).
   const mmss = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-  const tankTime = mmss(Math.ceil(tank)), hovered = s.numbers || s.hover === 'Rear', [ex, ey, ew, eh] = extR;
-  if (showBreath) {
-    row(Rt, 'ear', tank > 0 ? ccBacktank() : air(s.air < 0.15), s.air, LIQUID.air, 10, tank > 0 ? tankTime : Math.ceil(s.air * 10), tank > 0 ? null : 10);
-    if (tank > 0 && !hovered) {
-      ccMeter(g, ex, ey, ew * tank / s.tankMax, eh, 1, ['#ffd9b0', '#d9874a', '#5a2814'], 0);
-      ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
-    }
-  }
+  if (showBreath && tank > 0) {
+    const [ex, ey, ew, eh] = extR, tankTime = mmss(Math.ceil(tank));
+    ccIcon(g, ccBacktank(), Rt.iconC, ey + eh / 2, E.icon);
+    ccMeter(g, ex, ey, ew, eh, tank / s.tankMax, ['#c98a5a', '#7a3e1c', '#2e1206'], 10);
+    CC.hit.Rear = [ex, ey, ew, eh];
+    ccNumber(g, tankTime, ex + ew / 2 - ccNumberWidth(tankTime, NK) / 2, ey + eh / 2 - 2.5 * NK, '#ffffff', 'rgba(0,0,0,0.9)', NK);
+  } else if (showBreath) row(Rt, 'ear', air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);

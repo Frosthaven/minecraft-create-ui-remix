@@ -126,8 +126,9 @@ it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws 
 - Meters: health, food (left wing, vitals); Iron's mana, Ars mana (right wing, magic). Armor and breath show only when
   the game shows them (armor worn; under water), extending the raised hotbar band
   sideways over the left and right wing (same height, darker iron), as slim pipes level with the XP pipe. Breath is the vanilla bubbles;
-  a Create backtank adds its air on top in copper (like absorption on health), drained first, with the tank's time left
-  (m:ss, as Create's `remaining_air` layer) always on the meter while it has air: players rely on it.
+  while a Create backtank has air the breath segment is the tank alone (darker copper meter) with its time left (m:ss,
+  as Create's `remaining_air` layer) always on it: players rely on it. Then the bubbles. Breath shows while under
+  water or while air is below full, so the segment never blinks out when the tank empties.
 - Numbers (value bright, "/max" dim, the liquid dimmed behind them): on the page by hovering a meter. In game (decided):
   while a key is held, Left Alt by default, a KeyMapping so it is rebindable in Controls, and while an inventory
   screen is open.
