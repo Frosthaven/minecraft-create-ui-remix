@@ -10,7 +10,7 @@ os.makedirs(tex_dir, exist_ok=True)
 # Screen art: textures/gui (most mods and vanilla), and the other folders mods use for screens
 # (Mekanism keeps it in assets/<ns>/gui/). Item icons and map markers are left out.
 GUI = re.compile(r"^assets/([^/]+)/((?:textures/(?:gui|guis|hud|screens?|jei|contextmenu|waystones_gui|slot|crosshair)|gui)/.+"
-                 r"|textures/font/ascii(?:_sga)?|textures/icons|textures/item/empty_[a-z_]+|textures/item/empty_slot_lapis_lazuli|textures/item/trashcan)\.png$")  # the GUI and enchanting fonts, for the mockups;
+                 r"|textures/font/ascii|textures/icons|textures/item/empty_[a-z_]+|textures/item/trashcan)\.png$")  # the GUI font, for the mockups;
                                                                          # AppleSkin's HUD overlay sheet; 1.21.1's
                                                                          # empty armor and shield slot icons
 

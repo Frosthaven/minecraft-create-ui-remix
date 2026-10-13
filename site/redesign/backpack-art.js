@@ -138,7 +138,9 @@ function guiControls(orig) {
   // Tab art (128..256): canvas flaps, raised (they are controls), stitched along the top, right, bottom.
   clear(128, 0, 128, 256);
   tabArt(g);
-  solidAlpha(c);   // the tabs and pouch are blitted unblended too
+  // The tabs and the upgrade pouch are blitted unblended too: no soft edges there. Not the whole sheet: the gauge glass
+  // (47, 30) and other overlays are drawn blended over fluid and need their translucency.
+  solidAlpha(c, [128, 0, 128, 256]); solidAlpha(c, [0, 0, 27, 204]); solidAlpha(c, [0, 204, 7, 18]);
   return c;
 }
 

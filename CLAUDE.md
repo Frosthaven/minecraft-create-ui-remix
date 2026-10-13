@@ -191,24 +191,6 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 - Not restylable (drawn in code by the mod): the scrollbar, the search box (a bezel frames its collapsed
   spot), slot highlights. Upgrade item icons are item art; the mockup uses placeholders.
 
-## Enchanting Redesign (`site/redesign/enchanting.html`), work in progress
-
-- Layout from the game's bytecode (NeoForge client jar `net/minecraft/client/gui/screens/inventory/
-  EnchantmentScreen.class`, `world/inventory/EnchantmentMenu.class`; read with `javap -c`): item (15, 47),
-  lapis (35, 47), player inventory as usual; options 108 x 19 at (60, 14 + 19 k) with level icons 16 x 16 at
-  (61, 15 + 19 k); names in the enchanting font at (80, 16 + 19 k) wrapped to 86 - cost width; cost
-  right-aligned to x 166 at y 23 + 19 k with shadow; the 3D book centred at (33, 31); title (8, 6),
-  "Inventory" (8, 72). Fixed colours: names #685E4A (hovered #FFFF80, unusable #342F25), cost #80FF20
-  (too costly #407F10).
-- Direction (chosen by the user): an arcane study, redone from scratch as one concept with one focus. A
-  dark walnut desk; a plum leather mat (plum, not oxblood: it harmonises with the violet magic); on it an
-  inscribed rune circle in brass inlay centred on the floating book, the input slots at its foot; the
-  open book in the same plum leather (page stack, spine, brass corners), its pages the options (parchment,
-  violet when hovered, dim when unusable). No props (shelves, candles, scattered runes): they were clutter.
-- The player's inventory comes from the shared `playerInventory()` component, identical on every screen.
-- Measure label widths with the game font (`mcWidth`): "Inventory" is 50 px, so the label plate and the
-  raised iron section reach x 59 and the book starts right of it.
-
 ## Shared components (`site/redesign/components.js`)
 
 - Crafting set (`craftTray`, `craftArrow`, `resultFrame`), `steelButton`, `switchSlot`, gauges

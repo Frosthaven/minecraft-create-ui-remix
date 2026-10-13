@@ -67,12 +67,16 @@ function gaugeFrame(g, x, y, w, h, part) {
   if (part === 'top') { g.fillStyle = 'rgba(230,234,238,0.5)'; g.fillRect(x, y, w, 0.4); }
   if (part === 'bottom') { g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(x, y + h - 0.5, w, 0.5); }
 }
-/** A gauge's glass over the fill: tick marks on the right (0.5 wide, so they
+/** A gauge's glass over the fill: tick marks down both sides (0.5 wide, so they
  *  survive nearest sampling); kind 'liquid' or 'power' (power adds copper bands, like a cell). */
 function gaugeGlass(g, x, y, w, h, kind) {
   // No reflection stripe: a thin bright line beside the frame reads as a defect, not as glass.
+  // Ticks down both sides, long and short alternating (as the original gauge).
   g.fillStyle = 'rgba(220,226,232,0.45)';
-  for (let ty = y + 2; ty < y + h; ty += 4) g.fillRect(x + w - (ty % 8 < 4 ? 4 : 2.5), ty, ty % 8 < 4 ? 3 : 1.5, 0.5);
+  for (let ty = y + 2; ty < y + h; ty += 4) {
+    const len = ty % 8 < 4 ? 3 : 1.5;
+    g.fillRect(x + w - 1 - len, ty, len, 0.5); g.fillRect(x + 1, ty, len, 0.5);
+  }
   if (kind === 'power') {
     g.fillStyle = 'rgba(184,110,60,0.55)';
     for (const ty of [y + 0.5, y + h - 1]) g.fillRect(x, ty, w, 0.5);

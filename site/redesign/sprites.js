@@ -10,10 +10,11 @@ const P = {
 
 /** Makes every pixel fully opaque or fully clear (alpha cut at half), for art the game draws unblended
  *  (the item atlas, many GUI blits): there any pixel not fully clear shows at full strength. */
-function solidAlpha(c) {
-  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height);
+function solidAlpha(c, [x, y, w, h] = [0, 0, c.lw || c.width, c.lh || c.height]) {   // rect in logical units
+  const k = c.lw ? c.width / c.lw : 1, g = c.getContext('2d');
+  const d = g.getImageData(x * k, y * k, w * k, h * k);
   for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] >= 128 ? 255 : 0;
-  g.putImageData(d, 0, 0);
+  g.putImageData(d, x * k, y * k);
 }
 
 /** A canvas for a sprite of logical size w x h, drawn at R x; g works in logical units. */
