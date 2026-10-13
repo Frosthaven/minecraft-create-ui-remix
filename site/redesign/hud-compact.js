@@ -134,7 +134,8 @@ function ccEngrave(g, path, lw = 0.5) {
   g.save(); g.translate(0, 0.4); path(); g.strokeStyle = 'rgba(220,225,230,0.1)'; g.lineWidth = lw; g.stroke(); g.restore();
   path(); g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = lw; g.stroke();
 }
-/** A wing with nothing to show (vitals in creative): three meshing cogs pressed into the plate, centred on (cx, cy). */
+/** A wing with nothing to show (vitals in creative, magic without mana mods): three meshing cogs pressed into the
+ *  plate, centred on (cx, cy). */
 function ccGearRow(g, cx, cy) {
   for (const [dx, r, t] of [[-11.2, 3.6, 8], [0, 5, 10], [11.2, 3.6, 8]]) {
     const x = cx + dx, a = dx ? Math.PI / t : 0;
@@ -149,27 +150,15 @@ function ccGroove(g, x, y, w, h) {
   rrect(g, x, y, w, h, h / 2); g.fillStyle = 'rgba(0,0,0,0.22)'; g.fill();
   ccEngrave(g, () => rrect(g, x, y, w, h, h / 2), 0.4);
 }
-/** The bar's width for what the pack has (the hotbar stays centred, as vanilla): no mana mod drops the right wing, no
- *  dodge roll drops the dash's spot, so the bar ends just past what is there (its end S near the end is fine). The
- *  offhand sits at one end (right when left-handed), the dash at the other. With no right wing, the bar grows back
- *  out to the right while a right extension (breath) shows, so the extension has plate under it.
- *  Returns { x0, x1, offhand, dash } (dash: the dash icon's x; its chevrons start 3.5 in). */
-function ccLayout(s, rightExt) {
-  const mana = s.irons != null || s.ars != null, roll = s.rolls != null;
-  const rightStart = mana ? 143 : 93;                       // the right end spot: past the wing, or past the hotbar
-  const rightEnd = s.leftHanded ? 'offhand' : roll ? 'dash' : null, leftEnd = s.leftHanded ? (roll ? 'dash' : null) : 'offhand';
-  let x1 = rightEnd ? rightStart + 22 : mana ? 152 : 97;
-  if (rightExt) x1 = Math.max(x1, 152);
-  return {
-    x0: leftEnd ? -165 : -152, x1,
-    offhand: s.leftHanded ? rightStart : -161,
-    dash: s.leftHanded ? -164.5 : rightStart - 3.5,
-  };
+/** No dodge roll in the pack: one cog with a hex hub pressed into the plate where the dash would be. */
+function ccDashFiller(g, cx, cy) {
+  ccEngrave(g, () => cogPath(g, cx, cy, 6.2, 4.8, 10));
+  ccEngrave(g, () => { g.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; g.lineTo(cx + 2 * Math.cos(a), cy + 2 * Math.sin(a)); } g.closePath(); });
 }
 /** The action bar plate: blackened iron, wings either side of a raised hotbar section. Rounded everywhere: the outer
  *  corners by r, the climb from each wing to the section as a smooth S curve over `step`. */
-function ccPlate(g, ears = {}, x0 = CC.plate.x0, x1 = CC.plate.x1) {
-  const { wing, mid, step, r } = CC.plate, b = BOTTOM;
+function ccPlate(g, ears = {}) {
+  const { x0, x1, wing, mid, step, r } = CC.plate, b = BOTTOM;
   // The top edge as level runs [x from, x to, y], joined by S curves: the raised band (the hotbar section, plus any
   // extension over a wing) between the two wing runs.
   const E = CC.ext, sec = CC.plate.sec, b0 = ears.left ? E.l[0] : -sec, b1 = ears.right ? E.r[1] : sec;
@@ -220,15 +209,11 @@ function compactHud(s, font) {
   // The right extension: breath under water, else the Helium Flamingo charge, else an aircraft's health.
   const rightExt = showBreath ? 'breath' : s.flamingo != null ? 'flamingo' : s.aircraft ? 'hull' : null;
   const leftExt = showArmor || (!s.creative && s.mekasuit);
-  const lay = CC.lay = ccLayout(s, !!rightExt);
-  // A narrower bar stays centred on the screen: shift everything (whole pixels, so items stay sharp).
-  CC.shift = Math.round(-(lay.x0 + lay.x1) / 2);
-  g.translate(CC.shift, 0);
-  ccPlate(g, { left: leftExt, right: !!rightExt }, lay.x0, lay.x1);
+  ccPlate(g, { left: leftExt, right: !!rightExt });
   for (let i = 0; i < 9; i++) socket(g, ...CC.slot(i));
   // The offhand socket with a faint dotted shield, so the empty slot reads as the offhand.
   // Left-handed (Main Hand: Left): vanilla moves the offhand to the hotbar's right; the dash takes the left end.
-  const [ox, oy] = [lay.offhand, CC.offhand[1]];
+  const [ox, oy] = s.leftHanded ? [143, CC.offhand[1]] : CC.offhand;
   socket(g, ox, oy);
   g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
@@ -303,7 +288,8 @@ function compactHud(s, font) {
   // Magic: a mana row per mod present (null: the mod is not in the pack). None: engraved gears fill the wing; one: the
   // other row is an empty groove, so the wing still reads as complete.
   const hasIrons = s.irons != null, hasArs = s.ars != null;
-  if (hasIrons || hasArs) {   // no mana mod: no right wing at all (ccLayout)
+  if (!hasIrons && !hasArs) ccGearRow(g, (Rt.x + Rt.iconC + 3) / 2, 39);   // centred on the wing's meter + icon span
+  else {
     if (hasIrons) row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200); else ccGroove(g, Rt.x, rows[0], mw, mh);
     if (hasArs) row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150); else ccGroove(g, Rt.x, rows[1], mw, mh);
   }
@@ -321,8 +307,9 @@ function compactHud(s, font) {
   else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
   else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
-  if (s.rolls != null) {   // no dodge roll mod: no dash spot at all (ccLayout)
-  const [rx, ry] = [lay.dash, CC.roll[1]], tier = rollTier(s.rolls);
+  if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -152 : 152, 39);   // no dodge roll mod: a pressed-in cog
+  else {
+  const [rx, ry] = s.leftHanded ? [-164.5, CC.roll[1]] : CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
   if (font) {
     const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line
