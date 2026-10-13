@@ -277,7 +277,7 @@ function ccDashDial(g, cx, cy, ready, n) {
   g.save(); circle(g, cx, cy, r); g.clip();
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy, r, [[0, col + '55'], [1, col + '00']]); g.fill();
   const chev = x0 => { g.beginPath(); g.moveTo(x0, cy - 2.6); g.lineTo(x0 + 1.7, cy - 2.6); g.lineTo(x0 + 3.7, cy); g.lineTo(x0 + 1.7, cy + 2.6); g.lineTo(x0, cy + 2.6); g.lineTo(x0 + 2, cy); g.closePath(); };
-  for (const [x0, a] of [[cx - 3.6, 0.55], [cx - 0.9, 1]]) { chev(x0); g.fillStyle = mixHex(col, '#000000', a < 1 ? 0.4 : 0); g.fill(); }
+  for (const [x0, a] of [[cx - 3.2, 0.55], [cx - 0.5, 1]]) {   // the pair spans cx - 3.2 .. cx + 3.2 chev(x0); g.fillStyle = mixHex(col, '#000000', a < 1 ? 0.4 : 0); g.fill(); }
   g.beginPath(); g.ellipse(cx - r * 0.3, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
   g.fillStyle = radial(g, cx - r * 0.3, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]); g.fill();
   g.restore();
