@@ -5,7 +5,7 @@
 // Right orb: the primary mana pool as the liquid, the other mana mod's pool (when both are installed) the crescent;
 // which is primary is a setting. Breath takes over the right orb's bezel the same way, only under water (bubbles, or a Create
 // backtank in copper with its time left). Uses sprites.js, meters.js (LIQUID), hud-compact.js.
-const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, bezel: 1.6, band: 0.45, edge: 3 };   // band: a full layer's share of the width; edge: its inner curve's radius (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
+const ORB = { r: 13, y: 32.5, lx: -120, rx: 120, bezel: 1.1, band: 0.45, bow: 0.22 };   // band: a full layer's share of the width; bow: its inner edge's bulge (x r)   // band: a full crescent's share of the width   // band: a full crescent's share of the width
 
 /** One orb at (cx, cy): fill {frac, liq}, over {from, to, liq} (absorption, above the fill), crescent {frac, liq,
  *  light: {frac, liq}} (the secondary layer), ring {frac, on, off} (segments around the bezel). */
@@ -19,23 +19,27 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   circle(g, cx, cy, R1); g.fillStyle = brass(g, cy - R1, cy + R1); g.fill();
   surface(g, () => circle(g, cx, cy, R1), TEX.brushed, 0.08);   // a light brushed finish
   if (ring) {
-    // Every segment shows while the ring does: empty ones as dark recessed slots, full ones as bright plates.
-    const n = 10, gap = 0.07, r0 = r + 0.2, r1 = R1 - 0.2;
+    // Every segment shows while the ring does: empty ones in very dull brass, full ones as bright plates.
+    const n = 10, gap = 0.07, r0 = r + 0.12, r1 = R1 - 0.12;
     for (let k = 0; k < n; k++) {
       const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
       g.beginPath(); g.arc(cx, cy, r1, a0, a1); g.arc(cx, cy, r0, a1, a0, true); g.closePath();
-      g.fillStyle = '#0c0d0f'; g.fill();
+      g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#5a4a2e'], [1, '#2e2414']]); g.fill();
     }
     for (let k = 0; k < n; k++) {
       const lit = ring.frac * n - k;   // >= 1 full, 0..1 partial
       if (lit <= 0) break;
       const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
       const a2 = a0 + (a1 - a0) * Math.min(1, lit);
-      g.beginPath(); g.arc(cx, cy, r1, a0, a2); g.arc(cx, cy, r0, a2, a0, true); g.closePath();
-      g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill();
-      const seg = () => { g.beginPath(); g.arc(cx, cy, r1, a0, a2); g.arc(cx, cy, r0, a2, a0, true); g.closePath(); };
-      surface(g, seg, TEX.brushed, 0.2);   // worked metal plates
-      g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 0.25; g.stroke();
+      // A lit segment stands proud of the rim (wider than the bezel, dark outline) and glows in its colour.
+      const p0 = r - 0.35, p1 = R1 + 0.45;
+      const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
+      g.save(); g.shadowColor = ring.on[1]; g.shadowBlur = 2.2;
+      seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, ring.on[0]], [0.45, ring.on[1]], [1, ring.on[2]]]); g.fill();
+      g.restore();
+      surface(g, seg, TEX.brushed, 0.15);
+      seg(); g.strokeStyle = 'rgba(0,0,0,0.85)'; g.lineWidth = 0.3; g.stroke();
+      g.beginPath(); g.arc(cx, cy, p1 - 0.25, a0 + 0.02, a2 - 0.02); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 0.2; g.stroke();
     }
   }
   circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
@@ -56,9 +60,15 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
   if (over && over.to > over.from) liquid(over.liq, level(over.to), level(over.from));
   // The secondary layer: a crescent from the right, the orb minus a circle shifted left by 2r * frac.
   // At most ORB.band of the orb's width, so the primary stays readable behind it; a little see-through. The inner edge
-  // is a gentle curve (a circle ORB.edge times the orb's radius), as PoE's shield layer.
-  const RB = r * ORB.edge, inner = frac => cx + r - 2 * r * ORB.band * frac - RB;   // the cutting circle's centre x
-  const moon = (frac) => { g.beginPath(); g.arc(cx, cy, r + 0.1, 0, Math.PI * 2); g.arc(inner(frac), cy, RB, 0, Math.PI * 2); };
+  // is one fixed curve (bowing ORB.bow * r toward the orb's edge at mid-height) at any fill, as PoE's shield layer.
+  const edge = (frac, y) => { const t = (y - cy) / r; return cx + r - 2 * r * ORB.band * frac + ORB.bow * r * (1 - t * t) - ORB.bow * r; };
+  const edgePath = (frac, close) => {
+    g.beginPath();
+    for (let i = 0; i <= 24; i++) { const y = cy - r + (2 * r * i) / 24; i ? g.lineTo(edge(frac, y), y) : g.moveTo(edge(frac, y), y); }
+    if (close) { g.lineTo(cx + r + 1, cy + r); g.lineTo(cx + r + 1, cy - r); g.closePath(); }
+  };
+  // The layer: inside the orb, right of the edge. ('evenodd' is kept for the callers: one closed shape fills alike.)
+  const moon = (frac) => edgePath(frac, true);
   if (crescent && crescent.frac > 0) {
     g.globalAlpha = 0.88; moon(Math.min(1, crescent.frac)); g.fillStyle = radial(g, cx + r * 0.5, cy, r * 1.4, [[0, crescent.liq[0]], [0.5, crescent.liq[1]], [1, crescent.liq[2]]]); g.fill('evenodd');
     g.save(); moon(Math.min(1, crescent.frac)); g.clip('evenodd'); surface(g, () => circle(g, cx, cy, r), TEX.blotch, 0.3); g.restore();
@@ -69,7 +79,7 @@ function ccOrb(g, cx, cy, { fill, over, crescent, ring, shake = 0 }) {
     }
     g.globalAlpha = 1;
     {   // its inner edge, lit
-      g.beginPath(); g.arc(inner(Math.min(1, crescent.frac)), cy, RB, -0.42, 0.42); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.35; g.stroke();
+      edgePath(Math.min(1, crescent.frac), false); g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.35; g.stroke();
     }
   }
   // Glass: a soft dark rim and a highlight top-left.
