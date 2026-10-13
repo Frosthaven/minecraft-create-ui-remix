@@ -8,10 +8,11 @@ const CC = {
   plate: { x0: -172, x1: 172, wing: 26, mid: 21, step: 8, r: 2.5 },
   slot: i => [-90 + 20 * i, 29],          // socket top left (item at +1)
   offhand: [-168, 29],
-  rows: [28, 35, 42], meterH: 5, meterW: 38, icon: 6,
+  rows: [27.8, 35, 42.2], meterH: 6, meterW: 38, icon: 6,
   left: { icon: -147, x: -138 },          // vitals: health, food, armor
   right: { icon: 140, x: 100 },           // magic: Iron's mana, Ars mana, then air
   roll: [148, 29],
+  hit: {},                                // meter boxes by id, for the page's hover
   xp: { y: 22.6, h: 3.2, x0: -90, x1: 90 },   // the level window, then the pipe
 };
 
@@ -38,20 +39,51 @@ function ccIcon(g, img, cx, cy, h) {
   const bw = x1 - x0 + 1, bh = y1 - y0 + 1, w = h * bw / bh;
   g.drawImage(img, x0, y0, bw, bh, cx - w / 2, cy - h / 2, w, h);
 }
-/** A mana drop icon (7 x 7 cell at x, y) in the mana's colours. */
-function ccDrop(g, x, y, liq) {
-  const cx = x + 3.5;
-  g.beginPath(); g.moveTo(cx, y + 0.3); g.quadraticCurveTo(cx + 3.2, y + 3.8, cx, y + 6.7); g.quadraticCurveTo(cx - 3.2, y + 3.8, cx, y + 0.3);
-  g.fillStyle = vgrad(g, y, y + 7, [[0, liq[0]], [0.5, liq[1]], [1, liq[2]]]); g.fill();
-  g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.35; g.stroke();
+/** Iron's mana: a round glass flask of glowing mana with a brass cap (the hearts' vials, in mana). 9 x 9. */
+function ccFlask(liq) {
+  const [c, g] = hires(9, 9);
+  const body = () => { g.beginPath(); g.moveTo(3.6, 2.6); g.lineTo(3.6, 3.9); g.arc(4.5, 5.9, 2.9, Math.PI * 1.32, Math.PI * 1.68 + Math.PI * 2 - 0.0001, false); g.lineTo(5.4, 2.6); g.closePath(); };
+  body(); g.fillStyle = 'rgba(10,12,16,0.9)'; g.fill();
+  g.save(); body(); g.clip(); g.fillStyle = vgrad(g, 4.4, 8.8, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); g.fillRect(0, 4.4, 9, 5); g.restore();
+  body(); g.strokeStyle = 'rgba(220,230,240,0.55)'; g.lineWidth = 0.35; g.stroke();
+  rrect(g, 3.1, 1.2, 2.8, 1.6, 0.4); g.fillStyle = brass(g, 1.2, 2.8); g.fill();
+  return c;
+}
+/** Ars mana: a faceted source gem in a brass bezel. 9 x 9. */
+function ccGem(liq) {
+  const [c, g] = hires(9, 9);
+  const gem = (k) => { g.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; g.lineTo(4.5 + k * Math.cos(a), 4.5 + k * Math.sin(a)); } g.closePath(); };
+  gem(4.2); g.fillStyle = brass(g, 0.3, 8.7); g.fill();
+  gem(3.3); g.fillStyle = vgrad(g, 1.2, 7.8, [[0, liq[0]], [0.45, liq[1]], [1, liq[2]]]); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 0.3;
+  g.beginPath(); g.moveTo(4.5, 1.2); g.lineTo(4.5, 4.5); g.lineTo(1.6, 6.2); g.moveTo(4.5, 4.5); g.lineTo(7.4, 6.2); g.stroke();
+  return c;
+}
+/** The compact drumstick: the HUD's roast with a bigger head and a short bone, so it reads at 6 px. 9 x 9. */
+function ccDrumstick() {
+  const [c, g] = hires(9, 9);
+  g.strokeStyle = g.fillStyle = vgrad(g, 5, 8.8, [[0, '#efe4c8'], [0.5, '#c2b08c'], [1, '#6e6048']]);
+  g.lineWidth = 1.1; g.lineCap = 'round'; g.beginPath(); g.moveTo(3.4, 5.6); g.lineTo(1.9, 7.1); g.stroke();
+  circle(g, 1.2, 7.1, 0.75); g.fill(); circle(g, 1.9, 7.8, 0.75); g.fill();
+  const meat = () => { g.beginPath(); g.ellipse(5.3, 3.7, 3.4, 2.7, -Math.PI / 4, 0, Math.PI * 2); };
+  meat(); g.fillStyle = radial(g, 5.6, 3.3, 3.8, [[0, '#c8783e'], [0.45, '#8e4320'], [0.85, '#4a1c0a'], [1, '#2a0e04']], 4.8, 2.4); g.fill();
+  surface(g, meat, TEX.blotch, 0.3);
+  g.strokeStyle = 'rgba(255,215,160,0.55)'; g.lineWidth = 0.35; g.beginPath(); g.ellipse(5.3, 3.7, 2.6, 1.9, -Math.PI / 4, Math.PI * 1.05, Math.PI * 1.6); g.stroke();
+  return c;
 }
 // The level in a 3 x 5 pixel digit set (crisp at any GUI scale; the game font is 7 tall and would cover the pipe).
 const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001',
   '111100111001111', '111100111101111', '111001010010010', '111101111101111', '111101111001111'];
-function ccNumber(g, s, x, y, col) {
+CC_DIGITS['/'] = '001001010100100';
+const ccNumberWidth = (s, k = 1) => (s.length * 4 - 1) * k;
+/** s in the 3 x 5 digits at (x, y), each pixel k units; col a colour or a function of the character index (to colour
+ *  parts); shadow: a dark copy offset by half a pixel first (readable over liquid). */
+function ccNumber(g, s, x, y, col, shadow, k = 1) {
+  if (shadow) ccNumber(g, s, x + 0.5 * k, y + 0.5 * k, shadow, null, k);
   for (const [i, ch] of [...s].entries()) {
-    const bits = CC_DIGITS[+ch];
-    for (let k = 0; k < 15; k++) if (bits[k] === '1') { g.fillStyle = col; g.fillRect(x + i * 4 + (k % 3), y + Math.floor(k / 3), 1, 1); }
+    const bits = CC_DIGITS[ch === '/' ? '/' : +ch];
+    g.fillStyle = typeof col === 'function' ? col(i) : col;
+    for (let q = 0; q < 15; q++) if (bits[q] === '1') g.fillRect(x + (i * 4 + (q % 3)) * k, y + Math.floor(q / 3) * k, k, k);
   }
 }
 
@@ -83,29 +115,37 @@ function compactHud(s, font) {
   g.save(); g.translate(ox + 9, oy + 9.4); g.scale(1.25, 1.25); g.translate(-4.5, -4.5);
   shieldPath(g); g.setLineDash([0.4, 0.4]); g.strokeStyle = '#3a414b'; g.lineWidth = 0.4; g.stroke(); g.restore();
   // Experience: one glass pipe along the section's top edge (0 to 100 % in one run), the level in a small window at
-  // its left end (the same pill shape, a little taller).
-  const X = CC.xp, txt = String(Math.max(0, s.level)), tw = txt.length * 4 - 1, ww = Math.max(tw + 5, 12);
-  const wy = X.y + X.h / 2 - 3.4;
+  // its left end: the meters' small digits, a rounded rectangle like the plate (not a pill), inside the section's edge.
+  const X = CC.xp, LK = 0.6, txt = String(Math.max(0, s.level)), tw = ccNumberWidth(txt, LK), ww = Math.max(tw + 3, 8);
+  const wh = 5, wy = X.y + X.h / 2 - wh / 2;
   ccMeter(g, X.x0 + ww + 1, X.y, X.x1 - X.x0 - ww - 1, X.h, s.xp, ['#d8ff9a', '#5fd02a', '#1d5a08'], 18);
-  rrect(g, X.x0, wy, ww, 6.8, 3.4); g.fillStyle = steel(g, wy, wy + 6.8); g.fill();
-  rrect(g, X.x0 + 0.5, wy + 0.5, ww - 1, 5.8, 2.9); g.fillStyle = '#060708'; g.fill();
-  ccNumber(g, txt, X.x0 + ww / 2 - tw / 2, wy + 0.9, s.level > 0 ? '#80ff20' : '#3a5a2a');
+  rrect(g, X.x0, wy, ww, wh, 1.2); g.fillStyle = steel(g, wy, wy + wh); g.fill();
+  rrect(g, X.x0 + 0.5, wy + 0.5, ww - 1, wh - 1, 0.8); g.fillStyle = '#060708'; g.fill();
+  ccNumber(g, txt, X.x0 + ww / 2 - tw / 2, wy + wh / 2 - 2.5 * LK, s.level > 0 ? '#80ff20' : '#3a5a2a', null, LK);
   // Meters: every one the same size, with the HUD's own sprite as its icon.
   const { rows, meterH: mh, meterW: mw, icon: is } = CC, L = CC.left, Rt = CC.right;
   // Icons: each sprite trimmed to its drawing, one height (is), centred on its meter's middle.
-  const row = (side, k, img, frac, liq, segs, from) => {
-    const y = rows[k];
+  // Numbers: value / max in the small digits at 0.6 size, centred in the glass; the value bright, "/max" dim. Shown for
+  // the meter under the pointer (s.hover = 'L0'..'R2'), or all with s.numbers.
+  const NK = 0.6;
+  const row = (side, k, img, frac, liq, segs, value, max) => {
+    const y = rows[k], id = (side === L ? 'L' : 'R') + k;
     ccIcon(g, img, side.icon + is / 2, y + mh / 2, is);
-    ccMeter(g, side.x, y, mw, mh, frac, liq, segs, from);
+    ccMeter(g, side.x, y, mw, mh, frac, liq, segs);
+    CC.hit[id] = [side.x, y, mw, mh];
+    if ((s.numbers || s.hover === id) && value != null) {
+      const v = String(Math.round(value)), t = `${v}/${max}`;
+      ccNumber(g, t, side.x + mw / 2 - ccNumberWidth(t, NK) / 2, y + mh / 2 - 2.5 * NK, i => i < v.length ? '#ffffff' : '#9aa3ad',
+        'rgba(0,0,0,0.85)', NK);
+    }
   };
-  const drop = liq => { const [c2, g2] = hires(7, 7); ccDrop(g2, 0, 0, liq); return c2; };
-  row(L, 0, heart(false), s.health / 20, LIQUID.blood, 10);
+  row(L, 0, heart(false), s.health / 20, LIQUID.blood, 10, s.health, 20);
   if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
-  row(L, 1, food('full'), s.food / 20, LIQUID.broth, 10);
-  row(L, 2, armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10);
-  row(Rt, 0, drop(MANA.irons), s.irons, MANA.irons, 0);
-  row(Rt, 1, drop(MANA.ars), s.ars, MANA.ars, 0);
-  row(Rt, 2, air(s.air < 0.15), s.air, LIQUID.air, 10);   // always shown: full above water, draining under it
+  row(L, 1, ccDrumstick(), s.food / 20, LIQUID.broth, 10, s.food, 20);
+  row(L, 2, armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
+  row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
+  row(Rt, 1, ccGem(MANA.ars), s.ars, MANA.ars, 10, s.ars * 150, 150);
+  row(Rt, 2, air(s.air < 0.15), s.air, LIQUID.air, 10, Math.ceil(s.air * 10), 10);   // always shown: full above water, draining under it (bubbles)
   // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
   const [rx, ry] = CC.roll, tier = rollTier(s.rolls);
   g.drawImage(rollIcon(tier), rx, ry, 18, 18);
