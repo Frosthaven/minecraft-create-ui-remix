@@ -264,6 +264,36 @@ function ccHousing(g, cx, cy, inner) {   // inner: +1 when the hotbar is to the 
   g.save(); g.translate(0, 0.45); circle(g, cx, cy, ORB.r + ORB.bezel + 1.05); g.strokeStyle = 'rgba(220,225,230,0.12)'; g.lineWidth = 0.3; g.stroke(); g.restore();
 }
 
+/** The dodge roll dial at (cx, cy): a stone-rimmed glass with the dash chevrons in the tier colour, and around the rim a
+ *  segment per charge, each lit (proud, glowing, as the armor ring) once that charge is ready (partial while
+ *  recharging). ready: charges ready (fractional), n: the charge count. */
+function ccDashDial(g, cx, cy, ready, n) {
+  const r = 6.2, B = 1.1, R1 = r + B, tier = rollTier(ready), col = tier === 'grey' ? '#5a5e64' : ROLL_TIERS[tier];
+  circle(g, cx, cy, R1 + 0.9); g.strokeStyle = 'rgba(0,0,0,0.7)'; g.lineWidth = 0.8; g.stroke();   // the recess
+  circle(g, cx, cy, R1); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, '#55575b'], [0.35, '#36383c'], [1, '#1b1c1f']]); g.fill();
+  rim(g, () => circle(g, cx, cy, R1), cy - R1, cy + R1, '#8e9196', 0.3);
+  circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy - r * 0.3, r * 1.2, [[0, '#1a1c22'], [1, '#050608']]); g.fill();
+  // The chevrons behind the glass, with a soft glow of their colour.
+  g.save(); circle(g, cx, cy, r); g.clip();
+  circle(g, cx, cy, r); g.fillStyle = radial(g, cx, cy, r, [[0, col + '55'], [1, col + '00']]); g.fill();
+  const chev = x0 => { g.beginPath(); g.moveTo(x0, cy - 2.6); g.lineTo(x0 + 1.7, cy - 2.6); g.lineTo(x0 + 3.7, cy); g.lineTo(x0 + 1.7, cy + 2.6); g.lineTo(x0, cy + 2.6); g.lineTo(x0 + 2, cy); g.closePath(); };
+  for (const [x0, a] of [[cx - 3.6, 0.55], [cx - 0.9, 1]]) { chev(x0); g.fillStyle = mixHex(col, '#000000', a < 1 ? 0.4 : 0); g.fill(); }
+  g.beginPath(); g.ellipse(cx - r * 0.3, cy - r * 0.45, r * 0.42, r * 0.24, -0.5, 0, Math.PI * 2);
+  g.fillStyle = radial(g, cx - r * 0.3, cy - r * 0.45, r * 0.42, [[0, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]); g.fill();
+  g.restore();
+  // A segment per charge on the rim.
+  const gap = 0.12;
+  for (let k = 0; k < n; k++) {
+    const lit = ready - k;
+    if (lit <= 0) break;
+    const a0 = -Math.PI / 2 + (k / n) * Math.PI * 2 + gap, a1 = -Math.PI / 2 + ((k + 1) / n) * Math.PI * 2 - gap;
+    const a2 = a0 + (a1 - a0) * Math.min(1, lit), p0 = r - 0.25, p1 = R1 + 0.35;
+    const seg = () => { g.beginPath(); g.arc(cx, cy, p1, a0, a2); g.arc(cx, cy, p0, a2, a0, true); g.closePath(); };
+    g.save(); g.shadowColor = col; g.shadowBlur = 1.6; seg(); g.fillStyle = vgrad(g, cy - R1, cy + R1, [[0, mixHex(col, '#ffffff', 0.4)], [1, mixHex(col, '#000000', 0.3)]]); g.fill(); g.restore();
+    seg(); g.strokeStyle = 'rgba(0,0,0,0.8)'; g.lineWidth = 0.25; g.stroke();
+  }
+}
+
 /** An empty housing (creative's vitals, no mana mod): a cog pressed into its face. */
 function ccHousingCog(g, cx, cy) {
   ccEngrave(g, () => cogPath(g, cx, cy, ORB.r * 0.9, ORB.r * 0.7, 12), 0.6);

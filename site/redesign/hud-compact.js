@@ -315,20 +315,12 @@ function compactHud(s, font) {
   else if (rightExt === 'flamingo') row(Rt, 'ear', ccModIcon('flamingo'), s.flamingo, CC_FLAMINGO, 10, Math.round(s.flamingo * 10), 10);
   else if (rightExt === 'hull') row(Rt, 'ear', ccModIcon('plane'), s.hull, CC_HULL, 10, Math.round(s.hull * 20), 20);
   }
-  // Dodge roll: our dash icon, its count in the tier colour with the mod's black outline.
-  // No dodge roll mod: a pressed-in cog, centred in the dash's space (with orbs: between the housing and the plate's end).
+  // Dodge roll: a small dial like the orbs (stone rim, dark rivets, glass) with the dash chevrons behind the glass in
+  // the tier colour and a ring segment per charge, lit as charges are ready. Centred in its space at the wing's end.
+  // No dodge roll mod: a pressed-in cog there instead.
   const dashC = s.orbs ? (ORB.rx + ORB.housing + CC.plate.x1 - ORB.pull) / 2 : 152;
   if (s.rolls == null) ccDashFiller(g, s.leftHanded ? -dashC : dashC, 39);
-  else {
-  const dashIn = s.orbs ? 4 : 0;   // with orbs the dash sits a little further in, centred in its space
-  const [rx, ry] = s.leftHanded ? [-164.5 + pull + dashIn, CC.roll[1]] : [CC.roll[0] - pull - dashIn, CC.roll[1]], tier = rollTier(s.rolls);
-  g.drawImage(rollIcon(tier), rx, ry, 18, 18);
-  if (font) {
-    const t = String(Math.floor(s.rolls)), tx = rx + 17, ty = ry + 9 - 3.5;   // beside the dash, on its centre line
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) mcText(g, font, t, tx + dx, ty + dy, 1, '#000000');
-    mcText(g, font, t, tx, ty, 1, ROLL_TIERS[tier]);
-  }
-  }
+  else ccDashDial(g, s.leftHanded ? -dashC : dashC, 39, s.rolls, s.rollCount || 2);
   const [sx, sy] = CC.slot(s.slot);
   ccSlotMarks(g, s);
   ccAttackShade(g, s, [sx, sy]);
