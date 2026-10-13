@@ -2,8 +2,10 @@
 // Uses sprites.js, meters.js (LIQUID), hud-compact.js (ccMeter). s.t is the time in ms (animations).
 //   Hearts: poison / wither / frozen recolour the health liquid; hardcore adds a crimson trim; at 4 health or less the
 //     meter shakes; damage flashes it white; regeneration sweeps a light along it.
-//   Food: the Hunger effect turns the broth spoiled olive; holding food shows what it would restore (AppleSkin), a
-//     pale pulsing band past the fill.
+//   Food: saturation (vanilla's yellow outline, AppleSkin's overlay) is a cream layer along the broth's top, filled to
+//     the saturation level (never past the food); the Hunger effect turns the broth spoiled olive; holding food shows
+//     what it would restore (AppleSkin), a pale pulsing band past the fill.
+//   The heart icon follows the effect (poisoned, withered, frozen), as vanilla's hearts do.
 //   Riding: the mount's health replaces food (vanilla hides food then); charging a jump turns the XP pipe into the
 //     jump gauge (vanilla swaps the XP bar for the jump bar).
 //   Casting (Iron's): a small plate above the bar with a mana pipe while a spell charges. Attack cooldown (hotbar mode): a shade
@@ -34,6 +36,23 @@ function ccHealthFx(g, s, [x, y, w, h]) {
     g.fillStyle.addColorStop(0, 'rgba(255,255,255,0)'); g.fillStyle.addColorStop(0.5, 'rgba(255,230,220,0.6)'); g.fillStyle.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillRect(x + p - 4, y, 8, h);
   }
+  g.restore();
+}
+/** The heart icon for the current effect: the HUD's vial heart, its liquid in the effect's colours. 9 x 9. */
+function ccHeartIcon(s) {
+  if (!s.effect) return heart(false);
+  const liq = ccHealthLiquid(s), [c, g] = hires(9, 9);
+  heartPath(g); g.fillStyle = vgrad(g, 1, 8.2, [[0, liq[0]], [0.4, liq[1]], [1, liq[2]]]); g.fill();
+  heartFrame(g);
+  return c;
+}
+/** Saturation over the food meter: a cream layer in the top 45 % of the glass, from the left to saturation / 20. */
+function ccSaturation(g, s, [x, y, w, h]) {
+  const sat = Math.min(s.saturation, s.food);
+  if (sat <= 0) return;
+  g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, h / 2 - 0.5); g.clip();
+  g.fillStyle = vgrad(g, y + 0.5, y + 0.5 + (h - 1) * 0.45, [[0, '#fff3dc'], [1, '#f0c890']]);
+  g.fillRect(x + 0.5, y + 0.5, (w - 1) * sat / 20, (h - 1) * 0.45);
   g.restore();
 }
 /** AppleSkin's restore preview over the food meter: from the fill to fill + restore, pale and pulsing. */

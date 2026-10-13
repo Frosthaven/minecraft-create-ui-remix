@@ -129,7 +129,8 @@ it means Create Dark Inventory cancels the vanilla and mod HUD layers and draws 
   while a Create backtank has air the breath segment is the tank alone (darker copper meter) with its time left (m:ss,
   as Create's `remaining_air` layer) always on it: players rely on it. Then the bubbles. Breath shows while under
   water or while air is below full, so the segment never blinks out when the tank empties.
-- Statuses (`hud-compact-status.js`): heart effects recolour health (poison, wither, frozen), hardcore crimson trim,
+- Statuses (`hud-compact-status.js`): heart effects recolour health and its heart icon (poison, wither, frozen);
+  saturation (vanilla's yellow outline) is a cream layer along the food broth's top, to the saturation level; hardcore crimson trim,
   shake at 4 health or less, damage flash, regeneration sweep; Hunger effect spoils the broth; AppleSkin's food
   preview (what held food restores) pulses past the fill; riding swaps food for the mount's health (horse icon) and a
   charging jump turns the XP pipe into the jump gauge (vanilla swaps both); Iron's cast progress is its own small plate

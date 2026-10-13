@@ -16,9 +16,9 @@
      right wing is magic: Iron's mana and Ars mana, then our dash icon and count. Armor and breath appear only when the
      game would show them, extending the raised band sideways over their wing in a darker tone. Every meter is the same
      size, in ten segments, with the HUD's own icon; hover a meter for its value (current bright, max dim).</p>
-  <p>Every status the game shows here has a place (second row of buttons): heart effects recolour the health liquid
-     (poison, wither, frozen), hardcore trims it in crimson, it shakes at 4 health or less, flashes on damage and carries
-     a light sweep under Regeneration. The Hunger effect spoils the broth; holding food shows what it would restore
+  <p>Every status the game shows here has a place (second row of buttons): heart effects recolour the health liquid and
+     the heart (poison, wither, frozen), hardcore trims it in crimson, it shakes at 4 health or less, flashes on damage and carries
+     a light sweep under Regeneration. Saturation is a cream layer along the broth's top (vanilla's yellow outline); the Hunger effect spoils the broth; holding food shows what it would restore
      (AppleSkin). Riding swaps food for the mount's health and a charging jump turns the XP pipe into the jump gauge,
      as vanilla swaps them. A charging spell (Iron's) shows in its own small plate above the bar; the attack cooldown shades the
      selected socket; creative hides the vitals. A Create backtank shows alone in the breath segment, a darker copper
@@ -62,7 +62,7 @@ function render() {
 }
 const tap = (id, f) => document.getElementById(id).addEventListener('click', () => { f(); render(); });
 tap('hurt', () => { st.health = st.health <= 3 ? 20 : st.health - 3; st.hurtAt = performance.now(); });
-tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); });
+tap('eat', () => { st.food = st.food >= 20 ? 6 : Math.min(20, st.food + 4); st.saturation = Math.min(st.food, st.saturation + 3); });
 tap('cast', () => { st.irons = st.irons < 0.2 ? 1 : st.irons - 0.2; st.ars = st.ars < 0.2 ? 1 : st.ars - 0.15; });
 tap('numbers', () => { st.numbers = !st.numbers; document.getElementById('numbers').setAttribute('aria-pressed', String(st.numbers)); });
 tap('armorBtn', () => { st.armor = st.armor ? 0 : 14; document.getElementById('armorBtn').setAttribute('aria-pressed', String(!!st.armor)); });

@@ -203,10 +203,10 @@ function compactHud(s, font) {
   };
   // Vitals hide in creative (as vanilla). Health carries the heart statuses; riding swaps food for the mount's health.
   if (!s.creative) {
-  row(L, 0, heart(false), s.health / 20, ccHealthLiquid(s), 10, s.health, 20, { shake: ccShake(s), after: ccHealthFx });
+  row(L, 0, ccHeartIcon(s), s.health / 20, ccHealthLiquid(s), 10, s.health, 20, { shake: ccShake(s), after: ccHealthFx });
   if (s.absorb) ccMeter(g, L.x, rows[0], mw * s.absorb / 20, mh, 1, LIQUID.absorb, 0);
   if (s.riding) row(L, 1, ccHorse(), s.mount / s.mountMax, CC_MOUNT, 10, s.mount, s.mountMax);
-  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20, { after: ccFoodPreview });
+  else row(L, 1, ccDrumstick(), s.food / 20, s.hunger ? LIQUID.hunger : LIQUID.broth, 10, s.food, 20, { after: (g2, s2, box) => { ccSaturation(g2, s2, box); ccFoodPreview(g2, s2, box); } });
   }
   if (showArmor) row(L, 'ear', armor('full'), s.armor / 20, ['#eef1f4', '#9aa0a6', '#3a3d41'], 10, s.armor, 20);
   row(Rt, 0, ccFlask(MANA.irons), s.irons, MANA.irons, 10, s.irons * 200, 200);
