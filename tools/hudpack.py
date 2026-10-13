@@ -1,12 +1,15 @@
 """Builds the Create-HUD resource pack from the redesign pages' file lists (their PNG links): the HUD (with
 AppleSkin's overlay sheet), the player's inventory and the Sophisticated Backpacks screens.
 
-    python3 -I tools/hudpack.py <instance minecraft dir>    (with the site served on 127.0.0.1:18777)
+    python3 -I tools/hudpack.py    (with the site served on 127.0.0.1:18777)
+
+Writes the repo's resourcepacks/Create-HUD from scratch (the pages are the source; nothing is edited by hand there).
+./install.sh copies it into the instance, tools/release.sh into the release zip.
 
 All textures are R x (8) the originals; every user scales UVs by the logical size (the GUI sprite atlas, vanilla's
 256 x 256 blits, AppleSkin's and Sophisticated Core's explicit 256 x 256), so they draw at the original size.
 """
-import base64, json, os, re, subprocess, sys
+import base64, json, os, re, shutil, subprocess, sys
 
 PAGES = {'': None, 'inventory.html': 13, 'backpack.html': 8}  # page: files it lists (None: the page records it)
 
@@ -23,8 +26,7 @@ def target(name):
     return f'assets/{ns}/textures/gui/{path}.png'
 
 
-mc = sys.argv[1]
-pack = os.path.join(mc, 'resourcepacks', 'Create-HUD')
+pack = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resourcepacks', 'Create-HUD')
 files = []
 for page, n in PAGES.items():
     dom = subprocess.run(['google-chrome-stable', '--headless', '--incognito', '--disable-gpu', '--virtual-time-budget=20000',
@@ -35,6 +37,7 @@ for page, n in PAGES.items():
     if len(found) != n:
         sys.exit(f'{page or "index"}: expected {n} files, got {len(found)} (is the site served?)')
     files += found
+shutil.rmtree(os.path.join(pack, 'assets'), ignore_errors=True)
 for name, b64 in files:
     out = os.path.join(pack, target(name))
     os.makedirs(os.path.dirname(out), exist_ok=True)

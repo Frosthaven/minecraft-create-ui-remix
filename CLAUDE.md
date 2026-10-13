@@ -1,4 +1,4 @@
-# minecraft-create-hud-overhaul
+# minecraft-create-ui-remix
 
 A designer HUD (and later GUI) overhaul for the Create Ultimate Selection 2 modpack (the Haven
 server's pack), themed on Create. Two local web pages:
@@ -224,13 +224,25 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
   screen 488 GUI px wide so the Ars bar (fixed to the bottom-left corner) sits just left of the offhand slot.
 - Not restylable (drawn in code): the shake at low health and the Regeneration lift, all mod text (colours, places).
 
-## Packaging
+## Repo layout, install and release
 
-`python3 -I tools/hudpack.py <instance minecraft dir>` (site served) writes `resourcepacks/Create-HUD` from the file
-lists of the HUD page (the meter set; it records its count in `#sheet[data-count]`), Inventory and Backpack pages (90
-files now; the name stays Create-HUD so the game's pack list keeps it). Every user scales UVs by the logical size, so
-8x textures work. The sibling repo `minecraft-dark-mode-fixes` keeps its own copy of this pack for its `install.sh`,
-which refuses to overwrite a differing instance copy: refresh that copy there when it should match.
+One monorepo for everything a player installs (repo and folder were `minecraft-create-hud-overhaul`, and the
+mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
+
+- `site/`, `tools/extract.py`: the almanac and the redesign pages (the art source).
+- `resourcepacks/Create-HUD`: **generated**, never edited by hand. `python3 -I tools/hudpack.py` (site served)
+  rewrites it from the file lists of the HUD page (the meter set; it records its count in `#sheet[data-count]`),
+  Inventory and Backpack pages. Every user scales UVs by the logical size, so 8x textures work.
+- `resourcepacks/DarkModeEverywhere-Veil-Fix`: DME's two core shaders without bodiless function declarations,
+  so Veil's shader processor can parse them. Must stay at the top of the pack order.
+- `mod/`: Create Dark Inventory, the DME fixes (its own `mod/CLAUDE.md`).
+- `./install.sh [instance/minecraft]`: builds the mod, copies it and both packs into the Prism instance.
+- `tools/release.sh`: `dist/create-ui-remix.zip` with `mods/` (our jar, DME from Modrinth checked against
+  `tools/dme.sha512`, DME's license), `resourcepacks/` (each pack zipped) and `INSTALL.txt` (`tools/INSTALL.txt`).
+  `.github/workflows/release.yml` runs it on every push to main touching those parts and replaces the
+  `latest` release, which the README links. So: commit and push the regenerated pack to publish.
+- Pack textures: keep alpha binary (0 or 255). Many GUI blits run without blending, so a half-transparent
+  pixel shows at full color (the bright clumps that were on the backpack window corners).
 
 ## Next steps
 

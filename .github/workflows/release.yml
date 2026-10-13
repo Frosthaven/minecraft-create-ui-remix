@@ -1,0 +1,24 @@
+# Publishes dist/create-ui-remix.zip as the "latest" release on every push to main that changes it.
+name: release
+on:
+  push:
+    branches: [main]
+    paths: [mod/**, resourcepacks/**, tools/release.sh, tools/INSTALL.txt, tools/dme.sha512]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: tools/release.sh
+      - name: Replace the latest release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest dist/create-ui-remix.zip --title "Create UI Remix (latest)" \
+            --notes "Built from ${GITHUB_SHA::7}. Install steps: INSTALL.txt in the zip, or the README." --latest

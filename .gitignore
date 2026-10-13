@@ -1,3 +1,7 @@
 # Extracted from the local modpack by tools/extract.py: mod and pack art, not ours to publish.
 site/tex/
 site/manifest.json
+mod/build/
+mod/.gradle/
+mod/run/
+dist/
