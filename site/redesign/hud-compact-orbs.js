@@ -225,9 +225,9 @@ function ccOrbs(g, s) {
     const fh = (gh - 0.8) * s.mekasuit;
     rrect(g, gx + 0.4, gy + gh - 0.4 - fh, 1.6, fh, 0.8); g.fillStyle = vgrad(g, gy, gy + gh, [[0, CC_MEKA[0]], [0.5, CC_MEKA[1]], [1, CC_MEKA[2]]]); g.fill();
   }
-  // The backtank's time, always on (players rely on it), under the right orb's ring.
+  // The backtank's time, always on (players rely on it), just above the right orb's housing.
   if (breath && tank > 0) {
     const t = `${Math.floor(Math.ceil(tank) / 60)}:${String(Math.ceil(tank) % 60).padStart(2, '0')}`;
-    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y + ORB.r + ORB.bezel - 3.5, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6);
+    ccNumber(g, t, ORB.rx - ccNumberWidth(t, 0.6) / 2, ORB.y - ORB.housing - 4.2, ccTint('#d9874a'), 'rgba(0,0,0,0.95)', 0.6);   // above the housing's dome
   }
 }
