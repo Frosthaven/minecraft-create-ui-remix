@@ -116,8 +116,10 @@ not a spectator.
   the plate is drawn in three crops (centre, each wing); the offhand item follows; the effects rail moves with it.
 - Exhaustion: `HudFrame.exhaustShown` eases (Smooth, 400 ms for the reset jump); orbs reveal the screen-blended
   `exhaust` cell by angle, bars draw the strip's width.
-- Attack cooldown: on the selected socket whenever the attack indicator is not OFF, from `getAttackStrengthScale(partial
-  tick)`; the indicator mode is logged on change.
+- Attack cooldown: on the selected socket whenever the attack indicator is not OFF, vanilla's attack strength (the
+  ticker, via `LivingEntityAccessor`, plus the partial tick) over a delay from the held item's own attack speed
+  modifiers: on an item change the client's ATTACK_SPEED keeps the old item's until the server's attribute packet,
+  so `getAttackStrengthScale` refilled twice. The indicator mode is logged on change.
 - `HudStats`: Iron's mana (`ClientMagicData.getPlayerMana`, attribute `irons_spellbooks:max_mana`), Ars mana
   (`CapabilityRegistry.getMana`), the dodge roll (`RollAttachment.fromPlayer`: rollCount, getCooldown), Create's backtank
   (under water / in lava: persistent `VisualBacktankAir`; out of the water while the tanks' `BacktankUtil.getAir` total

@@ -11,11 +11,15 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.network.chat.Component;
+import dev.frosthaven.havencreateuiux.mixin.LivingEntityAccessor;
 
 /**
  * Mod state for the bar's extras, each read the way the mod's own HUD reads it (verified against the 1.21.1 jars in the
@@ -139,8 +143,27 @@ final class HudExtras {
         var mode = mc.options.attackIndicator().get();
         HudLog.changed("attackIndicator", mode, "attack indicator: {} ({})", mode, mode == AttackIndicatorStatus.OFF ? "no cooldown on the selected socket" : "cooldown shades the selected socket");
         if (mode == AttackIndicatorStatus.OFF) return null;
-        float f = p.getAttackStrengthScale(delta);
+        // Not getAttackStrengthScale: on an item change the client resets the ticker at once, but its ATTACK_SPEED still
+        // holds the old item's modifiers until the server's attribute packet lands. The veil then refilled at the old
+        // item's speed and jumped back (or came back after it ended) on the new one: two refills for one switch.
+        float f = (((LivingEntityAccessor) p).haven_create_ui_ux$attackStrengthTicker() + delta) / attackDelay(p);
         return f < 1 ? f : null;
+    }
+
+    /** Ticks to a full swing (vanilla's getCurrentItemAttackStrengthDelay), with the main hand's attack speed modifiers
+     *  from the held item, not from the synced attribute (vanilla weapons and most mods' use Item.BASE_ATTACK_SPEED_ID). */
+    private static float attackDelay(Player p) {
+        AttributeInstance synced = p.getAttribute(Attributes.ATTACK_SPEED);
+        if (synced == null) return p.getCurrentItemAttackStrengthDelay();
+        AttributeInstance held = new AttributeInstance(Attributes.ATTACK_SPEED, i -> {});
+        held.replaceFrom(synced);
+        held.removeModifier(Item.BASE_ATTACK_SPEED_ID);
+        p.getMainHandItem().forEachModifier(EquipmentSlot.MAINHAND, (a, m) -> {
+            if (!a.equals(Attributes.ATTACK_SPEED)) return;
+            held.removeModifier(m.id());
+            held.addTransientModifier(m);
+        });
+        return (float) (20 / held.getValue());
     }
 
     /** AppleSkin: the held food's {nutrition, health it would regenerate (0 when not)}, or null (AppleSkin's rules). */
