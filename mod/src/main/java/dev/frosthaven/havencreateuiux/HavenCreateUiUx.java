@@ -16,6 +16,7 @@ import net.neoforged.fml.event.lifecycle.InterModEnqueueEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 import dev.frosthaven.havencreateuiux.hud.CompactHud;
 import dev.frosthaven.havencreateuiux.hud.Followers;
@@ -56,6 +57,9 @@ public final class HavenCreateUiUx {
         modBus.addListener(InterModEnqueueEvent.class, event ->
                 InterModComms.sendTo(DME, "dme-shaderblacklist", () -> "StockKeeperRequestScreen:drawItemCount"));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, HavenCreateUiUx::moveDarkModeButton);
+        // The haven-create-hud pack, built into this jar (required, fixed at the top), and the pack's one-time defaults.
+        modBus.addListener(AddPackFindersEvent.class, BuiltInPack::register);
+        NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, PackDefaults::onScreen);
         // The dark mode split (SplitBlit): grey layers are looked up again after a resource reload.
         modBus.addListener(RegisterClientReloadListenersEvent.class, event ->
                 event.registerReloadListener((ResourceManagerReloadListener) manager -> SplitBlit.reload()));

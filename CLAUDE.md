@@ -310,15 +310,26 @@ mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
 - `resourcepacks/haven-create-hud`: **generated**, never edited by hand. `python3 -I tools/hudpack.py` (site served)
   rewrites it from the file lists of the HUD page (the meter set; it records its count in `#sheet[data-count]`),
   Inventory and Backpack pages. Every user scales UVs by the logical size, so 8x textures work.
+  **Shipped inside haven-create-ui-ux**: the mod's build copies it to `resourcepacks/haven_create_hud/` in the jar and
+  `BuiltInPack` registers it as a required pack fixed at the top (id `mod/haven_create_ui_ux:resourcepacks/haven_create_hud`,
+  title "Haven Create HUD"; it contains "create_hud", so `HudLayers.isCreateHudPack` matches it). No separate pack to
+  install, enable or order. After regenerating the pack, rebuild the mod.
 - `tools/pack-static/`: hand-written pack files that `hudpack.py` copies into haven-create-hud: DME's two core shaders
   without bodiless function declarations, so Veil's shader processor can parse them (was its own pack,
-  DarkModeEverywhere-Veil-Fix). So haven-create-hud must stay at the top of the pack order.
+  DarkModeEverywhere-Veil-Fix). The built-in pack is fixed at the top, so they always win.
 - `mod/`: haven-create-ui-ux, the DME fixes (its own `mod/CLAUDE.md`).
-- `./install.sh [instance/minecraft]`: builds the mod, copies it and both packs into the Prism instance.
-- `tools/release.sh`: `dist/create-ui-remix.zip` with `mods/` (our jar, DME from Modrinth checked against
-  `tools/dme.sha512`, DME's license), `resourcepacks/` (each pack zipped) and `INSTALL.txt` (`tools/INSTALL.txt`).
-  `.github/workflows/release.yml` runs it on every push to main touching those parts and replaces the
-  `latest` release, which the README links. So: commit and push the regenerated pack to publish.
+- `./install.sh [instance/minecraft]`: builds both mods and copies them into a Prism instance; removes the old
+  standalone packs (Create-HUD, the Veil fix, haven-create-hud folder) and their `options.txt` entries.
+- `tools/release.sh`: `dist/create-ui-remix.zip` with `mods/` (our two jars, DME from Modrinth checked against
+  `tools/dme.sha512`, DME's license) and `INSTALL.txt` (`tools/INSTALL.txt`); also leaves the two jars in `dist/`.
+  `.github/workflows/release.yml` runs it on every push to main touching those parts: it replaces the rolling
+  `latest` release (the README's link) and creates an immutable `v<mod_version>-<sha7>` release with the two jars and
+  the zip, which the Haven pack (minecraft-haven-pack) pins by hash. So: commit and push the regenerated pack to publish.
+- Pack defaults (`PackDefaults`, for the Haven pack): reads `config/haven-pack-defaults.json` (absent: nothing).
+  `resourcePacks`: `[{"id": "file/X.zip", "above"|"below": "file/Y.zip"}]`, each enabled once when first seen
+  installed (or installed again after removal), never re-enabled if the player turned it off while installed.
+  `shader`: `{"default": "<shaderpacks file>", "macos": "<file>", "enabled": true}`, applied through Iris on the first
+  run only. State in `config/haven-pack-defaults.state.json`. Log prefix `[pack defaults]`.
 - Dark mode split: the inventory, Curios, Cosmetic Armor, trash slot and backpack textures (storage backgrounds,
   `slots_background`, `gui_controls`) and the steel push buttons (recipe book sprite, Curios and Cosmetic Armor buttons,
   Sophisticated's buttons) also ship a `<name>_grey` layer (`greyLayer` in `screen-page.js`): their plain greys (opaque,

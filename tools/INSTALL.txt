@@ -3,8 +3,7 @@ Create UI Remix, for Create Ultimate Selection 2 (Minecraft 1.21.1, NeoForge). C
 1. Copy all three jars in mods/ into your instance's mods folder: haven-create-ui-ux, haven-mob-health-bars
    and Dark Mode Everywhere (it is not part of the modpack).
    (Prism: right-click the instance > Folder, then open minecraft/mods.)
-2. Copy haven-create-hud.zip from resourcepacks/ into the instance's resourcepacks folder.
-3. Start the game. Options > Resource Packs: enable haven-create-hud at the top of the list.
-4. The "Dark Mode" button in any inventory screen cycles 4 shades, from vanilla light mode to perfect dark.
+2. Start the game. The action bar's art (haven-create-hud) is built into haven-create-ui-ux: nothing else to enable.
+3. The "Dark Mode" button in any inventory screen cycles 4 shades, from vanilla light mode to perfect dark.
 
 Updates: download the zip again and replace the files.

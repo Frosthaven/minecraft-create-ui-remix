@@ -69,6 +69,16 @@ No player config edits needed; the instance config stays at DME's defaults.
 - Pack textures: keep alpha binary (0 or 255). Many GUI blits run without blending, so a
   half-transparent pixel shows at full color (the bright clumps on the backpack window corners).
 
+## Built-in pack and pack defaults
+
+- `BuiltInPack`: registers `resourcepacks/haven_create_hud` in the jar (copied from `../resourcepacks/haven-create-hud` by
+  processResources) on `AddPackFindersEvent` as a required client pack fixed at the top, id
+  `mod/haven_create_ui_ux:resourcepacks/haven_create_hud`. Log prefix `[built-in pack]`.
+- `PackDefaults`: one-time defaults from `config/haven-pack-defaults.json` on the first title screen of a session (format
+  in the root CLAUDE.md): enables listed resource packs once (ordered by `above`/`below`), sets Iris's shader per OS on
+  the first run (reflection: `Iris.getIrisConfig().setShaderPackName/setShadersEnabled/save`, `Iris.reload()`). The
+  player's later choices always win. Log prefix `[pack defaults]`.
+
 ## Compact action bar (`hud/`)
 
 The HUD designed on the redesign page `hud-compact.html`, drawn by the mod while the pack's textures

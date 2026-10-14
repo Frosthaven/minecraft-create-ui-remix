@@ -13,9 +13,9 @@ screens. Client only; nothing to install on the server.
 
 1. Copy all three jars in the zip's `mods/` (haven-create-ui-ux, haven-mob-health-bars and Dark Mode Everywhere) into
    your instance's `mods` folder (Prism: right-click the instance > Folder, then `minecraft/mods`).
-2. Copy `resourcepacks/haven-create-hud.zip` into the instance's `resourcepacks` folder.
-3. Start the game. Options > Resource Packs: enable **haven-create-hud** at the top of the list.
-4. The "Dark Mode" button on inventory screens cycles 4 shades, from vanilla light mode to perfect dark.
+2. Start the game. The action bar's art (haven-create-hud) is built into haven-create-ui-ux, so there is no
+   resource pack to install or enable.
+3. The "Dark Mode" button on inventory screens cycles 4 shades, from vanilla light mode to perfect dark.
 
 To update, download the zip again and replace the files.
 
@@ -35,6 +35,7 @@ Mods:
 - **Dark Mode Everywhere** 1.4.0 by Buuz135 (MIT; license included), supplied unmodified (not part of the modpack): a
   button on inventory screens cycles 4 shades, from vanilla light mode through toasted light and less perfect dark to perfect dark.
 
-Resource packs:
-- **haven-create-hud** (built here): the action bar's art, the inventory, Curios, Cosmetic Armor, TrashSlot and
-  Sophisticated Backpacks screens with their dark mode layers, and Dark Mode Everywhere's shaders fixed for Veil.
+Built into haven-create-ui-ux (a required resource pack, always at the top of the list):
+- **haven-create-hud** (generated in `resourcepacks/`): the action bar's art, the inventory, Curios, Cosmetic Armor,
+  TrashSlot and Sophisticated Backpacks screens with their dark mode layers, and Dark Mode Everywhere's shaders fixed
+  for Veil.

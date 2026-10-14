@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Builds dist/create-ui-remix.zip: the mods and resource packs a player needs, plus install steps.
+# Builds dist/create-ui-remix.zip: the mods a player needs (haven-create-hud is built into haven-create-ui-ux), plus
+# install steps; also leaves the two jars in dist/ for the versioned release.
 # Run locally or by .github/workflows/release.yml, which publishes it on every push to main.
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
@@ -8,7 +9,7 @@ DME_URL="https://cdn.modrinth.com/data/k3lrwGqk/versions/PEHRE9ut/darkmodeeveryw
 DME_SHA512="$(cat "$here/tools/dme.sha512")"
 
 work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
-out="$work/create-ui-remix"; mkdir -p "$out/mods" "$out/resourcepacks"
+out="$work/create-ui-remix"; mkdir -p "$out/mods"
 
 for m in mod mobbars; do (cd "$here/$m" && JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk}" ./gradlew build -q --no-configuration-cache); done
 cp "$here"/mod/build/libs/haven-create-ui-ux-*.jar "$here"/mobbars/build/libs/haven-mob-health-bars-*.jar "$out/mods/"
@@ -18,12 +19,9 @@ curl -fsSL "$DME_URL" -o "$dme"
 echo "$DME_SHA512  $dme" | sha512sum -c --quiet
 unzip -p "$dme" "LICENSE_Dark Mode Everywhere" > "$out/mods/LICENSE-DarkModeEverywhere.txt"
 
-for pack in "$here"/resourcepacks/*/; do
-  name="$(basename "$pack")"
-  (cd "$pack" && zip -qrX "$out/resourcepacks/$name.zip" .)
-done
 cp "$here/tools/INSTALL.txt" "$out/INSTALL.txt"
 
-mkdir -p "$here/dist"; rm -f "$here/dist/create-ui-remix.zip"
+mkdir -p "$here/dist"; rm -f "$here/dist/"*.zip "$here/dist/"*.jar
+cp "$here"/mod/build/libs/haven-create-ui-ux-*.jar "$here"/mobbars/build/libs/haven-mob-health-bars-*.jar "$here/dist/"
 (cd "$work" && zip -qrX "$here/dist/create-ui-remix.zip" create-ui-remix)
 echo "$here/dist/create-ui-remix.zip"
