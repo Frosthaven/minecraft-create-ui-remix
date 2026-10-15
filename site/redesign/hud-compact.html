@@ -44,7 +44,7 @@
 <div class="bar">
   <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button><button id="dive" aria-pressed="false" title="Under water with a Create backtank and diving helmet">Diving (backtank)</button>
   <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="armorBtn" aria-pressed="true" title="Armor worn: its meter extends the raised band over the left wing">Armor</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
-  <button id="orbsBtn" aria-pressed="true" title="Orbs (on, the default) or the wing meters (off)">Orbs</button><button id="primary" title="Which mana pool fills the orb when both mods are installed">Primary mana: Iron's</button>
+  <button id="orbsBtn" aria-pressed="false" title="Orbs (on) or the wing meters (off, the default); URL ?orbs starts on">Orbs</button><button id="primary" title="Which mana pool fills the orb when both mods are installed">Primary mana: Iron's</button>
   <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
 </div>
 <div class="bar">
@@ -107,7 +107,7 @@ const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45
   jump: null, cast: null, attack: null, creative: false, t: 0,
   spectator: false, maxHealth: 20, leftHanded: false, dash: null, holdHeal: 4, exhaustion: 2.4, itemName: '', nameAt: -1e9, actionBar: '',
   nourished: false, comfort: false, mekasuit: 0, aircraft: false, hull: 0.7, engine: null, train: null, flamingo: null, steampunk: false,
-  artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, orbs: true, manaPrimary: 'irons' };   // orbs: the game's default
+  artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, orbs: new URLSearchParams(location.search).has('orbs'), manaPrimary: 'irons' };   // bars: the game's default
 const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Pickaxe', 'Bread', 'Torch', 'Water Bucket', 'Goggles'];
 let font = null, waterTimer = null;
 function render() {
@@ -252,7 +252,7 @@ let manaSet = 0;
 tap('manaMods', () => { manaSet = (manaSet + 1) % MANA_SETS.length; const [name, i, a] = MANA_SETS[manaSet];
   st.irons = i; st.ars = a; document.getElementById('manaMods').textContent = 'Mana mods: ' + name; });
 tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
-flag('orbsBtn', 'orbs');
+flag('orbsBtn', 'orbs'); press('orbsBtn', st.orbs);
 const SIZES = [1, 1.25, 1.5, 0.75];
 tap('sideSize', () => { st.side = SIZES[(SIZES.indexOf(st.side ?? 1) + 1) % SIZES.length]; document.getElementById('sideSize').textContent = 'Side size: ' + st.side; });
 tap('barSize', () => { st.barScale = SIZES[(SIZES.indexOf(st.barScale ?? 1) + 1) % SIZES.length]; document.getElementById('barSize').textContent = 'Bar size: ' + st.barScale; });
