@@ -60,6 +60,7 @@ public final class HavenCreateUiUx {
         // The haven-create-hud pack, built into this jar (required, fixed at the top), and the pack's one-time defaults.
         modBus.addListener(AddPackFindersEvent.class, BuiltInPack::register);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, PackDefaults::onScreen);
+        LauncherSwap.run();   // Haven pack: installs the launcher the pack delivered, for launchers before 1.2
         // The dark mode split (SplitBlit): grey layers are looked up again after a resource reload.
         modBus.addListener(RegisterClientReloadListenersEvent.class, event ->
                 event.registerReloadListener((ResourceManagerReloadListener) manager -> SplitBlit.reload()));
