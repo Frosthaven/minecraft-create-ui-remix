@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 final class CompactAtlas {
     static final int K = 8;   // texels per GUI pixel
-    static final ResourceLocation PARTS = tex("parts"), ORBS = tex("orbs");
+    static final ResourceLocation PARTS = tex("parts"), ORBS = tex("orbs"), VANILLA = tex("vanilla");
     static final int PARTS_SIZE = 256 * K, ORBS_W = 384 * K, ORBS_H = 320 * K;
     static final int PLATE_W = 436 * K, PLATE_H = 66 * K, PLATE_X = -218 * K, PLATE_Y = (-15 - 50) * K;
     /** The plate texture's parts lie apart: the wings shifted out this far (each part padded past its joint edge). */
@@ -75,7 +75,13 @@ final class CompactAtlas {
     /** Logs (once each) every piece of a loaded atlas that has no visible texel: a blank or misplaced piece draws
      *  nothing in game (the export and this layout out of step), which is otherwise invisible in the log. */
     static void checkPieces(ResourceLocation loc, com.mojang.blaze3d.platform.NativeImage img) {
-        if (loc.equals(PARTS)) {
+        if (loc.equals(VANILLA)) {
+            for (String n : VAN_CELLS) blank(loc, img, n, vanCellU(n), vanCellV(n), VAN_CELL, VAN_CELL);
+            blank(loc, img, "gauge frame", 0, VAN_FRAME_V, VAN_FRAME_W, VAN_FRAME_H);
+            for (String n : VAN_STRIPS2) blank(loc, img, "strip " + n, 0, vanStripV(n, false), VAN_STRIP_W, 2 * K);
+            for (String n : VAN_STRIPS4) blank(loc, img, "tall strip " + n, 0, vanStripV(n, true), VAN_STRIP_W, 4 * K);
+            blank(loc, img, "tank glyphs", vanGlyphU('0'), 0, 52 * K, 11 * K);
+        } else if (loc.equals(PARTS)) {
             for (Object[] p : PARTS_PIECES) blank(loc, img, (String) p[0], (int) p[1] * K, (int) p[2] * K, (int) p[3] * K, (int) p[4] * K);
         } else if (loc.equals(ORBS)) {
             for (String n : ORB_CELLS) { double[] c = cell(n); blank(loc, img, n, (int) c[0] - CELL_HALF, (int) c[1] - CELL_HALF, 2 * CELL_HALF, 2 * CELL_HALF); }
@@ -125,6 +131,38 @@ final class CompactAtlas {
     static final int GEARS_U = 30 * K, GEARS_V = 190 * K, GEARS_W = 32 * K, GEARS_H = 12 * K;
     static final int GROOVE_U = 80 * K, GROOVE_V = 190 * K;
     static final int DASH_COG_U = 120 * K, DASH_COG_V = 190 * K, DASH_COG = 18 * K;
+
+    // ---- Almost Vanilla (vanilla.png, 224 x 96): KEEP IN STEP with hud-vanilla-export.js (VANX). ----
+    static final int VAN_W = 224 * K, VAN_H = 96 * K, VAN_CELL = 9 * K;
+    /** Icon cells, 9 x 9 at (10 (n % 16), 10 (n / 16)). */
+    static final List<String> VAN_CELLS = vanCells();
+    static final int VAN_FRAME_V = 32 * K, VAN_FRAME_W = 178 * K, VAN_FRAME_H = 5 * K, VAN_STRIP_W = 177 * K;
+    /** Liquid strips: 2 tall (the channels with mana) and 4 tall (the XP channel alone). */
+    static final List<String> VAN_STRIPS2 = List.of("irons", "ars", "xp", "jump", "cooldown", "cast", "train", "engine");
+    static final List<String> VAN_STRIPS4 = List.of("xp", "jump", "cooldown", "cast", "train", "engine");
+    /** The tank time's glyphs at 1 (3 x 5, 4 apart): the tank's tint (row 0), the black shadow (row 6). */
+    static final String VAN_GLYPHS = "0123456789:/+";
+    static final int VAN_GLYPH_TINT_V = 0, VAN_GLYPH_BLACK_V = 6 * K;
+
+    private static List<String> vanCells() {
+        List<String> l = new ArrayList<>(List.of("heart_empty"));
+        for (String f : List.of("blood", "poison", "wither", "frozen", "absorb", "mount")) { l.add("heart_" + f + "_full"); l.add("heart_" + f + "_half"); }
+        l.addAll(List.of("food_empty", "food_full", "food_half", "food_full_hunger", "food_half_hunger", "sat_full", "sat_half",
+                "glow_heal_full", "glow_heal_left", "glow_comfort_full", "glow_comfort_left", "glow_flash", "halo_full", "halo_right",
+                "tank_full", "tank_half", "tank_empty", "armor_full", "armor_half", "armor_empty", "air", "air_burst"));
+        return List.copyOf(l);
+    }
+    private static int vanCell(String n) {
+        int i = VAN_CELLS.indexOf(n);
+        if (i < 0) throw new IllegalArgumentException("no Almost Vanilla cell " + n);
+        return i;
+    }
+    static int vanCellU(String n) { return 10 * (vanCell(n) % 16) * K; }
+    static int vanCellV(String n) { return 10 * (vanCell(n) / 16) * K; }
+    static int vanStripV(String n, boolean tall) {
+        return tall ? (64 + 5 * VAN_STRIPS4.indexOf(n)) * K : (40 + 3 * VAN_STRIPS2.indexOf(n)) * K;
+    }
+    static int vanGlyphU(char c) { return (164 + 4 * VAN_GLYPHS.indexOf(c)) * K; }
 
     // ---- Orbs atlas: pieces centred in cells (texel centres). ----
     static final List<String> ORB_CELLS = orbCells();

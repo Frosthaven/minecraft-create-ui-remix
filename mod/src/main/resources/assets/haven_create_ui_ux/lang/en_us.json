@@ -6,6 +6,9 @@
   "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml.title": "Create UI Remix",
   "haven_create_ui_ux.configuration.hud": "Action bar",
   "haven_create_ui_ux.config.meter_display": "Meter display",
+  "haven_create_ui_ux.config.meter_display.almost_vanilla": "Almost Vanilla",
+  "haven_create_ui_ux.config.meter_display.orbs": "Orbs",
+  "haven_create_ui_ux.config.meter_display.bars": "Bars",
   "haven_create_ui_ux.config.primary_mana": "Primary mana pool",
   "haven_create_ui_ux.config.hud_scale": "Action bar size",
   "haven_create_ui_ux.config.side_scale": "Side bars size"

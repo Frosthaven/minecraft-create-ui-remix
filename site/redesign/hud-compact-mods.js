@@ -54,15 +54,16 @@ function ccDial(g, cx, cy, r, a, kind) {
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(a) * (r - 1.2), cy - Math.cos(a) * (r - 1.2)); g.stroke();
   if (kind === 'compass') { g.strokeStyle = '#e8e8e8'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - Math.sin(a) * (r - 1.6), cy + Math.cos(a) * (r - 1.6)); g.stroke(); }
 }
-/** The instrument plate above the bar: steampunk clock and compass, then Artifacts cooldown icons. Only when needed. */
-function ccInstruments(g, s) {
+/** The instrument plate above the bar: steampunk clock and compass, then Artifacts cooldown icons. Only when needed.
+ *  y: the plate's top (default: over the centre plate). Returns the plate's top, or null when there is none. */
+function ccInstruments(g, s, top) {
   const items = [];
   if (s.followers) items.push('ghost');
   if (s.steampunk) items.push('clock', 'compass');
   for (const cd of s.artifactCooldowns || []) items.push(cd);
-  if (!items.length) return;
+  if (!items.length) return null;
   const cellW = it => it === 'ghost' ? 9 + ccNumberWidth(String(s.followers), 0.94) + 1 : 9;   // the count at 0.94 (1.5x)
-  const cell = 9, w = items.reduce((a, it) => a + cellW(it), 0) + 3, h = 9, x = -w / 2, y = CC.plate.mid - h - 2.5, r = CC.plate.r;
+  const cell = 9, w = items.reduce((a, it) => a + cellW(it), 0) + 3, h = 9, x = -w / 2, y = top ?? CC.plate.mid - h - 2.5, r = CC.plate.r;
   ccFloatPlate(g, x, y, w, h);
   let cur = x + 2;
   items.forEach((it) => {
@@ -79,6 +80,7 @@ function ccInstruments(g, s) {
     g.fillStyle = it.color; g.fill();
     g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(cx - 3.6, cy - 3.6, 7.2, 7.2 * it.left);
   });
+  return y;
 }
 /** Create's marks over hotbar slots: toolbox-linked slots (red liquid corner chips), the schematic tool's slot (cyan). */
 function ccSlotMarks(g, s) {

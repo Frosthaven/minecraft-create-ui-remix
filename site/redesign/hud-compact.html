@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="page.css">
 </head>
 <body>
-<nav><a href="./">HUD</a><a href="hud-compact.html" aria-current="page">Compact HUD</a><a href="mob-bars.html">Mob bars</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="../">Almanac</a></nav>
+<nav><a href="./">HUD</a><a href="hud-compact.html" aria-current="page">Compact HUD</a><a href="hud-compact.html?vanilla">Vanilla layout</a><a href="mob-bars.html">Mob bars</a><a href="inventory.html">Inventory</a><a href="backpack.html">Backpack</a><a href="../">Almanac</a></nav>
 <header>
   <h1>Compact HUD: one action bar (concept)</h1>
   <p>Everything the action bar shows, gathered into one blackened iron bar instead of floating rows. The hotbar sits in
@@ -44,7 +44,7 @@
 <div class="bar">
   <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button><button id="dive" aria-pressed="false" title="Under water with a Create backtank and diving helmet">Diving (backtank)</button>
   <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="armorBtn" aria-pressed="true" title="Armor worn: its meter extends the raised band over the left wing">Armor</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
-  <button id="orbsBtn" aria-pressed="false" title="Orbs (on) or the wing meters (off, the default); URL ?orbs starts on">Orbs</button><button id="primary" title="Which mana pool fills the orb when both mods are installed">Primary mana: Iron's</button>
+  <button id="layout" aria-pressed="false" title="Layout: the compact action bar, or the vanilla layout (URL ?vanilla starts there)">Layout: action bar</button><button id="orbsBtn" aria-pressed="false" title="Orbs (on) or the wing meters (off, the default); URL ?orbs starts on">Orbs</button><button id="primary" title="Which mana pool fills the orb when both mods are installed">Primary mana: Iron's</button>
   <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
 </div>
 <div class="bar">
@@ -84,7 +84,7 @@
   <button id="sideSize" title="Config: side bars size (orbs or meters, offhand, dash), cycles">Side size: 1</button><button id="barSize" title="Config: action bar size (the whole bar), cycles">Bar size: 1</button><button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
 </div>
 <div class="compare">
-  <div class="scene galaxy" style="grid-column:1/-1"><span class="label after">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
+  <div class="scene galaxy" style="grid-column:1/-1"><span class="label after" id="hudLabel">Compact action bar (scaled to fit the page)</span><canvas id="hud" style="width:100%;height:auto"></canvas></div>
 </div>
 <h2>Files (for the game)</h2>
 <div id="sheet"></div>
@@ -101,13 +101,18 @@
 <script src="hud-compact-orbs.js"></script>
 <script src="hud-compact-export.js"></script>
 <script src="hud-compact-effects.js"></script>
+<script src="hud-vanilla-icons.js"></script>
+<script src="hud-vanilla-rows.js"></script>
+<script src="hud-vanilla.js"></script>
+<script src="hud-vanilla-export.js"></script>
 <script>
 const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45, level: 27, irons: 0.7, ars: 0.75, air: 1, rolls: 2, slot: 2, numbers: false, hover: null, diving: false, underwater: false, tank: 0, tankMax: 900,
   effect: '', hardcore: false, regen: false, hurtAt: -1e9, hunger: false, holdFood: 0, riding: false, mount: 22, mountMax: 30,
   jump: null, cast: null, attack: null, creative: false, t: 0,
   spectator: false, maxHealth: 20, leftHanded: false, dash: null, holdHeal: 4, exhaustion: 2.4, itemName: '', nameAt: -1e9, actionBar: '',
   nourished: false, comfort: false, mekasuit: 0, aircraft: false, hull: 0.7, engine: null, train: null, flamingo: null, steampunk: false,
-  artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, orbs: new URLSearchParams(location.search).has('orbs'), manaPrimary: 'irons' };   // bars: the game's default
+  artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, orbs: new URLSearchParams(location.search).has('orbs'), manaPrimary: 'irons',   // bars: the game's default
+  layout: new URLSearchParams(location.search).has('vanilla') ? 'vanilla' : 'bar' };
 const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Pickaxe', 'Bread', 'Torch', 'Water Bucket', 'Goggles'];
 let font = null, waterTimer = null;
 function render() {
@@ -115,7 +120,7 @@ function render() {
   // Exhaustion eases to its new value (the game: between ticks; back to empty when a point is taken).
   const ek = Math.min(1, (st.t - (st.exhAt ?? -1e9)) / 400);
   st.exhShown = st.exhAt == null ? st.exhaustion : st.exhFrom + (st.exhaustion - st.exhFrom) * (1 - (1 - ek) ** 2);
-  const img = compactHud(st, font), out = document.getElementById('hud');
+  const img = st.layout === 'vanilla' ? vanillaHud(st, font) : compactHud(st, font), out = document.getElementById('hud');
   out.width = img.width / 2; out.height = img.height / 2;   // 4 px per GUI px
   const g = out.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, out.width, out.height);
 }
@@ -236,7 +241,8 @@ tap('jetpackFly', () => {
   }
 });
 tap('aircraft', () => { st.aircraft = !st.aircraft; press('aircraft', st.aircraft); st.engine = st.aircraft ? 0.7 : null;   // engine: the XP pipe
-  if (st.aircraft) st.gear.aircraftHull = st.hull; else delete st.gear.aircraftHull; });   // hull: a gear status flag('train', 'train', v => v != null ? null : 0.55);
+  if (st.aircraft) st.gear.aircraftHull = st.hull; else delete st.gear.aircraftHull; });   // hull: a gear status
+flag('train', 'train', v => v != null ? null : 0.55);   // Create's train speed takes the XP pipe
 tap('flamingo', () => { const on = !('flamingo' in st.gear); if (on) st.gear.flamingo = 0.8; else delete st.gear.flamingo; press('flamingo', on); });   // a gear status
 // Toolbox slots: marks slots 5 and 8 and selects 5, to show a selected toolbox slot too.
 tap('toolbox', () => { const on = !st.toolboxSlots.length; st.toolboxSlots = on ? [4, 7] : []; press('toolbox', on); if (on) st.slot = 4; }); flag('schematic', 'schematicSlot', v => v != null ? null : 6);
@@ -253,6 +259,16 @@ tap('manaMods', () => { manaSet = (manaSet + 1) % MANA_SETS.length; const [name,
   st.irons = i; st.ars = a; document.getElementById('manaMods').textContent = 'Mana mods: ' + name; });
 tap('noRoll', () => { const on = st.rolls != null; st.rolls = on ? null : 2; press('noRoll', on); });
 flag('orbsBtn', 'orbs'); press('orbsBtn', st.orbs);
+/** The layout: the compact action bar or the vanilla layout (hud-vanilla.js). Every state button drives both; the
+ *  action bar's own options (orbs, side size) hide in the vanilla layout. */
+function showLayout() {
+  const v = st.layout === 'vanilla';
+  press('layout', v); document.getElementById('layout').textContent = 'Layout: ' + (v ? 'vanilla' : 'action bar');
+  for (const id of ['orbsBtn', 'sideSize']) document.getElementById(id).hidden = v;
+  document.getElementById('hudLabel').textContent = v ? 'Vanilla layout (scaled to fit the page)' : 'Compact action bar (scaled to fit the page)';
+}
+tap('layout', () => { st.layout = st.layout === 'vanilla' ? 'bar' : 'vanilla'; showLayout(); });
+showLayout();
 const SIZES = [1, 1.25, 1.5, 0.75];
 tap('sideSize', () => { st.side = SIZES[(SIZES.indexOf(st.side ?? 1) + 1) % SIZES.length]; document.getElementById('sideSize').textContent = 'Side size: ' + st.side; });
 tap('barSize', () => { st.barScale = SIZES[(SIZES.indexOf(st.barScale ?? 1) + 1) % SIZES.length]; document.getElementById('barSize').textContent = 'Bar size: ' + st.barScale; });
@@ -272,7 +288,8 @@ tap('castBtn', () => ramp('cast', 1500, null, () => { if (st.irons != null) st.i
 tap('attack', () => ramp('attack', 625, null));
 // Redraw while something animates (low-health shake, damage flash, regeneration, the food preview's pulse, ramps).
 setInterval(() => {
-  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.healAt ?? -1e9) < 400 || performance.now() - (st.exhAt ?? -1e9) < 500 || st.jump != null || st.cast != null || st.attack != null;
+  const moving = st.steampunk || st.comfort || st.nourished || st.aircraft || st.t - st.nameAt < 2100 || st.health <= 4 || st.food <= 6 || st.regen || st.holdFood || performance.now() - st.hurtAt < 450 || performance.now() - (st.healAt ?? -1e9) < 400 || performance.now() - (st.exhAt ?? -1e9) < 500 || st.jump != null || st.cast != null || st.attack != null
+    || (st.layout === 'vanilla' && st.saturation <= 0);   // vanilla: the food shake
   if (moving) render();
 }, 60);
 addEventListener('keydown', e => { if (e.key >= '1' && e.key <= '9') { st.slot = +e.key - 1; st.itemName = ITEMS[st.slot]; st.nameAt = performance.now(); render(); } });

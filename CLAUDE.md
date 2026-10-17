@@ -133,7 +133,7 @@ All positions are logical pixels; `cx` is the screen center and `bottom` the scr
 One iron action bar instead of the floating rows: hotbar in the raised middle with the XP pipe on its top edge and a
 level window centred on it; the vitals and mana either as three rows of bars per wing (default) or as two orbs in housings on the wing
 plates (client config "Meter display"). Shipping the page exports its textures (`hud-compact-export.js`,
-6 files under `createhud:textures/gui/compact/`: 4 plates, `parts`, `orbs`) and haven-create-ui-ux draws the layout
+7 files under `createhud:textures/gui/compact/`: 4 plates, `parts`, `orbs`, `vanilla`) and haven-create-ui-ux draws the layout
 from them, piece by piece in the page's order (the page and the export draw with the same functions, so preview and
 game match). The pack no longer overrides vanilla's HUD sprites (the HUD page `index.html` is not packed), so other
 mods that reuse vanilla hearts look vanilla.
@@ -190,10 +190,30 @@ mods that reuse vanilla hearts look vanilla.
 - Liquids are lifted a step (`ccLift`: mid toward white 10 %, dark toward mid 30 %); mana more (16 % / 50 %, nebula
   deep tone (128, 122, 166), the orb's mask at 0.55) to the cast bar's value. A smooth ring meter darkens the bezel
   under it all round (`ccOrbRingTrack`, atlas cell `ringTrack`).
-- Client config (`UiConfig`, Mods > Config in game): meter display Bars | Orbs (default Bars), primary mana pool
-  Iron's | Ars, action bar size (1.0).
+- Client config (`UiConfig`, Mods > Config in game): meter display Almost Vanilla | Orbs | Bars (default Almost Vanilla,
+  below), primary mana pool Iron's | Ars, action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
+
+## Almost Vanilla (the compact page's Layout toggle, `?vanilla`; `hud-vanilla*.js`): in game via the mod (VanillaHud), the default
+
+- The pieces at vanilla's places, floating (no plate): the sockets (span -89..89; no bar or row reaches past it); the
+  offhand socket and the dodge roll dial in the same 18 x 18 box at either end (x -118 | 100, y 30; left-handed swaps them);
+  hardcore's skull plate above the offhand.
+- The gauge is vanilla's XP bar (bottom - 29, 5 tall): a steel casing around 4 of glass, mana (2) straight over XP (2), no
+  divider; two mana mods split the mana at the level window (primary left from the left, the other right from the
+  right), each running exactly 1 px under the window's border; one fills it; none: XP fills the 4. Takeovers (cast,
+  dash, jump, train, engine) take the XP channel with their icon in the window.
+- Rows 3 px over the gauge, 10 icons (81 px) from each end, rows 10 apart, by vanilla's rules (`hud-vanilla-rows.js`):
+  hearts (absorption and max health add rows, the low health shake), food from the right (Hunger, the shake at
+  saturation 0) or the mount's hearts, armor shields above hearts, breath bubbles above food (popping one; 0.75 right so
+  their edge meets the food's), or while breathing gear supplies air copper tanks with an mm:ss time right-aligned.
+  Our effects on icons: the damage flash (red, 400 ms), Regeneration motes, natural heal, AppleSkin (saturation outline,
+  held food preview, exhaustion strip), Comfort's sheen, Nourishment's gold halo. Numbers dim the rows to 40 %.
+- Icons (`hud-vanilla-icons.js`) in the shields' style: bright fill, lit left facet, thin outline, rim, glint; half = the
+  empty icon with one side filled over it. Texture: `hud-vanilla-export.js` (`compact/vanilla`, 224 x 96: icon cells,
+  the gauge frame, liquid strips, the tank time's digits), KEEP IN STEP with `CompactAtlas` VAN_*.
+- The effects rail starts at the left end box (x -118); the instrument plate sits above the stack.
 
 ## Mob health bars (`site/redesign/mob-bars.html`, `mob-bars.js`): in game via its own mod haven-mob-health-bars (`mobbars/CLAUDE.md`)
 

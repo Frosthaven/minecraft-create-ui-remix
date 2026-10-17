@@ -32,7 +32,8 @@ import org.lwjgl.glfw.GLFW;
  * (createhud:textures/gui/compact/*); drawn at 1/8 GUI px from them, so it matches the page texel for texel.
  * Positions are the page's layout (logical units, x from the screen centre, the bar's bottom at 50) times 8.
  * Here: the plate, hotbar, XP pipe and level, the dash, the floating plates, the items; the vitals
- * and mana by the config's meter display, {@link OrbHud} (orbs) or {@link BarHud} (bars).
+ * and mana by the config's meter display, {@link OrbHud} (orbs) or {@link BarHud} (bars). Almost Vanilla (the default)
+ * draws no plate: {@link VanillaHud}, with this class's hotbar, items, dial and instrument plate.
  */
 public final class CompactHud {
     public static final ResourceLocation LAYER = ResourceLocation.fromNamespaceAndPath("haven_create_ui_ux", "compact_hud");
@@ -55,7 +56,7 @@ public final class CompactHud {
     public static float scale() { return (float) (double) UiConfig.HUD_SCALE.get(); }
 
     /** Everything the bar draws from (mipmapped, {@link MipTexture}). */
-    private static final List<ResourceLocation> TEXTURES = List.of(PARTS, ORBS, plate(true), plate(false));
+    private static final List<ResourceLocation> TEXTURES = List.of(PARTS, ORBS, VANILLA, plate(true), plate(false));
     static { CompactAtlas.checkLayout(); }
     private static List<String> packIds = List.of();
     private static boolean present;
@@ -107,8 +108,9 @@ public final class CompactHud {
     // ---- Drawing, in texels relative to (screen centre, screen bottom) -------------------------------------------
 
     /** The instrument plate above the bar: web followers (ghost and count), the steampunk armor's clock and compass, the
-     *  worn Artifacts on cooldown (their item, shaded by the time left). Only while there is one. */
-    private static void instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta) {
+     *  worn Artifacts on cooldown (their item, shaded by the time left). Only while there is one. top: the plate's top
+     *  (units; the action bar: over its centre). Returns the plate's top, or NaN when there is none. */
+    static double instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta, double top) {
         restoreBlend();
         int followers = Followers.count();
         boolean steam = HudExtras.steampunk(p);
@@ -116,9 +118,9 @@ public final class CompactHud {
         String fol = String.valueOf(followers);
         int fw = (int) Math.round(digitsWidth(fol) * 1.5);   // the count at 1.5x
         int w = (followers > 0 ? 9 * K + fw + K : 0) + (steam ? 18 * K : 0) + cooldowns.size() * 9 * K;
-        if (w == 0) return;
+        if (w == 0) return Double.NaN;
         w += 3 * K;
-        int x0 = -w / 2, y0 = y(MID - 9 - 2.5), cap = 4 * K;
+        int x0 = -w / 2, y0 = y(top), cap = 4 * K;
         use(g, PARTS);
         g.blit(PARTS, x0, y0, cap, IPLATE_H, IPLATE_U, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
         g.blit(PARTS, x0 + cap, y0, w - 2 * cap, IPLATE_H, IPLATE_U + cap, OVER_V, IPLATE_W - 2 * cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
@@ -157,6 +159,7 @@ public final class CompactHud {
             g.fill(cur + K, y0 + K, cur + 8 * K, y0 + K + (int) (7 * K * (float) cd[1]), 0x99000000);
             cur += 9 * K;
         }
+        return top;
     }
 
     /** A dial face from the atlas with its hand at angle a (radians, clockwise from up). */
@@ -200,8 +203,8 @@ public final class CompactHud {
         LocalPlayer p = mc.player;
         int cx = g.guiWidth() / 2, bottom = g.guiHeight();
         HudFrame f = new HudFrame(mc, p, delta, NUMBERS.isDown());
-        HudLog.changed("config", f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side, "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {})",
-                f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side);
+        HudLog.changed("config", f.vanilla + "/" + f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side, "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {})",
+                f.vanilla ? "Almost Vanilla" : f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side);
         HudLog.changed("mode", (f.hurtable ? "survival" : "creative") + (f.lefty ? ", left-handed" : "") + (f.hardcore ? ", hardcore" : ""),
                 "mode: {}{}{}", f.hurtable ? "survival" : "creative (vitals hidden)", f.lefty ? ", left-handed (offhand on the right)" : "", f.hardcore ? ", hardcore (skull)" : "");
         // Mod extras, each read as the mod's own HUD reads it (HudExtras); null / -1 when absent or not showing.
@@ -216,6 +219,7 @@ public final class CompactHud {
                 f.showBreath ? "shown" : "hidden", f.tank != null ? " (Create backtank: " + (int) f.tank[0] + "s of " + (int) f.tank[1] + "s)" : "");
         HudLog.changed("mana", (f.irons != null) + "/" + (f.ars != null), "mana mods: Iron's Spellbooks {}, Ars Nouveau {}",
                 f.irons != null ? "found (" + (int) f.irons[0] + "/" + (int) f.irons[1] + ")" : "not found", f.ars != null ? "found (" + (int) f.ars[0] + "/" + (int) f.ars[1] + ")" : "not found");
+        if (f.vanilla) { VanillaHud.draw(g, f, delta, scale, cx, bottom, cast, train, engine, attack, toolbox, schematic); return; }
 
         var pose = g.pose();
         pose.pushPose();
@@ -235,24 +239,14 @@ public final class CompactHud {
         double offSide = f.lefty ? 1 : -1;   // the offhand's wing; the dash takes the other
 
         // Hotbar sockets, the offhand socket (its shield ghost while empty), the selection frame.
-        for (int i = 0; i < 9; i++) part(g, SOCKET_U, 0, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
         double oy = offhandY(f);
-        side(g, offSide, f.side, () -> {
-            part(g, SOCKET_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(oy));
-            if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(f.ends.offhand), y(oy));
-        });
-        // Create's slot marks (toolbox chips, the schematic tool's frame), then the selection (a toolbox slot's in red, its
-        // chips lit over the ring). The attack cooldown is a veil over the item, after the items.
-        int sel = p.getInventory().selected;
-        for (int i = 0; i < 9; i++) if (toolbox[i] && i != sel) part(g, CHIPS_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
-        if (schematic >= 0) part(g, SCHEMATIC_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * schematic), y(30));
-        if (toolbox[sel]) part(g, TOOLBOX_SEL_U, OVER_V, 24 * K, 23 * K, x(-92 + 20 * sel), y(27));
-        else part(g, SELECTION_U, 0, 24 * K, 23 * K, x(-92 + 20 * sel), y(27));
+        side(g, offSide, f.side, () -> offhandSocket(g, p, f.ends.offhand, oy));
+        hotbar(g, p, toolbox, schematic);
 
         xpPipe(g, p, cast, train, engine);
         if (f.orbs) OrbHud.draw(g, f); else BarHud.draw(g, f);
         side(g, -offSide, f.side, () -> dash(g, f));
-        instruments(g, mc, p, delta);
+        instruments(g, mc, p, delta, MID - 9 - 2.5);
         double wingTop = f.orbs ? 28 : BarHud.TOP;   // the plate's top over the offhand
         if (f.hardcore) side(g, offSide, f.side, () -> part(g, SKULL_U, 0, SKULL_W, SKULL_H, x(f.ends.offhand + 9 - 4.5), y(wingTop - 9 - 2.5)));   // a skull above the offhand
         // The effects rail: above the orbs' domes; bar mode: above the tall wings (and the skull); following the side size.
@@ -261,8 +255,7 @@ public final class CompactHud {
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.
-        for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
-        if (attack != null) attackVeil(g, cx - 88 + 20 * sel, bottom - 19, attack);
+        hotbarItems(g, mc, p, attack, cx, bottom);
         pose.pushPose();
         // In its socket (bars: centred on the meter block), at the side bars' size.
         if (f.side != 1) {
@@ -280,24 +273,54 @@ public final class CompactHud {
         mc.gui.rightHeight = Math.max(mc.gui.rightHeight, (int) Math.ceil(33 * scale));
     }
 
+    /** The hotbar's sockets, Create's slot marks (toolbox chips, the schematic tool's frame) and the selection (a toolbox
+     *  slot's in red, its chips lit over the ring); under the 1/8 pose. The attack cooldown is a veil after the items. */
+    static void hotbar(GuiGraphics g, LocalPlayer p, boolean[] toolbox, int schematic) {
+        for (int i = 0; i < 9; i++) part(g, SOCKET_U, 0, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
+        int sel = p.getInventory().selected;
+        for (int i = 0; i < 9; i++) if (toolbox[i] && i != sel) part(g, CHIPS_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * i), y(30));
+        if (schematic >= 0) part(g, SCHEMATIC_U, OVER_V, 18 * K, 18 * K, x(-89 + 20 * schematic), y(30));
+        if (toolbox[sel]) part(g, TOOLBOX_SEL_U, OVER_V, 24 * K, 23 * K, x(-92 + 20 * sel), y(27));
+        else part(g, SELECTION_U, 0, 24 * K, 23 * K, x(-92 + 20 * sel), y(27));
+    }
+    /** The offhand socket at (x, y) (units, top left), its shield ghost while the hand is empty. */
+    static void offhandSocket(GuiGraphics g, LocalPlayer p, double ux, double uy) {
+        part(g, SOCKET_U, 0, 18 * K, 18 * K, x(ux), y(uy));
+        if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(ux), y(uy));
+    }
+    /** The hotbar's items at vanilla's exact spots (GUI px), then the attack cooldown's veil over the selected one. */
+    static void hotbarItems(GuiGraphics g, Minecraft mc, LocalPlayer p, Float attack, int cx, int bottom) {
+        for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
+        if (attack != null) attackVeil(g, cx - 88 + 20 * p.getInventory().selected, bottom - 19, attack);
+    }
+
     /** The offhand socket's top (units): orbs: level with the hotbar; bars: centred on the wing's meter block. */
     private static double offhandY(HudFrame f) { return f.orbs ? 30 : BarHud.MID - 9; }
+
+    /** What takes over the XP pipe: its liquid (the atlas strip), window icon and fill. */
+    record Take(String liquid, String icon, double frac) {}
+    /** The takeover, first wins: a charging spell (Iron's), a mount's dash cooldown or jump, a train's speed, an engine;
+     *  null: experience. */
+    static Take take(LocalPlayer p, Float cast, Float train, Float engine) {
+        var jumpable = p.jumpableVehicle();
+        HudLog.changed("mount", p.getVehicle() == null ? "none" : p.getVehicle().getType().toString(), "vehicle: {}",
+                p.getVehicle() == null ? "none" : p.getVehicle().getType().toShortString() + (jumpable != null ? " (jump bar takes the XP pipe while charging)" : ""));
+        String mountIcon = p.getVehicle() instanceof Camel ? "camel" : "horse";
+        if (cast != null) return new Take("cast", "flask", cast);
+        if (jumpable != null && jumpable.getJumpCooldown() > 0) return new Take("cooldown", mountIcon, 1);
+        if (jumpable != null && p.getJumpRidingScale() > 0) return new Take("jump", mountIcon, p.getJumpRidingScale());
+        if (train != null) return new Take("train", "train", train);
+        if (engine != null) return new Take("engine", "engine", engine);
+        return null;
+    }
 
     /** The shared pipe: XP, or a takeover (first wins: a charging spell (Iron's), a mount's dash cooldown or jump, a
      *  train's speed, an engine) with its icon in a larger window. The level in a small window centred on the pipe. */
     private static void xpPipe(GuiGraphics g, LocalPlayer p, Float cast, Float train, Float engine) {
         restoreBlend();   // the level window and digits have transparent cells
-        var jumpable = p.jumpableVehicle();
-        HudLog.changed("mount", p.getVehicle() == null ? "none" : p.getVehicle().getType().toString(), "vehicle: {}",
-                p.getVehicle() == null ? "none" : p.getVehicle().getType().toShortString() + (jumpable != null ? " (jump bar takes the XP pipe while charging)" : ""));
-        String mountIcon = p.getVehicle() instanceof Camel ? "camel" : "horse", take = null, takeIcon = null;
-        double takeFrac = 0;
-        if (cast != null) { take = "cast"; takeIcon = "flask"; takeFrac = cast; }
-        else if (jumpable != null && jumpable.getJumpCooldown() > 0) { take = "cooldown"; takeIcon = mountIcon; takeFrac = 1; }
-        else if (jumpable != null && p.getJumpRidingScale() > 0) { take = "jump"; takeIcon = mountIcon; takeFrac = p.getJumpRidingScale(); }
-        else if (train != null) { take = "train"; takeIcon = "train"; takeFrac = train; }
-        else if (engine != null) { take = "engine"; takeIcon = "engine"; takeFrac = engine; }
-        double frac = clamp(take != null ? takeFrac : p.experienceProgress);
+        Take t = take(p, cast, train, engine);
+        String take = t == null ? null : t.liquid(), takeIcon = t == null ? null : t.icon();
+        double frac = clamp(t != null ? t.frac() : p.experienceProgress);
         part(g, 0, XP_CASE_V, XP_W, XP_H, x(XP_X0), y(XP_Y));
         int inner = XP_W - 2 * INSET, fill = (int) Math.round(inner * frac);
         part(g, INSET, xpLiquidV(take != null ? take : "xp") + INSET, fill, XP_H - 2 * INSET, x(XP_X0) + INSET, y(XP_Y) + INSET);
@@ -326,12 +349,17 @@ public final class CompactHud {
         float[] roll = f.roll;
         HudLog.changed("roll", roll == null ? "none" : String.valueOf((int) roll[1]), "dodge roll: {}", roll == null ? "not found (a pressed-in cog takes its place)" : "found, " + (int) roll[1] + " charges");
         // Orbs: in its own housing (a parts piece over the plate); bars: centred on the meter block. Drawn DIAL_S x.
-        double dy = f.orbs ? HudFrame.DIAL_Y : BarHud.MID, cx = f.ends.dash * K, cy = (dy - 50) * K;
+        double dy = f.orbs ? HudFrame.DIAL_Y : BarHud.MID;
         if (f.orbs) part(g, DOME_U, DOME_V, DOME_W, DOME_H, x(f.ends.dash - DOME_HALF), y(DOME_TOP));
+        dialAt(g, roll, f.ends.dash, dy, HudFrame.DIAL_S);
+    }
+    /** The dial (or its cog) centred on (ux, uy) (units) at s x its own size. */
+    static void dialAt(GuiGraphics g, float[] roll, double ux, double uy, double s) {
+        double cx = ux * K, cy = (uy - 50) * K;
         var pose = g.pose();
         pose.pushPose();
         pose.translate(cx, cy, 0);
-        pose.scale((float) HudFrame.DIAL_S, (float) HudFrame.DIAL_S, 1);
+        pose.scale((float) s, (float) s, 1);
         pose.translate(-cx, -cy, 0);
         try { dial(g, roll, cx, cy); } finally { pose.popPose(); }
     }
@@ -357,7 +385,7 @@ public final class CompactHud {
     /** The attack cooldown (the page's ccAttackShade): a translucent cool grey veil over the selected item (so the held
      *  weapon dims), hanging from the slot's top and shrinking upward as the attack recharges, a faint light line and the
      *  amber edge at its bottom. Over the items (in front of their depth), with the HUD's blending. */
-    private static void attackVeil(GuiGraphics g, int x, int y, float charge) {
+    static void attackVeil(GuiGraphics g, int x, int y, float charge) {
         int h = Math.round(16 * (1 - charge));
         if (h <= 0) return;
         var pose = g.pose();
@@ -371,7 +399,7 @@ public final class CompactHud {
         pose.popPose();
     }
 
-    private static void slotItem(GuiGraphics g, Minecraft mc, LocalPlayer p, ItemStack stack, int x, int y, int seed) {
+    static void slotItem(GuiGraphics g, Minecraft mc, LocalPlayer p, ItemStack stack, int x, int y, int seed) {
         if (stack.isEmpty()) return;
         use(g, ITEM);
         g.renderItem(p, stack, x, y, seed);

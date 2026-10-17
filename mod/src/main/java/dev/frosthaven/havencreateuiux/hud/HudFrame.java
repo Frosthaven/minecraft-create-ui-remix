@@ -32,7 +32,7 @@ final class HudFrame {
     final Minecraft mc;
     final LocalPlayer p;
     final long now;
-    final boolean orbs, hurtable, lefty, nums, underwater, showArmor, showBreath, hardcore, regen, comfort, nourished, hunger;
+    final boolean vanilla, orbs, hurtable, lefty, nums, underwater, showArmor, showBreath, hardcore, regen, comfort, nourished, hunger;
     final float hp, maxHp, absorb, saturation, exhaustion;
     final int armor, food;
     final long hurtSince, healSince;
@@ -54,6 +54,7 @@ final class HudFrame {
         this.mc = mc;
         this.p = p;
         now = Util.getMillis();
+        vanilla = UiConfig.METER_DISPLAY.get() == UiConfig.MeterDisplay.ALMOST_VANILLA;   // VanillaHud
         orbs = UiConfig.METER_DISPLAY.get() == UiConfig.MeterDisplay.ORBS;
         primaryArs = UiConfig.PRIMARY_MANA.get() == UiConfig.PrimaryMana.ARS;
         side = UiConfig.SIDE_SCALE.get() * WING_BASE;

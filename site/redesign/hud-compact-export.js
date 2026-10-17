@@ -199,5 +199,6 @@ function compactExports() {
   ccDial(g, 116.5, 214.5, 3.6, null, 'clock'); ccDial(g, 126.5, 214.5, 3.6, null, 'compass');
   files.push(['createhud: compact/parts', c]);
   files.push(['createhud: compact/orbs', ccxOrbs()]);
+  files.push(['createhud: compact/vanilla', vanillaAtlas()]);   // Almost Vanilla (hud-vanilla-export.js)
   return files;
 }

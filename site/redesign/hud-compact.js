@@ -50,18 +50,23 @@ const CC = {
   // window centred on it
 };
 
-/** A pill-shaped glass meter: steel casing, dark glass, liquid (light top, dark bottom) to frac, segment lines. */
+/** A pill-shaped glass meter: steel casing around ccMeterFill's glass and liquid. */
 function ccMeter(g, x, y, w, h, frac, liq, segs = 0, from = 'left', style) {
   const r = h / 2;
   // Satin, not chrome: a darker steel casing, and the liquid's highlight halfway to its body colour.
   rrect(g, x, y, w, h, r); g.fillStyle = vgrad(g, y, y + h, [[0, '#9ea4aa'], [0.25, '#6c7278'], [0.65, '#3a3e43'], [1, '#141619']]); g.fill();
-  rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5); g.fillStyle = '#060708'; g.fill();
-  g.save(); rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5); g.clip();
-  const fw = (w - 1) * Math.max(0, Math.min(1, frac)), fx = from === 'left' ? x + 0.5 : x + w - 0.5 - fw;
-  g.fillStyle = vgrad(g, y + 0.5, y + h - 0.5, [[0, mixHex(liq[0], liq[1], 0.5)], [0.45, liq[1]], [1, liq[2]]]); g.fillRect(fx, y, fw, h);
-  if (style && fw > 0) ccMeterTexture(g, fx, y, fw, h, liq, style);   // the orbs' liquid looks (cloud, broth, galaxy)
+  ccMeterFill(g, x + 0.5, y + 0.5, w - 1, h - 1, r - 0.5, frac, liq, segs, from, style);
+}
+/** A meter's dark glass in the rounded rect (x, y, w, h, r), the liquid (light top, dark bottom) to frac with its look
+ *  by style, and segment lines. */
+function ccMeterFill(g, x, y, w, h, r, frac, liq, segs = 0, from = 'left', style) {
+  rrect(g, x, y, w, h, r); g.fillStyle = '#060708'; g.fill();
+  g.save(); rrect(g, x, y, w, h, r); g.clip();
+  const fw = w * Math.max(0, Math.min(1, frac)), fx = from === 'left' ? x : x + w - fw;
+  g.fillStyle = vgrad(g, y, y + h, [[0, mixHex(liq[0], liq[1], 0.5)], [0.45, liq[1]], [1, liq[2]]]); g.fillRect(fx, y - 0.5, fw, h + 1);
+  if (style && fw > 0) ccMeterTexture(g, fx, y - 0.5, fw, h + 1, liq, style);   // the orbs' liquid looks (cloud, broth, galaxy)
   g.fillStyle = 'rgba(0,0,0,0.55)';
-  for (let k = 1; k < segs; k++) g.fillRect(x + 0.5 + (w - 1) * k / segs - 0.15, y, 0.3, h);
+  for (let k = 1; k < segs; k++) g.fillRect(x + w * k / segs - 0.15, y - 0.5, 0.3, h + 1);
 
   g.restore();
 }
@@ -237,6 +242,16 @@ function ccLevelWindow(g, x, y, w, h) {
   rrect(g, x, y, w, h, 1.2); g.fillStyle = steel(g, y, y + h); g.fill();
   rrect(g, x + 0.5, y + 0.5, w - 1, h - 1, 0.8); g.fillStyle = '#060708'; g.fill();
 }
+/** What takes over the XP pipe, if anything: [frac, liquid, icon()] for a charging spell (Iron's), a camel's dash
+ *  cooldown, a mount's jump charge, a train's speed or an aircraft's engine (in that order); null: experience. */
+function ccXpTake(s) {
+  const mounted = s.riding === 'camel' ? ccCamel : ccHorse;
+  return s.cast != null ? [s.cast, MANA.irons, () => ccFlask(MANA.irons)]
+    : s.riding === 'camel' && s.dash != null ? [s.dash, CC_COOLDOWN, ccCamel]
+    : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted]
+    : s.train != null ? [s.train, CC_TRAIN, () => ccModIcon('train')]      // Create's train HUD speed
+    : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
+}
 /** The whole action bar for a state; a canvas of logical 2 CX x (BOTTOM + TOPM). */
 function compactHud(s, font) {
   const [c, g] = hires(2 * CX, BOTTOM + TOPM);
@@ -277,12 +292,7 @@ function compactHud(s, font) {
   // small window centred on the pipe.
   // The pipe is shared: casting a spell (Iron's), a camel's dash cooldown and a mount's jump charge take it over (vanilla
   // already swaps the XP bar for the jump bar), and the level window shows that action's icon instead of the number.
-  const X = CC.xp, mounted = s.riding === 'camel' ? ccCamel : ccHorse;
-  const take = s.cast != null ? [s.cast, MANA.irons, () => ccFlask(MANA.irons)]
-    : s.riding === 'camel' && s.dash != null ? [s.dash, CC_COOLDOWN, ccCamel]
-    : s.riding && s.jump != null ? [s.jump, CC_JUMP, mounted]
-    : s.train != null ? [s.train, CC_TRAIN, () => ccModIcon('train')]      // Create's train HUD speed
-    : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
+  const X = CC.xp, take = ccXpTake(s);
   const [xf, xl] = take ? take : [s.xp, CC_XP];
   ccMeter(g, X.x0, X.y, X.x1 - X.x0, X.h, xf, xl, 18, 'left', !take ? 'cloud' : s.cast != null ? 'mana' : undefined);   // XP: health's billows; a cast is mana: the galaxy
   // The window, centred on the pipe (which runs on behind it): small for the level's digits, larger while an icon

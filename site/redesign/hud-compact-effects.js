@@ -113,8 +113,9 @@ function ccEffectTime(secs) {
   const sec = Math.ceil(secs);
   return sec < 60 ? String(sec) : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
 }
-function ccEffectsRail(g, s, icons) {
-  const list = s.effects || [], { size, cell, rowH, k, tk, perRow } = CC_EFFECTS, left = ccSideX((CC.lay || CC.plate).x0, ccSideK(s));   // the bar's left edge
+/** at: { left, top } to place the lines elsewhere (the vanilla layout); default: above the bar's left wing. */
+function ccEffectsRail(g, s, icons, at) {
+  const list = s.effects || [], { size, cell, rowH, k, tk, perRow } = CC_EFFECTS, left = at ? at.left : ccSideX((CC.lay || CC.plate).x0, ccSideK(s));   // the bar's left edge
   // Two lines: buffs nearest the bar, debuffs above them at 1.5x. A line that runs out of room wraps upward.
   // Each line starts with its always-on effects (infinite or a beacon's), then the timed ones.
   const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));
@@ -146,7 +147,7 @@ function ccEffectsRail(g, s, icons) {
     // The kind's tint all the way down: the colour does not change as the time runs out.
     ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, e.kind === 'buff' ? CC_EFFECT_INK.buff : CC_EFFECT_INK.debuff, kk);
   };
-  let top = ccSideY(s.orbs ? ORB.y - ORB_H() : CC_WING.top - (s.hardcore ? CC_SKULL_PLATE.h + CC_SKULL_PLATE.lift + 1 : 0), ccSideK(s)) - 2;   // above the domes / the wings (and the skull), at the side size
+  let top = at ? at.top : ccSideY(s.orbs ? ORB.y - ORB_H() : CC_WING.top - (s.hardcore ? CC_SKULL_PLATE.h + CC_SKULL_PLATE.lift + 1 : 0), ccSideK(s)) - 2;   // above the domes / the wings (and the skull), at the side size
   for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top
     const per = Math.floor(perRow / m);
     for (let r = 0; r * per < all.length; r++) {

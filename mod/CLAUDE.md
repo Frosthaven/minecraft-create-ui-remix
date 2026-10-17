@@ -82,7 +82,8 @@ No player config edits needed; the instance config stays at DME's defaults.
 ## Compact action bar (`hud/`)
 
 The HUD designed on the redesign page `hud-compact.html`, drawn by the mod while the pack's textures
-(`createhud:textures/gui/compact/{parts,plate_*}.png`, exported by `hud-compact-export.js`) are present and the player is
+(`createhud:textures/gui/compact/{parts,orbs,vanilla,plate_*}.png`, exported by `hud-compact-export.js` and
+`hud-vanilla-export.js`) are present and the player is
 not a spectator.
 - Paint order: ImmediatelyFast batches HUD blits and fills per render layer (one per texture, one for fills) and draws
   the batches out of call order, which put the dash dial's chevrons (orbs atlas) under its housing (parts). Every
@@ -107,7 +108,8 @@ not a spectator.
 - In game the whole bar (items included) is drawn at the config's size (`UiConfig.HUD_SCALE`, 1.0) around the screen's
   bottom centre.
 - Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, floating plates,
-  items), `HudFrame` (one frame's state, the wing ends), `OrbHud` (orb mode), `BarHud` (bar mode), `HudDraw` (blits,
+  items), `HudFrame` (one frame's state, the wing ends), `OrbHud` (orb mode), `BarHud` (bar mode), `VanillaHud` (Almost
+  Vanilla, the default: no plate; see below), `HudDraw` (blits,
   circle and pill clipped fills, textured sectors that reveal a ring by angle, the digit sets), `Smooth` (breath and the
   backtank eased between the game's steps).
 - Glows are drawn on black in the atlas and added with a screen blend (`ONE, ONE_MINUS_SRC_COLOR`); ImmediatelyFast's
@@ -135,6 +137,12 @@ not a spectator.
   (under water / in lava: persistent `VisualBacktankAir`; out of the water while the tanks' `BacktankUtil.getAir` total
   falls, a Create Jetpack in flight, and 3 s after: that total; capacity `maxAir` over `getAllWithAir`), by reflection: a
   missing mod hides its row.
+- `VanillaHud` (meter display Almost Vanilla, `UiConfig.MeterDisplay.ALMOST_VANILLA`, the default; the page's
+  hud-vanilla*.js, layout in the root CLAUDE.md): reuses `CompactHud.hotbar`, `offhandSocket`, `hotbarItems`, `take`,
+  `dialAt` (the dial at 9 / 7.75 x, filling the offhand's 18 x 18 box) and `instruments` (with a top); draws the gauge,
+  rows and icons from `compact/vanilla` (`CompactAtlas` VAN_*). Faded icons (glows, previews, the rows dimmed to 40 %
+  under numbers) draw one at a time with `RenderSystem.setShaderColor` alpha, the batch flushed before and after. Sets
+  `gui.leftHeight/rightHeight` to the stack's height.
 - `RollHudMixin` (`haven_create_ui_ux.bosses.mixins.json`, optional): cancels Block Factory's Bosses' own roll icon
   (`ClientEvents.renderGUI`, a RenderGuiEvent.Pre we cannot hide as a layer) while the bar is active.
 - `Followers`: Haven Link's web map followers from its chat lines; reset on logout.
