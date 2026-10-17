@@ -9,8 +9,8 @@ import net.neoforged.neoforge.common.TranslatableEnum;
  * Read the values each frame: NeoForge reloads them when the file or the config screen changes them.
  */
 public final class UiConfig {
-    /** How the vitals and mana show: Almost Vanilla (vanilla's places, no plate; the default), or the one iron action bar
-     *  with orbs or with rows of bars on its wings. */
+    /** How the vitals and mana show: Almost Vanilla (vanilla's places, no plate), or the one iron action bar
+     *  with orbs or with rows of bars on its wings (Bars, the default). */
     public enum MeterDisplay implements TranslatableEnum {
         ALMOST_VANILLA, ORBS, BARS;
         @Override public Component getTranslatedName() { return Component.translatable("haven_create_ui_ux.config.meter_display." + name().toLowerCase(java.util.Locale.ROOT)); }
@@ -27,7 +27,7 @@ public final class UiConfig {
         var b = new ModConfigSpec.Builder();
         b.push("hud");
         METER_DISPLAY = b.comment("Almost Vanilla: hearts, food and the XP bar at vanilla's places (mana stacked in the XP bar). Orbs or Bars: one iron action bar, health, food and mana as two orbs beside the hotbar or as rows of bars on its wings.")
-                .translation("haven_create_ui_ux.config.meter_display").defineEnum("meterDisplay", MeterDisplay.ALMOST_VANILLA);
+                .translation("haven_create_ui_ux.config.meter_display").defineEnum("meterDisplay", MeterDisplay.BARS);
         PRIMARY_MANA = b.comment("With both Iron's Spellbooks and Ars Nouveau installed: the mana pool shown first (the orb's left half, the top bar).")
                 .translation("haven_create_ui_ux.config.primary_mana").defineEnum("primaryMana", PrimaryMana.IRONS);
         HUD_SCALE = b.comment("The action bar's size, relative to the GUI scale.")

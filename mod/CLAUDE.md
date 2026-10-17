@@ -109,7 +109,7 @@ not a spectator.
   bottom centre.
 - Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, floating plates,
   items), `HudFrame` (one frame's state, the wing ends), `OrbHud` (orb mode), `BarHud` (bar mode), `VanillaHud` (Almost
-  Vanilla, the default: no plate; see below), `HudDraw` (blits,
+  Vanilla: no plate; see below), `HudDraw` (blits,
   circle and pill clipped fills, textured sectors that reveal a ring by angle, the digit sets), `Smooth` (breath and the
   backtank eased between the game's steps).
 - Glows are drawn on black in the atlas and added with a screen blend (`ONE, ONE_MINUS_SRC_COLOR`); ImmediatelyFast's
@@ -137,7 +137,7 @@ not a spectator.
   (under water / in lava: persistent `VisualBacktankAir`; out of the water while the tanks' `BacktankUtil.getAir` total
   falls, a Create Jetpack in flight, and 3 s after: that total; capacity `maxAir` over `getAllWithAir`), by reflection: a
   missing mod hides its row.
-- `VanillaHud` (meter display Almost Vanilla, `UiConfig.MeterDisplay.ALMOST_VANILLA`, the default; the page's
+- `VanillaHud` (meter display Almost Vanilla, `UiConfig.MeterDisplay.ALMOST_VANILLA`; Bars is the default; the page's
   hud-vanilla*.js, layout in the root CLAUDE.md): reuses `CompactHud.hotbar`, `offhandSocket`, `hotbarItems`, `take`,
   `dialAt` (the dial at 9 / 7.75 x, filling the offhand's 18 x 18 box) and `instruments` (with a top); draws the gauge,
   rows and icons from `compact/vanilla` (`CompactAtlas` VAN_*). Faded icons (glows, previews, the rows dimmed to 40 %

@@ -190,12 +190,12 @@ mods that reuse vanilla hearts look vanilla.
 - Liquids are lifted a step (`ccLift`: mid toward white 10 %, dark toward mid 30 %); mana more (16 % / 50 %, nebula
   deep tone (128, 122, 166), the orb's mask at 0.55) to the cast bar's value. A smooth ring meter darkens the bezel
   under it all round (`ccOrbRingTrack`, atlas cell `ringTrack`).
-- Client config (`UiConfig`, Mods > Config in game): meter display Almost Vanilla | Orbs | Bars (default Almost Vanilla,
+- Client config (`UiConfig`, Mods > Config in game): meter display Almost Vanilla | Orbs | Bars (default Bars; Almost Vanilla
   below), primary mana pool Iron's | Ars, action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
 
-## Almost Vanilla (the compact page's Layout toggle, `?vanilla`; `hud-vanilla*.js`): in game via the mod (VanillaHud), the default
+## Almost Vanilla (the compact page's Layout toggle, `?vanilla`; `hud-vanilla*.js`): in game via the mod (VanillaHud), an option (Bars is the default)
 
 - The pieces at vanilla's places, floating (no plate): the sockets (span -89..89; no bar or row reaches past it); the
   offhand socket and the dodge roll dial in the same 18 x 18 box at either end (x -118 | 100, y 30; left-handed swaps them);
