@@ -94,8 +94,17 @@ final class HudDraw {
     static void orbPart(GuiGraphics g, int u, int v, int w, int h, int x, int y) {
         if (w > 0 && h > 0) { use(g, ORBS); g.blit(ORBS, x, y, u, v, w, h, ORBS_W, ORBS_H); }
     }
-    /** A rect (x0..x1, y0..y1, texels relative to the piece's centre) of an orb-atlas piece centred on (cx, cy). */
+    /** How far (texels) every orb piece stops short of its cell's edge. The cells touch in the atlas, the glow cells on
+     *  solid black, and the linear filter reads up to half a mip texel (4 texels at the coarsest level) past the sample
+     *  point, which on a quad's edge pixel can lie on the edge itself (the wings' side scale puts edges mid-pixel): a
+     *  piece drawn to its cell's edge took the neighbour's black as a dark hairline (the cog's right edge, against the
+     *  exhaustion cell, up the joint). No cell has content within 11 texels of its edge. */
+    static final int ORB_PAD = K;
+    /** A rect (x0..x1, y0..y1, texels relative to the piece's centre) of an orb-atlas piece centred on (cx, cy), kept
+     *  ORB_PAD inside the cell. */
     static void orbPiece(GuiGraphics g, double[] cell, double cx, double cy, double x0, double y0, double x1, double y1) {
+        double lim = CELL_HALF - ORB_PAD;
+        x0 = Math.max(x0, -lim); y0 = Math.max(y0, -lim); x1 = Math.min(x1, lim); y1 = Math.min(y1, lim);
         int ax = (int) Math.round(cx + x0), ay = (int) Math.round(cy + y0), bx = (int) Math.round(cx + x1), by = (int) Math.round(cy + y1);
         orbPart(g, (int) Math.round(cell[0] + ax - cx), (int) Math.round(cell[1] + ay - cy), bx - ax, by - ay, ax, ay);
     }
