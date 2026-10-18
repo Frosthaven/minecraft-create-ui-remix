@@ -14,6 +14,5 @@
   "haven_create_ui_ux.config.effects_anchor.top_left": "Top left of the screen",
   "haven_create_ui_ux.config.effects_anchor.action_bar": "Action bar",
   "haven_create_ui_ux.config.hud_scale": "Action bar size",
-  "haven_create_ui_ux.config.side_scale": "Side bars size",
-  "haven_create_ui_ux.portal_guard.shaders": "Shaders are on, but this computer's OpenGL cannot run Immersive Portals' shader path (it needs 4.3). Portals still teleport but show as empty frames until shaders are off."
+  "haven_create_ui_ux.config.side_scale": "Side bars size"
 }

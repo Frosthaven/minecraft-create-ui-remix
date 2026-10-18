@@ -78,12 +78,6 @@ No player config edits needed; the instance config stays at DME's defaults.
   in the root CLAUDE.md): enables listed resource packs once (ordered by `above`/`below`), sets Iris's shader per OS on
   the first run (reflection: `Iris.getIrisConfig().setShaderPackName/setShadersEnabled/save`, `Iris.reload()`). The
   player's later choices always win. Log prefix `[pack defaults]`.
-- `PortalShaderGuard`: Immersive Portals' Iris renderers copy the depth buffer with `glCopyImageSubData` (OpenGL 4.3)
-  with no capability check (upstream issue 1792); macOS has 4.1, so shaders on near a portal abort the JVM ("No context
-  is current or a function that is not available..."; seen 2026-10-17 on an M3 Pro). With `immersive_portals_core` and
-  `iris` loaded and `GL.getCapabilities()` lacking OpenGL43 / ARB_copy_image, a client tick (every 10) holds
-  `IPGlobal.renderMode` at `none` while `Iris.getCurrentPack()` is present (reflection), chats the player once, and
-  restores the mode when shaders go off. Log prefix `[portal guard]`.
 
 ## Compact action bar (`hud/`)
 

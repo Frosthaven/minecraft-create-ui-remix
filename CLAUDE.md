@@ -351,9 +351,8 @@ mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
   `.github/workflows/release.yml` runs it on every push to main touching those parts: it replaces the rolling
   `latest` release (the README's link) and creates an immutable `v<mod_version>-<sha7>` release with the two jars and
   the zip, which the Haven pack (minecraft-haven-pack) pins by hash. So: commit and push the regenerated pack to publish.
-- Portal shader guard (`PortalShaderGuard`): on a machine without OpenGL 4.3 (macOS), Immersive Portals' render mode is
-  held at `none` while Iris shaders are on, because its shader path calls `glCopyImageSubData` unguarded and aborts the
-  JVM; the player is told once in chat; the mode comes back when shaders go off.
+- Fixes between other mods of the pack (Immersive Portals with shaders on macOS, ...) are not this mod's: they live in
+  minecraft-haven-compat (`haven_compat`). This mod is the HUD and the screens.
 - Pack defaults (`PackDefaults`, for the Haven pack): reads `config/haven-pack-defaults.json` (absent: nothing).
   `resourcePacks`: `[{"id": "file/X.zip", "above"|"below": "file/Y.zip"}]`, each enabled once when first seen
   installed (or installed again after removal), never re-enabled if the player turned it off while installed.
