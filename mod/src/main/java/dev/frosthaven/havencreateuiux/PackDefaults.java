@@ -7,6 +7,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.frosthaven.havencreateuiux.hud.HudLog;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,6 +16,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.neoforged.fml.loading.FMLPaths;
@@ -25,13 +29,17 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * <pre>
  * {"resourcePacks": [{"id": "file/FA+All_Extensions-v1.8.1.zip", "above": "file/FreshAnimations_v1.10.4.zip"},
  *                    {"id": "file/Some Pack.zip"}],
- *  "shader": {"default": "ComplementaryUnbound_r5.9.zip", "macos": "BSL_v10.1.1.zip", "enabled": true}}
+ *  "shader": {"default": "ComplementaryUnbound_r5.9.zip", "macos": "BSL_v10.1.1.zip", "enabled": true},
+ *  "shaderOptions": {"macos": {"ComplementaryUnbound_r5.9.zip": {"BLOCK_REFLECT_QUALITY": "1"}}}}
  * </pre>
  * Resource packs: a listed pack is enabled when it is first seen installed, or when it is installed again after it was
  * removed; "above" / "below" place it right above (higher priority) or below another selected pack. A pack the player
  * turned off while it stayed installed is never turned back on. Shader: on the first run only, Iris gets the
- * OS-specific shader pack (macOS: "macos", else "default") and shaders on or off. State is kept in
- * {@code config/haven-pack-defaults.state.json}. Runs on the first title screen of each session.
+ * OS-specific shader pack (macOS: "macos", else "default") and shaders on or off. Shader options: per OS ("macos",
+ * else "default"), per shader pack, option values written into Iris's per-pack option file
+ * ({@code shaderpacks/<pack>.txt}); a key is written when the file lacks it or still holds the value written here
+ * before (so a pack change moves it), a value the player changed stays; Iris reloads once when something changed.
+ * State is kept in {@code config/haven-pack-defaults.state.json}. Runs on the first title screen of each session.
  */
 public final class PackDefaults {
     private static final HudLog.Channel LOG = new HudLog.Channel("[pack defaults] ");
@@ -54,10 +62,14 @@ public final class PackDefaults {
             JsonObject state = Files.exists(statePath)
                     ? JsonParser.parseString(Files.readString(statePath, StandardCharsets.UTF_8)).getAsJsonObject() : new JsonObject();
             if (spec.has("resourcePacks")) resourcePacks(spec.getAsJsonArray("resourcePacks"), obj(state, "seen"));
+            boolean reload = false;
+            if (spec.has("shaderOptions")) reload = shaderOptions(spec.getAsJsonObject("shaderOptions"), obj(state, "shaderOptions"));
             if (spec.has("shader") && !state.has("shaderApplied")) {
-                shader(spec.getAsJsonObject("shader"));
+                shader(spec.getAsJsonObject("shader"));   // reloads Iris itself
                 state.addProperty("shaderApplied", true);
+                reload = false;
             }
+            if (reload) reloadIris("shader options changed");
             Files.writeString(statePath, GSON.toJson(state), StandardCharsets.UTF_8);
         } catch (Exception e) {
             LOG.error("apply", "could not apply " + defaults.getFileName() + "; skipped", e);
@@ -67,6 +79,10 @@ public final class PackDefaults {
     private static JsonObject obj(JsonObject parent, String key) {
         if (!parent.has(key)) parent.add(key, new JsonObject());
         return parent.getAsJsonObject(key);
+    }
+
+    private static boolean mac() {
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac");
     }
 
     /** Enables newly seen packs in order, then saves options (Minecraft reloads resources if the list changed). */
@@ -106,7 +122,7 @@ public final class PackDefaults {
 
     /** First run only: sets Iris's shader pack for this OS (reflection; Iris absent or file missing: skipped). */
     private static void shader(JsonObject spec) {
-        boolean mac = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac");
+        boolean mac = mac();
         String name = spec.has(mac ? "macos" : "default") ? spec.get(mac ? "macos" : "default").getAsString()
                 : spec.has("default") ? spec.get("default").getAsString() : null;
         boolean enabled = !spec.has("enabled") || spec.get("enabled").getAsBoolean();
@@ -128,6 +144,75 @@ public final class PackDefaults {
             LOG.once("no-iris", "Iris is not installed; shader default skipped");
         } catch (ReflectiveOperationException | LinkageError e) {
             LOG.error("shader", "setting the shader pack through Iris failed; skipped", e);
+        }
+    }
+
+    /**
+     * Per-OS option values for shader packs, in Iris's per-pack option file (a Java properties file next to the pack).
+     * Example: macOS runs out of texture units (Apple's OpenGL stops at 16) with Complementary at "Block Reflection
+     * Quality: High" once a mod adds its own sampler, so the pack sets it to Low there. Returns true when a file changed.
+     */
+    private static boolean shaderOptions(JsonObject spec, JsonObject applied) {
+        String os = mac() ? "macos" : "default";
+        if (!spec.has(os) || !spec.get(os).isJsonObject()) return false;
+        Path dir = FMLPaths.GAMEDIR.get().resolve("shaderpacks");
+        boolean changed = false;
+        for (Map.Entry<String, JsonElement> pack : spec.getAsJsonObject(os).entrySet()) {
+            String name = pack.getKey();
+            if (!pack.getValue().isJsonObject()) continue;
+            if (!Files.exists(dir.resolve(name))) {
+                LOG.once("options-missing:" + name, "shader pack {} is not in shaderpacks/; its options are skipped", name);
+                continue;
+            }
+            Path file = dir.resolve(name + ".txt");
+            Properties values = new Properties();
+            try {
+                if (Files.exists(file)) {
+                    try (Reader in = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                        values.load(in);
+                    }
+                }
+                JsonObject mine = obj(applied, name);
+                boolean packChanged = false;
+                for (Map.Entry<String, JsonElement> opt : pack.getValue().getAsJsonObject().entrySet()) {
+                    String key = opt.getKey(), want = opt.getValue().getAsString();
+                    String have = values.getProperty(key);
+                    String before = mine.has(key) ? mine.get(key).getAsString() : null;
+                    if (want.equals(have)) {
+                        mine.addProperty(key, want);
+                        continue;
+                    }
+                    if (have != null && !have.equals(before)) {
+                        LOG.once("options-player:" + name + ":" + key, "{}: {} is the player's choice ({}); left alone", name, key, have);
+                        continue;
+                    }
+                    values.setProperty(key, want);
+                    mine.addProperty(key, want);
+                    packChanged = true;
+                    LOG.once("options:" + name + ":" + key, "{} ({}): {} {} -> {}", name, os, key, have == null ? "unset" : have, want);
+                }
+                if (packChanged) {
+                    try (Writer out = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                        values.store(out, "Shader pack options; Haven pack defaults set some of these once");
+                    }
+                    changed = true;
+                }
+            } catch (Exception e) {
+                LOG.error("options:" + name, "could not update " + file.getFileName() + "; skipped", e);
+            }
+        }
+        return changed;
+    }
+
+    /** Iris reloads its shader pack (reflection; Iris absent: nothing to do). */
+    private static void reloadIris(String why) {
+        try {
+            Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
+            LOG.once("reload", "Iris reloaded: {}", why);
+        } catch (ClassNotFoundException e) {
+            LOG.once("no-iris", "Iris is not installed; nothing to reload");
+        } catch (ReflectiveOperationException | LinkageError e) {
+            LOG.error("reload", "Iris reload failed", e);
         }
     }
 }
