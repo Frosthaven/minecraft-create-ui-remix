@@ -21,7 +21,7 @@ jobs:
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest dist/create-ui-remix.zip --title "Create UI Remix (latest)" \
+          gh release create latest dist/create-ui-remix.zip --title "Haven Create UI Remix (latest)" \
             --notes "Built from ${GITHUB_SHA::7}. Install steps: INSTALL.txt in the zip, or the README." --latest
       - name: Create the versioned release
         env: { GH_TOKEN: "${{ github.token }}" }
@@ -29,6 +29,6 @@ jobs:
           ver="$(grep '^mod_version=' mod/gradle.properties | cut -d= -f2)"
           tag="v${ver}-${GITHUB_SHA::7}"
           gh release create "$tag" dist/haven-create-ui-ux-*.jar dist/haven-mob-health-bars-*.jar dist/create-ui-remix.zip \
-            --target "$GITHUB_SHA" --title "Create UI Remix ${ver} (${GITHUB_SHA::7})" \
+            --target "$GITHUB_SHA" --title "Haven Create UI Remix ${ver} (${GITHUB_SHA::7})" \
             --notes "Immutable build of ${GITHUB_SHA::7}, for pinning by hash (the Haven pack). The README links the rolling 'latest'." \
             --latest=false

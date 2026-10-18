@@ -71,7 +71,7 @@ public final class CompactHud {
     }
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(NUMBERS);
-        HudLog.once("key", "key '{}' registered (default Left Alt; Options > Controls > Create UI Remix)", NUMBERS.getName());
+        HudLog.once("key", "key '{}' registered (default Left Alt; Options > Controls > Haven Create UI Remix)", NUMBERS.getName());
     }
 
     /** While a screen is open: the hovered buff or debuff's tooltip, over the screen. */

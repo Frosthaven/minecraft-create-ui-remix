@@ -1,9 +1,9 @@
 {
-  "key.categories.haven_create_ui_ux": "Create UI Remix",
+  "key.categories.haven_create_ui_ux": "Haven Create UI Remix",
   "key.haven_create_ui_ux.hud_numbers": "Show HUD numbers (hold)",
-  "haven_create_ui_ux.configuration.title": "Create UI Remix",
-  "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml": "Create UI Remix",
-  "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml.title": "Create UI Remix",
+  "haven_create_ui_ux.configuration.title": "Haven Create UI Remix",
+  "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml": "Haven Create UI Remix",
+  "haven_create_ui_ux.configuration.section.haven_create_ui_ux.client.toml.title": "Haven Create UI Remix",
   "haven_create_ui_ux.configuration.hud": "Action bar",
   "haven_create_ui_ux.config.meter_display": "Meter display",
   "haven_create_ui_ux.config.meter_display.almost_vanilla": "Almost Vanilla",

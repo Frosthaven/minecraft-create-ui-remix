@@ -1,4 +1,4 @@
-Create UI Remix, for Create Ultimate Selection 2 (Minecraft 1.21.1, NeoForge). Client only.
+Haven Create UI Remix, for Create Ultimate Selection 2 (Minecraft 1.21.1, NeoForge). Client only.
 
 1. Copy all three jars in mods/ into your instance's mods folder: haven-create-ui-ux, haven-mob-health-bars
    and Dark Mode Everywhere (it is not part of the modpack).
