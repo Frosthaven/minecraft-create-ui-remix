@@ -16,10 +16,17 @@ public final class UiConfig {
         @Override public Component getTranslatedName() { return Component.translatable("haven_create_ui_ux.config.meter_display." + name().toLowerCase(java.util.Locale.ROOT)); }
     }
     public enum PrimaryMana { IRONS, ARS }
+    /** Where buffs and debuffs show: the screen's top left (vanilla's rows: buffs first, debuffs below; the default), or the
+     *  action bar's area (a rail above its left wing, debuffs above buffs). */
+    public enum EffectsAnchor implements TranslatableEnum {
+        TOP_LEFT, ACTION_BAR;
+        @Override public Component getTranslatedName() { return Component.translatable("haven_create_ui_ux.config.effects_anchor." + name().toLowerCase(java.util.Locale.ROOT)); }
+    }
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.EnumValue<MeterDisplay> METER_DISPLAY;
     public static final ModConfigSpec.EnumValue<PrimaryMana> PRIMARY_MANA;
+    public static final ModConfigSpec.EnumValue<EffectsAnchor> EFFECTS_ANCHOR;
     public static final ModConfigSpec.DoubleValue HUD_SCALE;
     public static final ModConfigSpec.DoubleValue SIDE_SCALE;
 
@@ -30,6 +37,8 @@ public final class UiConfig {
                 .translation("haven_create_ui_ux.config.meter_display").defineEnum("meterDisplay", MeterDisplay.BARS);
         PRIMARY_MANA = b.comment("With both Iron's Spellbooks and Ars Nouveau installed: the mana pool shown first (the orb's left half, the top bar).")
                 .translation("haven_create_ui_ux.config.primary_mana").defineEnum("primaryMana", PrimaryMana.IRONS);
+        EFFECTS_ANCHOR = b.comment("Where buffs and debuffs show: Top left of the screen (buffs in the first row, debuffs in the row below, as vanilla orders them), or Action bar (a rail above its left wing, debuffs above buffs).")
+                .translation("haven_create_ui_ux.config.effects_anchor").defineEnum("effectsAnchor", EffectsAnchor.TOP_LEFT);
         HUD_SCALE = b.comment("The action bar's size, relative to the GUI scale.")
                 .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.0, 0.5, 2.0);
         SIDE_SCALE = b.comment("The side bars' size (orbs or meters, the offhand, the dash), relative to their design; they stay attached to the action bar.")

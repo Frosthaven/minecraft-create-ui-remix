@@ -164,10 +164,15 @@ mods that reuse vanilla hearts look vanilla.
   liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns, Immersive Armors steampunk
   clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the bar. Followers come
   from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped following").
-- Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`): two floating lines (no plate) above the bar's left
-  wing, left-aligned to its edge: buffs nearest the bar, debuffs at 1.5x above, each line always-on first; at most 10 a
-  line (6 debuffs), wrapping upward; each effect a 10 x 10 socket with a border draining clockwise from the top (green
-  buff, red debuff) and its time left under it (45, 3m, 1h; none when infinite) in the kind's tint, never by time left.
+- Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`), where the client config "Buffs and debuffs" puts them
+  (the page's Effects button; `?railEffects` starts on the rail): **top left of the screen** (the default,
+  `ccEffectsTopLeft`, `CC_CORNER`): buffs in the first row, debuffs in the row below as vanilla orders them, both at
+  2x from (2, 2) px, following the screen (not the action bar size), a row longer than half the screen wrapping
+  downward; or the **action bar** (`ccEffectsRail`): two floating lines (no plate) above the bar's left wing,
+  left-aligned to its edge, buffs nearest the bar, debuffs at 1.5x above, at most 10 a line (6 debuffs), wrapping
+  upward. Each line always-on first; each effect a 10 x 10 socket (times the size) with a border draining clockwise
+  from the top (green buff, red debuff) and its time left under it (45, 3m, 1h; none when infinite) in the kind's tint,
+  never by time left. The page's canvas shows the whole 16:9 screen while the corner is in use.
   Worn gear is a cyan socket each in the buffs line after the always-on buffs, all the same kind (cyan border and
   number), told apart by the worn item's icon: MekaSuit energy, Mekanism jetpack and MekaSuit jetpack unit hydrogen,
   Ad Astra Jet Suit energy, a Create Jetpack in flight (the backtank air it drains out of water, and 3 s after; under
@@ -191,7 +196,8 @@ mods that reuse vanilla hearts look vanilla.
   deep tone (128, 122, 166), the orb's mask at 0.55) to the cast bar's value. A smooth ring meter darkens the bezel
   under it all round (`ccOrbRingTrack`, atlas cell `ringTrack`).
 - Client config (`UiConfig`, Mods > Config in game): meter display Almost Vanilla | Orbs | Bars (default Bars; Almost Vanilla
-  below), primary mana pool Iron's | Ars, action bar size (1.0).
+  below), buffs and debuffs Top left of the screen | Action bar (default Top left), primary mana pool Iron's | Ars,
+  action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
 
@@ -213,7 +219,7 @@ mods that reuse vanilla hearts look vanilla.
 - Icons (`hud-vanilla-icons.js`) in the shields' style: bright fill, lit left facet, thin outline, rim, glint; half = the
   empty icon with one side filled over it. Texture: `hud-vanilla-export.js` (`compact/vanilla`, 224 x 96: icon cells,
   the gauge frame, liquid strips, the tank time's digits), KEEP IN STEP with `CompactAtlas` VAN_*.
-- The effects rail starts at the left end box (x -118); the instrument plate sits above the stack.
+- The effects rail (config: Action bar) starts at the left end box (x -118); the instrument plate sits above the stack.
 
 ## Mob health bars (`site/redesign/mob-bars.html`, `mob-bars.js`): in game via its own mod haven-mob-health-bars (`mobbars/CLAUDE.md`)
 

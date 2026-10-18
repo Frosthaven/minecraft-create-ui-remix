@@ -57,10 +57,11 @@ function vanDial(g, s, x, y) {
   const cx = x + 9, cy = y + 9, S = 9 / (CC_DASH.r + CC_DASH.B + 0.45);   // the rim and its recess just inside the box
   ccScaled(g, cx, cy, S, () => s.rolls == null ? ccDashFiller(g, cx, cy) : ccDashDial(g, cx, cy, s.rolls, s.rollCount || 2));
 }
-/** The vanilla-layout HUD for a state s (the compact page's state fields); a canvas of logical 2 CX x (BOTTOM + TOPM). */
+/** The vanilla-layout HUD for a state s (the compact page's state fields); a canvas of logical 2 CX x ccCanvasH(s), as
+ *  compactHud's. */
 function vanillaHud(s, font) {
-  const [c, g] = hires(2 * CX, BOTTOM + TOPM), V = VAN, G = vanGauge(s);
-  g.translate(CX, TOPM);
+  const H = ccCanvasH(s), [c, g] = hires(2 * CX, H), V = VAN, G = vanGauge(s);
+  g.translate(CX, H - BOTTOM);
   if ((s.barScale || 1) !== 1) { g.translate(0, BOTTOM); g.scale(s.barScale, s.barScale); g.translate(0, -BOTTOM); }   // the action bar size
   ccGameText(g, s, font);
   if (s.spectator) return c;
@@ -108,8 +109,7 @@ function vanillaHud(s, font) {
   }
   const plate = ccInstruments(g, s, top - 9 - 3);   // the instrument plate above the stack
   if (plate != null) top = plate;
-  if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit) || Object.keys(s.gear || {}).length)
-    ccEffectsRail(g, s, s.effectIcons || {}, { left: -V.end[0] - 18 - 1, top: top - 2 });   // the first socket on the left end box's edge
+  ccEffects(g, s, s.effectIcons || {}, { left: -V.end[0] - 18 - 1, top: top - 2 });   // the rail: the first socket on the left end box's edge; or the screen's top left corner
   ccSlotMarks(g, s);
   const [sx, sy] = CC.slot(s.slot), toolboxSel = (s.toolboxSlots || []).includes(s.slot);
   ccSelection(g, sx, sy, toolboxSel);

@@ -44,7 +44,7 @@
 <div class="bar">
   <button id="hurt">Damage</button><button id="eat">Eat</button><button id="water" aria-pressed="false">Under water</button><button id="dive" aria-pressed="false" title="Under water with a Create backtank and diving helmet">Diving (backtank)</button>
   <button id="cast">Cast</button><button id="roll">Roll</button><button id="absorb" aria-pressed="false">Absorption</button><button id="armorBtn" aria-pressed="true" title="Armor worn: its meter extends the raised band over the left wing">Armor</button><button id="numbers" aria-pressed="false" title="Show every meter's numbers (otherwise: hover a meter)">All numbers</button>
-  <button id="layout" aria-pressed="false" title="Layout: the compact action bar, or the vanilla layout (URL ?vanilla starts there)">Layout: action bar</button><button id="orbsBtn" aria-pressed="false" title="Orbs (on) or the wing meters (off, the default); URL ?orbs starts on">Orbs</button><button id="primary" title="Which mana pool fills the orb when both mods are installed">Primary mana: Iron's</button>
+  <button id="layout" aria-pressed="false" title="Layout: the compact action bar, or the vanilla layout (URL ?vanilla starts there)">Layout: action bar</button><button id="orbsBtn" aria-pressed="false" title="Orbs (on) or the wing meters (off, the default); URL ?orbs starts on">Orbs</button><button id="effectsAnchor" title="Config: where buffs and debuffs show. Top left of the screen (the default): buffs in the first row, debuffs in the row below, following the screen; or the action bar's rail above its left wing (URL ?railEffects starts there)">Effects: top left</button><button id="primary" title="Which mana pool fills the orb when both mods are installed">Primary mana: Iron's</button>
   <span style="color:var(--muted);align-self:center">Keys 1-9 select a slot</span>
 </div>
 <div class="bar">
@@ -78,7 +78,7 @@
   <button id="schematic" aria-pressed="false" title="Create schematic tool's slot">Schematic</button>
   <button id="manaMods" title="Which mana mods the pack has (cycles)">Mana mods: both</button>
   <button id="noRoll" aria-pressed="false" title="A pack without the dodge roll">No dodge roll</button>
-  <button id="effectsBtn" aria-pressed="false" title="Buffs and debuffs above the bar, with their time left">Buffs and debuffs</button>
+  <button id="effectsBtn" aria-pressed="false" title="Buffs and debuffs (where the Effects button puts them), with their time left">Buffs and debuffs</button>
   <button id="manyEffects" aria-pressed="false" title="A long list: 13 buffs and 5 debuffs">Many effects</button>
   <button id="rollCount" title="Roll charges the player has (server config default 2; gear can change it)">Roll charges: 2</button>
   <button id="sideSize" title="Config: side bars size (orbs or meters, offhand, dash), cycles">Side size: 1</button><button id="barSize" title="Config: action bar size (the whole bar), cycles">Bar size: 1</button><button id="followers" title="Haven Link: web map viewers following you (cycles 0 to 3)">Web followers: 0</button>
@@ -112,7 +112,8 @@ const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45
   spectator: false, maxHealth: 20, leftHanded: false, dash: null, holdHeal: 4, exhaustion: 2.4, itemName: '', nameAt: -1e9, actionBar: '',
   nourished: false, comfort: false, mekasuit: 0, aircraft: false, hull: 0.7, engine: null, train: null, flamingo: null, steampunk: false,
   artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, orbs: new URLSearchParams(location.search).has('orbs'), manaPrimary: 'irons',   // bars: the game's default
-  layout: new URLSearchParams(location.search).has('vanilla') ? 'vanilla' : 'bar' };
+  layout: new URLSearchParams(location.search).has('vanilla') ? 'vanilla' : 'bar',
+  effectsAnchor: new URLSearchParams(location.search).has('railEffects') ? 'bar' : 'topLeft' };   // the config's "Buffs and debuffs": top left of the screen is the default
 const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Pickaxe', 'Bread', 'Torch', 'Water Bucket', 'Goggles'];
 let font = null, waterTimer = null;
 function render() {
@@ -162,7 +163,7 @@ function swim(on, diving) {
 tap('water', () => swim(!st.underwater || st.diving, false));
 tap('dive', () => swim(!st.diving, true));
 document.getElementById('hud').addEventListener('mousemove', e => {
-  const r = e.target.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 2 * CX - CX, y = (e.clientY - r.top) / r.height * (BOTTOM + TOPM) - TOPM;
+  const r = e.target.getBoundingClientRect(), H = ccCanvasH(st), x = (e.clientX - r.left) / r.width * 2 * CX - CX, y = (e.clientY - r.top) / r.height * H - (H - BOTTOM);
   const id = Object.keys(CC.hit).find(k => { const [bx, by, bw, bh] = CC.hit[k]; return x >= bx - (k.startsWith('orb') ? 0 : 9) && x <= bx + bw && y >= by - 1 && y <= by + bh + 1; }) || null;
   if (id !== st.hover) { st.hover = id; render(); }
 });
@@ -268,6 +269,9 @@ function showLayout() {
   document.getElementById('hudLabel').textContent = v ? 'Vanilla layout (scaled to fit the page)' : 'Compact action bar (scaled to fit the page)';
 }
 tap('layout', () => { st.layout = st.layout === 'vanilla' ? 'bar' : 'vanilla'; showLayout(); });
+const showAnchor = () => document.getElementById('effectsAnchor').textContent = 'Effects: ' + (st.effectsAnchor === 'bar' ? 'action bar' : 'top left');
+tap('effectsAnchor', () => { st.effectsAnchor = st.effectsAnchor === 'bar' ? 'topLeft' : 'bar'; showAnchor(); });
+showAnchor();
 showLayout();
 const SIZES = [1, 1.25, 1.5, 0.75];
 tap('sideSize', () => { st.side = SIZES[(SIZES.indexOf(st.side ?? 1) + 1) % SIZES.length]; document.getElementById('sideSize').textContent = 'Side size: ' + st.side; });

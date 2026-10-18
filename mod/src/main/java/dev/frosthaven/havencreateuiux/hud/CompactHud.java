@@ -203,8 +203,9 @@ public final class CompactHud {
         LocalPlayer p = mc.player;
         int cx = g.guiWidth() / 2, bottom = g.guiHeight();
         HudFrame f = new HudFrame(mc, p, delta, NUMBERS.isDown());
-        HudLog.changed("config", f.vanilla + "/" + f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side, "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {})",
-                f.vanilla ? "Almost Vanilla" : f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side);
+        boolean corner = HudEffects.atCorner();
+        HudLog.changed("config", f.vanilla + "/" + f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side + "/" + corner, "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {}), effects {}",
+                f.vanilla ? "Almost Vanilla" : f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side, corner ? "top left" : "action bar");
         HudLog.changed("mode", (f.hurtable ? "survival" : "creative") + (f.lefty ? ", left-handed" : "") + (f.hardcore ? ", hardcore" : ""),
                 "mode: {}{}{}", f.hurtable ? "survival" : "creative (vitals hidden)", f.lefty ? ", left-handed (offhand on the right)" : "", f.hardcore ? ", hardcore (skull)" : "");
         // Mod extras, each read as the mod's own HUD reads it (HudExtras); null / -1 when absent or not showing.
@@ -219,7 +220,11 @@ public final class CompactHud {
                 f.showBreath ? "shown" : "hidden", f.tank != null ? " (Create backtank: " + (int) f.tank[0] + "s of " + (int) f.tank[1] + "s)" : "");
         HudLog.changed("mana", (f.irons != null) + "/" + (f.ars != null), "mana mods: Iron's Spellbooks {}, Ars Nouveau {}",
                 f.irons != null ? "found (" + (int) f.irons[0] + "/" + (int) f.irons[1] + ")" : "not found", f.ars != null ? "found (" + (int) f.ars[0] + "/" + (int) f.ars[1] + ")" : "not found");
-        if (f.vanilla) { VanillaHud.draw(g, f, delta, scale, cx, bottom, cast, train, engine, attack, toolbox, schematic); return; }
+        if (f.vanilla) {
+            VanillaHud.draw(g, f, delta, scale, cx, bottom, cast, train, engine, attack, toolbox, schematic);
+            HudEffects.corner(g, p, f.gear, cx, bottom, scale, g.guiWidth());   // the config's default; the rail is drawn inside
+            return;
+        }
 
         var pose = g.pose();
         pose.pushPose();
@@ -268,6 +273,7 @@ public final class CompactHud {
         pose.translate(ox - Math.floor(ox), oyItem - Math.floor(oyItem), 0);
         slotItem(g, mc, p, p.getOffhandItem(), cx + (int) Math.floor(ox), bottom + (int) Math.floor(oyItem), 10);
         pose.popPose();
+        HudEffects.corner(g, p, f.gear, cx, bottom, scale, g.guiWidth());   // the config's default; the rail is drawn above
         // The bar is about 31 px tall: later HUD layers (mod texts, Create's prompts) stack above it.
         mc.gui.leftHeight = Math.max(mc.gui.leftHeight, (int) Math.ceil(33 * scale));
         mc.gui.rightHeight = Math.max(mc.gui.rightHeight, (int) Math.ceil(33 * scale));

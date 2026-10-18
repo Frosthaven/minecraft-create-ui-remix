@@ -152,8 +152,11 @@ not a spectator.
 - Every preview feature is in game: `HudExtras` reads each mod the way its own HUD does (Iron's cast, MekaSuit energy,
   Immersive Aircraft health and engine, Create train speed / toolbox slots / schematic slot, Artifacts Helium Flamingo
   and cooldowns, Immersive Armors steampunk chestplate, AppleSkin food and health previews, vanilla attack indicator),
-  through `Reflect` (cached, absent mod = hidden, logged once). `HudEffects`: buffs and debuffs (replaces EFFECTS),
-  hover tooltip while a screen is open; worn gear as cyan sockets in the buffs line (`GearStatus.Gear`: fraction, name,
+  through `Reflect` (cached, absent mod = hidden, logged once). `HudEffects`: buffs and debuffs (replaces EFFECTS) where
+  `UiConfig.EFFECTS_ANCHOR` puts them: `corner` (TOP_LEFT, the default: buffs row then debuffs row from (2, 2) GUI px at
+  2x, the bar's size undone so it follows the screen, wrapping at half the screen; called by `CompactHud.draw` after
+  either mode) or `draw` (ACTION_BAR: the rail above the left wing, inside the modes' K pose); hover tooltip while a
+  screen is open; worn gear as cyan sockets in the buffs line (`GearStatus.Gear`: fraction, name,
   the mod's amount text, the worn item rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in
   `BUFF` / `DEBUFF`). `GearStatus` reads (bytecode of the pack's jars): MekaSuit energy (`HudExtras.mekaSuit`); Mekanism
   jetpack / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through `Capabilities.CHEMICAL.item()`

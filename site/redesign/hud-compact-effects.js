@@ -1,9 +1,10 @@
-// Status effects (buffs and debuffs), kept where vanilla puts them (the screen's top-right: beneficial in the top row,
-// harmful in the second, newest leftmost, 25 px apart; Gui.renderEffects) and restyled to match the action bar: each
-// effect a small iron socket, brass-bezeled for a buff, rust for a debuff, dimmer for an ambient (beacon) effect.
-// Instead of vanilla's blinking under 10 s, a bright border drains clockwise from the top as the effect runs out.
-// Uses sprites.js. Shipping it: haven-create-ui-ux replaces the MOB_EFFECTS layer (the frame from the pack, the
-// border drawn as fills).
+// Status effects (buffs and debuffs) restyled to match the action bar: each effect a small iron socket, brass-bezeled
+// for a buff, rust for a debuff, dimmer for an ambient (beacon) effect. Instead of vanilla's blinking under 10 s, a
+// bright border drains clockwise from the top as the effect runs out. Where they show is the config's "Buffs and
+// debuffs" (the page's Effects button, s.effectsAnchor): the screen's top left (the default, ccEffectsTopLeft: buffs
+// in the first row, debuffs in the row below as vanilla orders them, following the screen and not the bar's size) or
+// the action bar's area (ccEffectsRail: two lines above the left wing, debuffs above buffs). Uses sprites.js.
+// Shipping it: haven-create-ui-ux replaces the MOB_EFFECTS layer (the frame from the pack, the border drawn as fills).
 
 // Buffs read green, debuffs red: the draining border (and its glow) in that colour, on a brass or rust bezel.
 /** Outlined effect numbers (CC_EFFECT_INK, hud-compact.js): a solid 1 font px black outline, then the tint. */
@@ -113,10 +114,9 @@ function ccEffectTime(secs) {
   const sec = Math.ceil(secs);
   return sec < 60 ? String(sec) : sec < 3600 ? Math.floor(sec / 60) + 'm' : Math.floor(sec / 3600) + 'h';
 }
-/** at: { left, top } to place the lines elsewhere (the vanilla layout); default: above the bar's left wing. */
-function ccEffectsRail(g, s, icons, at) {
-  const list = s.effects || [], { size, cell, rowH, k, tk, perRow } = CC_EFFECTS, left = at ? at.left : ccSideX((CC.lay || CC.plate).x0, ccSideK(s));   // the bar's left edge
-  // Two lines: buffs nearest the bar, debuffs above them at 1.5x. A line that runs out of room wraps upward.
+/** The buffs line (always-on first, then the worn gear, then the timed ones) and the debuffs line, for a state. */
+function ccEffectLines(s) {
+  const list = s.effects || [];
   // Each line starts with its always-on effects (infinite or a beacon's), then the timed ones.
   const line = kind => list.filter(e => e.kind === kind && !e.total).concat(list.filter(e => e.kind === kind && e.total));
   const green = line('buff'), red = line('debuff');
@@ -125,34 +125,65 @@ function ccEffectsRail(g, s, icons, at) {
   const worn = s.creative ? [] : [...(s.mekasuit ? [{ id: 'mekasuit', kind: 'suit', suit: s.mekasuit }] : []),
     ...Object.entries(s.gear || {}).map(([id, frac]) => ({ id, kind: 'suit', gear: CC_GEAR[id], frac }))];
   green.splice(green.filter(e => !e.total).length, 0, ...worn);
-  // Debuffs at 1.5x (socket, spacing, digits): the ones to act on stand out.
-  const draw = (e, x, y, m) => {
-    const sz = size * m, kk = k * m * tk;
-    g.save(); g.translate(x, y); g.scale(sz / 24, sz / 24);
-    ccEffect(g, 0, 0, e.kind, e.suit ? ccSuitIcon() : e.gear ? ccGearIcon(e.gear.icon) : icons[e.id], e.suit ? e.suit : e.gear ? e.frac : e.total ? e.secs / e.total : 1, e.ambient);
-    g.restore();
-    CC.hit['effect:' + e.id] = [x, y, sz, sz];
-    if (e.gear) {   // the amount left (percent, no sign), cyan as the MekaSuit's
-      const t = String(Math.round(e.frac * 100));
-      ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, CC_EFFECT_INK.gear, kk);
-      return;
+  return [green, red];
+}
+/** One socket at (x, y), m times the rail's size (debuffs in the rail: 1.5x, so the ones to act on stand out), with
+ *  its number under it: the time left in the kind's tint (which does not change as it runs out), or a gear status's
+ *  percent (no sign) in cyan. Records the hit box for the page's hover. */
+function ccEffectSocket(g, e, x, y, m, icons) {
+  const { size, k, tk } = CC_EFFECTS, sz = size * m, kk = k * m * tk;
+  g.save(); g.translate(x, y); g.scale(sz / 24, sz / 24);
+  ccEffect(g, 0, 0, e.kind, e.suit ? ccSuitIcon() : e.gear ? ccGearIcon(e.gear.icon) : icons[e.id], e.suit ? e.suit : e.gear ? e.frac : e.total ? e.secs / e.total : 1, e.ambient);
+  g.restore();
+  CC.hit['effect:' + e.id] = [x, y, sz, sz];
+  const number = (t, col) => ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, col, kk);
+  if (e.gear) number(String(Math.round(e.frac * 100)), CC_EFFECT_INK.gear);   // the amount left (percent), cyan as the MekaSuit's
+  else if (e.suit) number(String(Math.round(e.suit * 100)), CC_EFFECT_INK.gear);   // the energy left (percent), always cyan
+  else if (e.total) number(ccEffectTime(e.secs), e.kind === 'buff' ? CC_EFFECT_INK.buff : CC_EFFECT_INK.debuff);
+}
+/** Anything to show: effects, or worn gear statuses (not in creative). */
+const ccEffectsShown = s => (s.effects && s.effects.length) || (!s.creative && s.mekasuit) || Object.keys(s.gear || {}).length;
+/** Buffs and debuffs where the config puts them (s.effectsAnchor): the screen's top left (the default) or the rail in the
+ *  action bar's area; at: the rail's { left, top } for the vanilla layout. */
+function ccEffects(g, s, icons, at) {
+  if (!ccEffectsShown(s)) return;
+  if (s.effectsAnchor === 'bar') ccEffectsRail(g, s, icons, at); else ccEffectsTopLeft(g, s, icons);
+}
+/** The HUD canvas's logical height: the whole 16:9 screen at the canvas's width when the effects sit in its top left
+ *  corner, else just the bar and the room above it for the game's text. The screen bottom is y BOTTOM either way. */
+const CC_SCREEN_H = Math.round(2 * CX * 9 / 16);
+const ccCanvasH = s => s.effectsAnchor === 'bar' ? BOTTOM + TOPM : CC_SCREEN_H;
+/** The screen's top left (the default): buffs in the first row, debuffs in the row below (vanilla's order), both at
+ *  CC_CORNER.k with the time under each socket; a row longer than half the screen wraps downward. Follows the screen,
+ *  not the bar's size (undone here). */
+const CC_CORNER = { k: 2, x: 2, y: 2 };
+function ccEffectsTopLeft(g, s, icons) {
+  const { cell, rowH } = CC_EFFECTS, m = CC_CORNER.k, lines = ccEffectLines(s);
+  g.save();
+  if ((s.barScale || 1) !== 1) { g.translate(0, BOTTOM); g.scale(1 / s.barScale, 1 / s.barScale); g.translate(0, -BOTTOM); }
+  const left = -CX + CC_CORNER.x, per = Math.max(1, Math.floor((CX - CC_CORNER.x) / (cell * m)));
+  let top = BOTTOM - ccCanvasH(s) + CC_CORNER.y;
+  for (const all of lines) {   // from the top down: buffs, then debuffs
+    for (let r = 0; r * per < all.length; r++) {
+      all.slice(r * per, (r + 1) * per).forEach((e, i) => ccEffectSocket(g, e, left + cell * m * i, top, m, icons));
+      top += rowH * m;
     }
-    if (e.suit) {   // the energy left (percent), always cyan
-      const t = String(Math.round(e.suit * 100));   // percent, no sign
-      ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, CC_EFFECT_INK.gear, kk);
-      return;
-    }
-    if (!e.total) return;
-    const t = ccEffectTime(e.secs);
-    // The kind's tint all the way down: the colour does not change as the time runs out.
-    ccOutlinedNumber(g, t, x + sz / 2 - ccNumberWidth(t, kk) / 2, y + sz + m, e.kind === 'buff' ? CC_EFFECT_INK.buff : CC_EFFECT_INK.debuff, kk);
-  };
+  }
+  g.restore();
+}
+/** The rail in the action bar's area: two floating lines above the bar's left wing (no plate), left-aligned to the
+ *  bar's edge, buffs nearest the bar and debuffs above them at 1.5x; a line that runs out of room (PER_ROW, the right
+ *  wing's width) wraps upward, so a long list grows upward instead of sideways into anything.
+ *  at: { left, top } to place the lines elsewhere (the vanilla layout); default: above the bar's left wing. */
+function ccEffectsRail(g, s, icons, at) {
+  const { cell, rowH, perRow } = CC_EFFECTS, left = at ? at.left : ccSideX((CC.lay || CC.plate).x0, ccSideK(s));   // the bar's left edge
+  const [green, red] = ccEffectLines(s);
   let top = at ? at.top : ccSideY(s.orbs ? ORB.y - ORB_H() : CC_WING.top - (s.hardcore ? CC_SKULL_PLATE.h + CC_SKULL_PLATE.lift + 1 : 0), ccSideK(s)) - 2;   // above the domes / the wings (and the skull), at the side size
   for (const [all, m] of [[green, 1], [red, 1.5]]) {   // from the bar up: buffs (always-on first), then debuffs on top
     const per = Math.floor(perRow / m);
     for (let r = 0; r * per < all.length; r++) {
       top -= rowH * m;
-      all.slice(r * per, (r + 1) * per).forEach((e, i) => draw(e, left + 1 + cell * m * i, top, m));
+      all.slice(r * per, (r + 1) * per).forEach((e, i) => ccEffectSocket(g, e, left + 1 + cell * m * i, top, m, icons));
     }
   }
 }

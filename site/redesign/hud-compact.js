@@ -252,10 +252,11 @@ function ccXpTake(s) {
     : s.train != null ? [s.train, CC_TRAIN, () => ccModIcon('train')]      // Create's train HUD speed
     : s.aircraft && s.engine != null ? [s.engine, CC_ENGINE, () => ccModIcon('engine')] : null;   // aircraft engine
 }
-/** The whole action bar for a state; a canvas of logical 2 CX x (BOTTOM + TOPM). */
+/** The whole action bar for a state; a canvas of logical 2 CX x ccCanvasH(s) (the bar and the room above it, or the
+ *  whole screen while the effects sit in its top left corner), the screen bottom at y BOTTOM. */
 function compactHud(s, font) {
-  const [c, g] = hires(2 * CX, BOTTOM + TOPM);
-  g.translate(CX, TOPM);
+  const H = ccCanvasH(s), [c, g] = hires(2 * CX, H);
+  g.translate(CX, H - BOTTOM);
   if ((s.barScale || 1) !== 1) { g.translate(0, BOTTOM); g.scale(s.barScale, s.barScale); g.translate(0, -BOTTOM); }   // the action bar size
   ccGameText(g, s, font);   // the game's own text above the bar (not ours; shown for spacing)
   if (s.spectator) return c;   // spectator: vanilla draws no hotbar or vitals (only its own menu when opened)
@@ -389,7 +390,7 @@ function compactHud(s, font) {
   ccAttackShade(g, s, [sx, sy]);   // over the item (the game: after the items)
   ccInstruments(g, s);
   side(offSide, () => ccHardcore(g, s));
-  if ((s.effects && s.effects.length) || (!s.creative && s.mekasuit) || Object.keys(s.gear || {}).length) ccEffectsRail(g, s, s.effectIcons || {});
+  ccEffects(g, s, s.effectIcons || {});   // the rail above the left wing, or the screen's top left corner
   return c;
 }
 

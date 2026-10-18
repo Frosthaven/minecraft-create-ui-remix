@@ -18,19 +18,26 @@ import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
+import dev.frosthaven.havencreateuiux.UiConfig;
+
 /**
- * Buffs and debuffs in the bar's area (the page's hud-compact-effects.js), in place of vanilla's top-right icons: two
- * floating lines left-aligned to the bar's edge, buffs nearest the bar and debuffs (1.5x) above, each line always-on
- * effects first; a socket per effect with a border draining clockwise from the top (green buff, red debuff) and the
- * time left under it (45, 3m, 1h) in the kind's tint (it does not change as it runs down). Hovering one while a screen is open shows its name and time.
+ * Buffs and debuffs (the page's hud-compact-effects.js), in place of vanilla's top-right icons, where the config's
+ * "Buffs and debuffs" puts them ({@link UiConfig.EffectsAnchor}): the screen's top left (the default; {@link #corner}),
+ * buffs in the first row and debuffs in the row below as vanilla orders them, at twice the rail's size, following the
+ * screen and not the bar's size; or the action bar's area ({@link #draw}): two floating lines left-aligned to the bar's
+ * edge, buffs nearest the bar and debuffs (1.5x) above. Each line always-on effects first; a socket per effect with a
+ * border draining clockwise from the top (green buff, red debuff) and the time left under it (45, 3m, 1h) in the kind's
+ * tint (it does not change as it runs down). Hovering one while a screen is open shows its name and time.
  * Worn gear (GearStatus: MekaSuit energy, jetpack hydrogen, scuba / space suit oxygen, Jet Suit energy, O2 backtanks)
  * adds sockets to the buffs line after the always-on buffs: all cyan, each the worn item as its icon, the border draining
  * with what is left and the percent under it (no sign), cyan; the tooltip names the resource and its amount.
- * Drawn in texels relative to (bar centre, screen bottom); CompactHud's pose maps them to the screen.
+ * The rail is drawn in texels relative to (bar centre, screen bottom); CompactHud's pose maps them to the screen.
  */
 final class HudEffects {
     private static final int SIZE = 10 * K, CELL = 13 * K, PER_ROW = 10;
     private static final double ROW_H = 19.5, TIME_K = 1.5;   // TIME_K: the times' digits scale (the bigger bar)
+    /** The top-left corner: both kinds at this scale, from (CORNER_X, CORNER_Y) GUI px; a row wraps at half the screen. */
+    private static final double CORNER_K = 2, CORNER_X = 2, CORNER_Y = 2;
     /** The longest duration seen per effect: the border shows time left of that. */
     private static final Map<Holder<MobEffect>, Integer> START = new HashMap<>();
     /** Effect boxes on screen (GUI px) from the last frame, for the hover tooltip. */
@@ -38,10 +45,11 @@ final class HudEffects {
 
     private HudEffects() {}
 
-    /** left: the bar's left edge + 1, top: where the lines start (units; with orbs, clear of the housings). */
-    static void draw(GuiGraphics g, Player p, List<GearStatus.Gear> gear, int cx, int bottom, float scale, double left, double startTop) {
-        restoreBlend();
-        BOXES.clear();
+    /** The config: buffs and debuffs at the screen's top left (else in the action bar's area). */
+    static boolean atCorner() { return UiConfig.EFFECTS_ANCHOR.get() == UiConfig.EffectsAnchor.TOP_LEFT; }
+
+    /** The buffs line (always-on first, then the worn gear, then the timed ones) and the debuffs line. */
+    private static List<List<Object>> lines(Player p, List<GearStatus.Gear> gear) {
         List<MobEffectInstance> all = new ArrayList<>();
         for (MobEffectInstance e : p.getActiveEffects()) if (e.showIcon()) all.add(e);
         all.sort((a, b) -> b.compareTo(a));
@@ -51,23 +59,68 @@ final class HudEffects {
         HudLog.changed("effects", green.size() + "/" + red.size(), "effects: {} buffs, {} debuffs", green.size(), red.size());
         HudLog.changed("gear", gear.stream().map(GearStatus.Gear::id).toList(), "gear statuses (cyan, in the buffs line): {}",
                 gear.isEmpty() ? "none" : String.join(", ", gear.stream().map(GearStatus.Gear::id).toList()));
+        return List.of(green, red);
+    }
+
+    /** The rail in the action bar's area (nothing when the config anchors the effects to the corner).
+     *  left: the bar's left edge + 1, top: where the lines start (units; with orbs, clear of the housings). */
+    static void draw(GuiGraphics g, Player p, List<GearStatus.Gear> gear, int cx, int bottom, float scale, double left, double startTop) {
+        if (atCorner()) return;
+        restoreBlend();
+        BOXES.clear();
+        List<List<Object>> lines = lines(p, gear);
         double top = startTop;
-        for (Object[] l : new Object[][] {{green, 1.0}, {red, 1.5}}) {
-            @SuppressWarnings("unchecked") List<Object> list = (List<Object>) l[0];
-            double m = (double) l[1];
+        for (int kind = 0; kind < 2; kind++) {   // from the bar up: buffs, then debuffs at 1.5x on top
+            List<Object> list = lines.get(kind);
+            double m = kind == 0 ? 1.0 : 1.5;
             int per = (int) (PER_ROW / m);
             for (int r = 0; r * per < list.size(); r++) {
                 top -= ROW_H * m;
                 for (int i = 0; i < per && r * per + i < list.size(); i++) {
                     Object e = list.get(r * per + i);
                     int x = (int) Math.round(left * K) + (int) (CELL * m * i), y = (int) Math.round((top - 50) * K);
-                    if (e instanceof GearStatus.Gear su) suit(g, su, x, y);
-                    else effect(g, (MobEffectInstance) e, x, y, m);
+                    socket(g, e, x, y, m);
                     double s = scale / K;
                     BOXES.add(new Object[] {e, cx + x * s, bottom + y * s, SIZE * m * s});
                 }
             }
         }
+    }
+
+    /** The screen's top left (the config's default; nothing otherwise): buffs in the first row, debuffs in the row below,
+     *  both at CORNER_K, the time under each socket; a row longer than half the screen wraps downward. Drawn in GUI px
+     *  (the bar's size undone: the corner follows the screen); the caller's pose is CompactHud's sized one. */
+    static void corner(GuiGraphics g, Player p, List<GearStatus.Gear> gear, int cx, int bottom, float scale, int guiWidth) {
+        if (!atCorner()) return;
+        restoreBlend();
+        BOXES.clear();
+        List<List<Object>> lines = lines(p, gear);
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(cx, bottom, 0);
+        pose.scale(1 / scale, 1 / scale, 1);
+        pose.translate(-cx, -bottom, 0);
+        pose.scale(1f / K, 1f / K, 1);
+        double m = CORNER_K, top = CORNER_Y;
+        int per = Math.max(1, (int) ((guiWidth / 2.0 - CORNER_X) / (CELL / (double) K * m)));
+        for (List<Object> list : lines) {   // from the top down: buffs, then debuffs
+            for (int r = 0; r * per < list.size(); r++) {
+                for (int i = 0; i < per && r * per + i < list.size(); i++) {
+                    Object e = list.get(r * per + i);
+                    int x = (int) Math.round(CORNER_X * K + CELL * m * i), y = (int) Math.round(top * K);
+                    socket(g, e, x, y, m);
+                    BOXES.add(new Object[] {e, x / (double) K, y / (double) K, SIZE * m / K});
+                }
+                top += ROW_H * m;
+            }
+        }
+        pose.popPose();
+    }
+
+    /** One socket at (x, y) texels, m times the rail's size: a gear status or an effect. */
+    private static void socket(GuiGraphics g, Object e, int x, int y, double m) {
+        if (e instanceof GearStatus.Gear su) suit(g, su, x, y, m);
+        else effect(g, (MobEffectInstance) e, x, y, m);
     }
 
     /** How many of a buffs line are always-on (they lead it). */
@@ -78,10 +131,11 @@ final class HudEffects {
     }
 
     /** A gear socket: cyan frame, the worn item's icon, the border draining with what is left, the percent. */
-    private static void suit(GuiGraphics g, GearStatus.Gear su, int x, int y) {
+    private static void suit(GuiGraphics g, GearStatus.Gear su, int x, int y, double m) {
         var pose = g.pose();
         pose.pushPose();
         pose.translate(x, y, 0);
+        pose.scale((float) m, (float) m, 1);
         use(g, PARTS);
         g.blit(PARTS, 0, 0, EFFECT_SUIT_U, EFFECT_V, SIZE, SIZE, PARTS_SIZE, PARTS_SIZE);
         if (su.icon() != null) {   // the item, 16 px, in the effect icon's 47-texel box at (17, 17)
