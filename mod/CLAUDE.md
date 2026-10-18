@@ -74,14 +74,8 @@ No player config edits needed; the instance config stays at DME's defaults.
 - `BuiltInPack`: registers `resourcepacks/haven_create_hud` in the jar (copied from `../resourcepacks/haven-create-hud` by
   processResources) on `AddPackFindersEvent` as a required client pack fixed at the top, id
   `mod/haven_create_ui_ux:resourcepacks/haven_create_hud`. Log prefix `[built-in pack]`.
-- `PackDefaults`: one-time defaults from `config/haven-pack-defaults.json` on the first title screen of a session (format
-  in the root CLAUDE.md): enables listed resource packs once (ordered by `above`/`below`), sets Iris's shader per OS on
-  the first run (reflection: `Iris.getIrisConfig().setShaderPackName/setShadersEnabled/save`, `Iris.reload()`), and
-  writes per-OS shader pack options (`shaderOptions`) into Iris's `shaderpacks/<pack>.txt` (a properties file): a key
-  is written when the file lacks it or still holds the value written before, then `Iris.reload()`; a value the player
-  changed stays. First use: Complementary Unbound on macOS at Block Reflection Quality Low, because Apple's OpenGL has
-  16 texture units and Deep Seas 3.4's hull sampler overflowed composite1 at High. The player's later choices always
-  win. Log prefix `[pack defaults]`.
+- Pack defaults: moved to haven-compat 0.5.0 (`defaults/`), a required mod; this mod no longer reads
+  `config/haven-pack-defaults.json` (1.4.0).
 
 ## Compact action bar (`hud/`)
 
