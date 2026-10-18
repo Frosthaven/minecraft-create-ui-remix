@@ -357,7 +357,9 @@ mod and packs were `minecraft-dark-mode-fixes`, merged in with history):
   `resourcePacks`: `[{"id": "file/X.zip", "above"|"below": "file/Y.zip"}]`, each enabled once when first seen
   installed (or installed again after removal), never re-enabled if the player turned it off while installed.
   `shader`: `{"default": "<shaderpacks file>", "macos": "<file>", "enabled": true}`, applied through Iris on the first
-  run only. State in `config/haven-pack-defaults.state.json`. Log prefix `[pack defaults]`.
+  run only; `shaderOptions` (per OS, per shader pack) writes Iris option values into `shaderpacks/<pack>.txt` once and
+  reloads Iris, a value the player changed stays (1.3.0+). State in `config/haven-pack-defaults.state.json`. Log prefix
+  `[pack defaults]`.
 - Dark mode split: the inventory, Curios, Cosmetic Armor, trash slot and backpack textures (storage backgrounds,
   `slots_background`, `gui_controls`) and the steel push buttons (recipe book sprite, Curios and Cosmetic Armor buttons,
   Sophisticated's buttons) also ship a `<name>_grey` layer (`greyLayer` in `screen-page.js`): their plain greys (opaque,
