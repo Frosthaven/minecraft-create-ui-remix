@@ -41,7 +41,9 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  *  - with a Create HUD pack on, no dark mode on the main HUD ({@link HudLayers}), Sophisticated
  *    Backpacks screens and the inventory ({@link PackScreens}), except their plain greys, which the
  *    pack ships as grey layers that follow DME ({@link SplitBlit});
- *  - the compact action bar ({@link CompactHud}) in place of the vanilla and mod HUD rows.
+ *  - the compact action bar ({@link CompactHud}) in place of the vanilla and mod HUD rows;
+ *  - on a machine without OpenGL 4.3 (macOS), Immersive Portals' shader path is held off while shaders are on
+ *    ({@link PortalShaderGuard}): it would abort the JVM.
  */
 @Mod(value = HavenCreateUiUx.ID, dist = Dist.CLIENT)
 public final class HavenCreateUiUx {
@@ -61,6 +63,7 @@ public final class HavenCreateUiUx {
         modBus.addListener(AddPackFindersEvent.class, BuiltInPack::register);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class, PackDefaults::onScreen);
         LauncherSwap.run();   // Haven pack: installs the launcher the pack delivered, for launchers before 1.2
+        PortalShaderGuard.register(NeoForge.EVENT_BUS);   // no OpenGL 4.3 (macOS): Immersive Portals' shader path held off
         // The dark mode split (SplitBlit): grey layers are looked up again after a resource reload.
         modBus.addListener(RegisterClientReloadListenersEvent.class, event ->
                 event.registerReloadListener((ResourceManagerReloadListener) manager -> SplitBlit.reload()));
