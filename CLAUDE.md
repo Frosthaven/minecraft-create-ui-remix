@@ -264,7 +264,7 @@ Three kinds: hostile red, not hostile green, players blue; each toggled in the c
 
 ## Backpack Redesign (`site/redesign/backpack.html`), work in progress
 
-- Sophisticated Backpacks (Sophisticated Core 1.4.90). Before and after are assembled by the same code
+- Sophisticated Backpacks (Sophisticated Core 1.4.90; the icon sheet also carries 1.5.7's linked storage markers). Before and after are assembled by the same code
   (`backpack.js`) with the mod's cutting rules, for every tier (Leather 9x3 to Netherite 12x10), the
   small-screen scrolling layout (`_wider` textures) and an open crafting tab. Art in `backpack-art.js`.
 - Files: `sophisticatedcore:textures/gui/storage_background_{9,12}[_wider]`, `slots_background`,
@@ -291,7 +291,11 @@ Three kinds: hostile red, not hostile green, players blue; each toggled in the c
   tab: four toggles and four fluid filter slots.
 - Icons in `icons`, all flat vector shapes (one solid light steel tone, rust for "not" signs; no gradient,
   shadow, glow or pixel upscaling): transfer and sort arrows, sort-by letters in the game font, the settings
-  cog, the switch lever, the crafting and pump tab toggles (redrawn by meaning), the result arrows.
+  cog, the switch lever, the crafting and pump tab toggles (redrawn by meaning), the result arrows, and the linked
+  storage markers Sophisticated Core 1.5.7 added for the Ender Linker (`LinkedStorageEndpointRoleRenderer`, 16 x 16 at
+  (112,112) primary and (128,112) secondary, next to the storage title and in item tooltips; the broken link at (144,112)
+  is on the sheet only): ender orbs, the primary ringed, the broken one cracked. A Sophisticated Core update that draws
+  new cells of `icons` or `gui_controls` needs them redrawn here, else the pack's copy shows them blank.
 - Controls keep everything (shadows too) inside their box: mods place buttons 1 px from slots. Small 12 px
   buttons draw a 9.6 px face inset 1.2 px, with glyphs about 4.4 x 5.6, so they do not crowd slot rows.
 - The search box is the mod's flat #777777 square with a magnifier hint; the texture frames it like the

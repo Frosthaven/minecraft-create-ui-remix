@@ -183,7 +183,7 @@ function tabArt(g) {
 
 /** icons: the pack's sheet with the icons this screen uses redrawn flat (one solid tone, no shading)
  *  (transfer and sort arrows, filtered arrows with a dotted stem, sort-by letters in the game's font,
- *  the settings cog) and the upgrade switch as a lever that glows ember when on. */
+ *  the settings cog, the linked storage markers) and the upgrade switch as a lever that glows ember when on. */
 function bpIcons(orig, font) {
   const [c, g] = hires(256, 256);
   g.imageSmoothingEnabled = false;
@@ -248,6 +248,17 @@ function bpIcons(orig, font) {
   icon16(0, 112, tank); icon16(16, 112, tank, true);
   icon16(176, 0, world); icon16(192, 0, world, true);
   icon16(208, 0, hand); icon16(224, 0, hand, true);
+  // Linked storage markers (Sophisticated Core 1.5.7, the Ender Linker; LinkedStorageEndpointRoleRenderer), 16 x 16:
+  // primary endpoint (112,112), secondary (128,112), and the broken link the sheet carries at (144,112) (no code
+  // draws it in 1.5.7). An ender orb: the primary inside a ring (the hub), the secondary alone, the broken one cracked.
+  const orb = r => { circle(g, 8, 8, r); g.fill(); };
+  icon16(112, 112, () => { orb(3.2); g.lineWidth = 0.9; circle(g, 8, 8, 5.6); g.stroke(); });
+  icon16(128, 112, () => orb(3.8));
+  icon16(144, 112, () => {
+    orb(3.8);
+    g.save(); g.globalCompositeOperation = 'destination-out'; g.lineWidth = 1; g.lineJoin = 'miter';
+    g.beginPath(); g.moveTo(7, 3.4); g.lineTo(9.2, 6.6); g.lineTo(6.8, 9.2); g.lineTo(9, 12.6); g.stroke(); g.restore();
+  });
   g.clearRect(48, 144, 16, 12);
   g.fillStyle = ICON_FLAT;
   g.beginPath(); g.moveTo(53.6, 3 + 144); g.lineTo(50.4, 6 + 144); g.lineTo(53.6, 9 + 144); g.closePath(); g.fill();
@@ -264,7 +275,7 @@ function bpIcons(orig, font) {
     rrect(g, x + 0.4, ky, 3.2, 4, 0.8); g.fillStyle = col; g.fill();
   }
   // A thin dark outline on every icon: the buttons under them follow dark mode, so a face can be light grey.
-  outlineCanvas(c, 0.4, [[0, 144, 48, 24], [48, 144, 16, 12], [32, 48, 32, 16], [0, 112, 64, 16], [144, 0, 96, 16], [16, 96, 16, 16]]);
+  outlineCanvas(c, 0.4, [[0, 144, 48, 24], [48, 144, 16, 12], [32, 48, 32, 16], [0, 112, 64, 16], [144, 0, 96, 16], [16, 96, 16, 16], [112, 112, 48, 16]]);
   return c;
 }
 
