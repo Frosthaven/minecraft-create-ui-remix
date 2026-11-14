@@ -9,10 +9,14 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
  * and the faded hint (#8C5D4B). Dark Mode Everywhere turns text light only when red, green and blue are all under 65,
  * so these browns stayed dark on its darkened panel. The same hue scaled under 65 lets DME's own rule (and its toggle)
  * handle them, as with the frogport title ({@link PackagePortScreenMixin}).
+ *
+ * <p>#4A2D31 changes in {@code init} only (the search box text). In {@code renderBg} Create uses it as the shadow copy
+ * under light text (the empty-list message and the category names, drawn twice one pixel apart): scaled under 65 there,
+ * DME turned the shadow light too and the text showed doubled.
  */
 @Mixin(targets = "com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScreen", remap = false)
 public abstract class StockKeeperRequestScreenMixin {
-    @ModifyConstant(method = {"init", "renderBg"}, constant = @Constant(intValue = 0x4A2D31), require = 0)
+    @ModifyConstant(method = "init", constant = @Constant(intValue = 0x4A2D31), require = 0)
     private int haven_create_ui_ux$textColor(int color) {
         return 0x402730;
     }
