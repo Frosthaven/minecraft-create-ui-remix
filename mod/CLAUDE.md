@@ -183,9 +183,10 @@ not a spectator.
   its gear's lines), except the jetpack's: `MekanismJetpackHudMixin` (`ItemJetpack.addHUDStrings`) and
   `MekanismJetpackUnitHudMixin` (`ModuleJetpackUnit.addHUDElements`), optional config `mekanism.mixins.json`, leave them
   out while the bar is active, since the instrument plate's jetpack chip shows them (`GearStatus.jetpack`:
-  `IJetpackItem.getPrimaryJetpack`, `getJetpackMode`, tank 0; not a gear status any more; always the key of
-  `MekanismKeyHandler.chestModeSwitchKey` as a tab on the top edge, `WordChips.key` in the slot numbers' style, `WordChips.keyLabel`: from
-  the key's locale-free name, at most 3 characters of the strip). `WordChips` draws the jetpack chip's words at 1.5x. Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
+  `IJetpackItem.getPrimaryJetpack`, `getJetpackMode`, tank 0; not a gear status any more; the key of
+  `MekanismKeyHandler.chestModeSwitchKey` first inside the chip, in a key cap (`WordChips.keyCap` / `keyWidth`, the same on
+  every chip), `WordChips.keyLabel`: from the key's locale-free name, at most 3 characters of the strip, a NeoForge key modifier
+  in front as ALT+, CTL+, SHF+). `WordChips` draws the jetpack chip's words at 1.5x. Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
 - Slot badges (`SlotBadges` draws, `SlotRead` reads; the page's `ccSlotBadge`, root CLAUDE.md): called from
   `CompactHud.hotbarItems` (all modes) and after each offhand `slotItem` (`CompactHud`, `VanillaHud`), z 300, bottom right in
   the slot numbers' digits; `jetRow('V')` orange for low ammo, `jetRow('D')` red for none, the bucket mode ON `jetRow('N')` green (OFF white), `DIM` for an enum's OFF; the held items' key (selected slot, offhand) bottom left,
@@ -195,9 +196,13 @@ not a spectator.
   `getAmmoConfig(getCurrentAmmo(data).getId(), data).getCounter()` (`ntgl:bar` / `ntgl:percent`: the percent; these are
   the weapon's ammo, refilled by the reload key like rounds: `ReloadTracker.reloadMagazine` takes the Pneumatic Hammer's air
   from a Create backtank, the Blazegun's from burnable fuel or a Blaze Cake, so red and RELOAD apply to them too), both cached
-  500 ms per stack; `ntgl:throw` weapons (grenades) and capacity 0 left out; the fire select key (`NtglKeyBinds.KEY_FIRE_SELECT`) on the held gun's slot when
-  `WeaponModifierHelper.getFireModes(data)` has more than one ; the selected slot's and the offhand's key always draw. `SlotRead.reloadRow`: the held
-  gun (main hand, else offhand) is empty (a low gun shows only its orange count): `CompactHud.instruments` adds the RELOAD chip (red; always the tab of `NtglKeyBinds.KEY_RELOAD`, `SlotRead.reloadKey`). `CrossbowItem`:
+  500 ms per stack; `ntgl:throw` weapons (grenades) and capacity 0 left out; guns carry no slot key; a held Mekanism mode item's slot (selected slot,
+  offhand) always shows the item mode key. `GunRead` (the held gun, main hand else offhand; NTGL methods looked up by exact
+  parameter types, as `getFireMode` has a private ItemStack overload): FIRE MODE chip while `getFireModes(data)` has more
+  than one (`WeaponStateHelper.getFireMode(data)`'s id path in capitals; key `KEY_FIRE_SELECT`), AMMO chip while
+  `getAmmoItems(data)` has more than one (`getAmmoConfig(getCurrentAmmo(data).getId(), data).getAmmoType()`'s id path as
+  words, a few renamed in `GunRead.AMMO_WORDS`; key `KEY_AMMO_SELECT`). `SlotRead.reloadRow`: the held
+  gun (main hand, else offhand) is empty (a low gun shows only its orange count): `CompactHud.instruments` adds the RELOAD chip (its key `NtglKeyBinds.KEY_RELOAD` in the key cap, `SlotRead.reloadKey`, then the word in red). `CrossbowItem`:
   `charged_projectiles`. Other `ProjectileWeaponItem`s (bows, Mekanism Electric Bow, Create and TFMG potato cannons,
   Cataclysm Cursed Bow, Ars spell bow, Mystical Agriculture and Aquaculture bows): the inventory's stacks that
   `getAllSupportedProjectiles()` accepts; Power Grid's Electro Zapper (accepts none, battery) left out. Mekanism

@@ -116,7 +116,7 @@ public final class CompactHud {
 
     /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 px apart): web
      *  followers (ghost and count), the steampunk armor's clock and compass, the Mekanism jetpack (mode word and
-     *  hydrogen), RELOAD while the held gun is empty (SlotRead.reloadRow), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
+     *  hydrogen), RELOAD while the held gun is empty (SlotRead.reloadRow), the held gun's FIRE MODE and AMMO (GunRead), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
      *  top: the plates' top (units; the action bar: over its centre). Returns it, or NaN when there is none. */
     static double instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta, double top) {
         restoreBlend();
@@ -149,15 +149,13 @@ public final class CompactHud {
         }
         GearStatus.Jet jet = GearStatus.jetpack(p);
         if (jet != null) {
-            String key = GearStatus.jetKey();   // the mode switch key, always a tab on its top edge
-            int tw = WordChips.jetWidth(jet), jw = Math.max(CHIP_W, tw + 8 * K);   // 4 px each side
-            chips.add(new Chip(jw, x -> {
-                WordChips.jet(g, jet, x + (jw - tw) / 2, y0);
-                if (key != null) WordChips.key(g, key, x + (jw - tw) / 2, y0);
-            }));
+            String key = GearStatus.jetKey();   // the mode switch key, in a key cap before the text
+            int tw = WordChips.keyWidth(key) + WordChips.jetWidth(jet), jw = Math.max(CHIP_W, tw + 8 * K);   // 4 px each side
+            chips.add(new Chip(jw, x -> WordChips.jet(g, jet, x + (jw - tw) / 2 + WordChips.keyCap(g, key, x + (jw - tw) / 2, y0), y0)));
         }
         Integer reload = SlotRead.reloadRow(p);
-        if (reload != null) wordChip(g, chips, "RELOAD", reload, SlotRead.reloadKey(), y0);   // the held gun is empty (red); its reload key always
+        if (reload != null) wordChip(g, chips, "RELOAD", reload, SlotRead.reloadKey(), y0);   // the held gun is empty (red)
+        for (String[] gun : new String[][] {GunRead.fireMode(p), GunRead.ammo(p)}) if (gun != null) wordChip(g, chips, gun[0], WHITE, gun[1], y0);
         var cooldowns = HudExtras.artifactCooldowns(p, delta);
         if (!cooldowns.isEmpty()) {   // every worn Artifact on cooldown in one chip: its item, shaded by the time left
             int cw = cooldowns.size() * 9 * K;
@@ -189,14 +187,10 @@ public final class CompactHud {
         return top;
     }
 
-    /** A chip of words (WordChips.words, 1.5x) in a digit row, widened to fit with 4 px each side; key: a tab on its top
-     *  edge from the text's left (while the slot numbers show), or null. */
+    /** A chip of words (WordChips.words, 1.5x) in a digit row after its key cap (key, or null), widened to fit, 4 px each side. */
     private static void wordChip(GuiGraphics g, List<Chip> chips, String words, int row, String key, int y0) {
-        int tw = WordChips.wordsWidth(words), w = Math.max(CHIP_W, tw + 8 * K);
-        chips.add(new Chip(w, x -> {
-            WordChips.words(g, words, row, x + (w - tw) / 2, y0);
-            if (key != null) WordChips.key(g, key, x + (w - tw) / 2, y0);
-        }));
+        int tw = WordChips.keyWidth(key) + WordChips.wordsWidth(words), w = Math.max(CHIP_W, tw + 8 * K);
+        chips.add(new Chip(w, x -> WordChips.words(g, words, row, x + (w - tw) / 2 + WordChips.keyCap(g, key, x + (w - tw) / 2, y0), y0)));
     }
 
     /** A small floating iron plate at (x, y) texels, w wide (the instrument plate's piece, its caps kept). */

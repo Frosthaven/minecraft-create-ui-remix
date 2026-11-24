@@ -58,7 +58,7 @@ function ccDial(g, cx, cy, r, a, kind) {
 const CC_CHIP_W = 21;
 /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 apart): web
  *  followers, the steampunk clock and compass, the Mekanism jetpack, RELOAD (the held gun empty, red; a low gun only its
- *  orange count; game: SlotRead.reloadRow), the Artifacts on cooldown (one chip). Only when needed.
+ *  orange count; game: SlotRead.reloadRow), the held gun's FIRE MODE and AMMO (GunRead), the Artifacts on cooldown (one chip). Only when needed.
  *  top: the plates' top (default: over the centre plate). Returns it, or null when there is none. */
 function ccInstruments(g, s, top) {
   const h = 9, y = top ?? CC.plate.mid - h - 2.5, cy = y + h / 2, chips = [];
@@ -72,17 +72,18 @@ function ccInstruments(g, s, top) {
     ccDial(g, x + 6, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
     ccDial(g, x + 15, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
   }]);
-  if (s.jetpack) {   // the mode switch key, always a tab on its top edge; the chip keeps its size
-    const key = CC_JET_KEY;
-    const tw = ccJetChip.width(s.jetpack), jw = Math.max(W, tw + 8);
-    chips.push([jw, x => { ccJetChip(g, x + (jw - tw) / 2, cy, s.jetpack); if (key) ccJetKey(g, key, x + (jw - tw) / 2, y); }]);
+  if (s.jetpack) {   // the mode switch key in a key cap before the text
+    const tw = ccChipKey.width(CC_JET_KEY) + ccJetChip.width(s.jetpack), jw = Math.max(W, tw + 8);
+    chips.push([jw, x => ccJetChip(g, x + (jw - tw) / 2 + ccChipKey(g, CC_JET_KEY, x + (jw - tw) / 2, cy), cy, s.jetpack)]);
   }
   const held = (s.slotBadges || [])[s.slot];
-  const wordChip = (words, col, key) => {   // words in the follower count's digits, widened to fit (4 each side), key a top-edge tab (always)
-    const tw = ccWords.width(words), w = Math.max(W, tw + 8);
-    chips.push([w, x => { ccWords(g, words, x + (w - tw) / 2, cy, col); if (key) ccJetKey(g, key, x + (w - tw) / 2, y); }]);
+  const wordChip = (words, col, key) => {   // its key cap, then words in the follower count's digits; widened to fit (4 each side)
+    const tw = ccChipKey.width(key) + ccWords.width(words), w = Math.max(W, tw + 8);
+    chips.push([w, x => ccWords(g, words, x + (w - tw) / 2 + ccChipKey(g, key, x + (w - tw) / 2, cy), cy, col)]);
   };
-  if (held && held.gun && held.row === 'red') wordChip('RELOAD', CC_SLOT_INK.red, CC_RELOAD_KEY);   // the held gun empty; its reload key always
+  if (held && held.gun && held.row === 'red') wordChip('RELOAD', CC_SLOT_INK.red, CC_RELOAD_KEY);   // the held gun empty
+  if (held && held.fire) wordChip(held.fire, '#f2f2f2', CC_FIRE_KEY);   // FIRE MODE: a gun with several fire modes (game: GunRead)
+  if (held && held.ammo) wordChip(held.ammo, '#f2f2f2', CC_AMMO_KEY);   // AMMO: a gun taking several ammo kinds
   const cds = s.artifactCooldowns || [];
   if (cds.length) {   // every Artifact on cooldown in one chip: its icon (placeholder gem), shaded by what is left
     const cw = cds.length * 9, w = Math.max(W, cw + 3);
@@ -103,11 +104,20 @@ function ccInstruments(g, s, top) {
  *  the follower count's digits; the chip widens to fit, 4 px each side. (x, cy): text left, centre line. */
 const CC_JET = { D: '#ff5a4e', V: '#ffa040', N: '#62e07a', H: '#3fe0ff' };
 const CC_JET_WORD = { N: 'NORMAL', V: 'VECTOR', H: 'HOVER', D: 'DISABLED' };
-/** The jetpack's mode switch key, a tab on the chip's top edge: the slot numbers' style (white, black outline,
- *  CC_SLOT_NUM.k) from the text's left x, running rightward, its glyphs' bottom 0.75 below the plate's top y. */
-function ccJetKey(g, key, x, y) {
-  ccOutlinedNumber(g, key, x, y + 0.75 - 5 * CC_SLOT_NUM.k, '#ffffff', CC_SLOT_NUM.k);
+/** A chip's hotkey inside the chip before its text (the game: WordChips.keyCap): a small key cap (dark, a light edge)
+ *  holding the key in the slot numbers' white digits, centred on the words' line (cy - 0.35: their glyphs' centre). From
+ *  x; returns its width and the gap after it (0 without a key). Same on every chip. */
+function ccChipKey(g, key, x, cy) {
+  if (!key) return 0;
+  const k = CC_SLOT_NUM.k, kw = ccNumberWidth(key, k), kh = 5 * k, c = cy - 0.35;
+  g.fillStyle = '#7a808a'; g.fillRect(x, c - kh / 2 - 1, kw + 2, kh + 2);
+  g.fillStyle = '#1c1f24'; g.fillRect(x + 0.5, c - kh / 2 - 0.5, kw + 1, kh + 1);
+  ccOutlinedNumber(g, key, x + 1, c - kh / 2, '#ffffff', k);
+  return ccChipKey.width(key);
 }
+ccChipKey.width = key => key ? ccNumberWidth(key, CC_SLOT_NUM.k) + 2 + 2 : 0;
+/** NTGL's fire select and ammo select keys (defaults B, N; the game: the player's bindings). */
+const CC_FIRE_KEY = 'B', CC_AMMO_KEY = 'N';
 /** The RELOAD chip (the held gun empty, red): NTGL's reload key (default R; the game: the binding). */
 const CC_RELOAD_KEY = 'R';
 /** Words in the follower count's digits split at spaces (no space glyph), 2 apart; (x, cy): left, centre line. */

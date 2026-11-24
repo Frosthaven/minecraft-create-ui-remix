@@ -7,7 +7,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The instrument chips that show words (the Mekanism jetpack, RELOAD): text in the digits' pixel font at the follower count's size (1.5x), one plate
+ * The instrument chips that show words (the Mekanism jetpack, RELOAD, FIRE MODE, AMMO), each with its hotkey in a key cap before the text: text in the digits' pixel font at the follower count's size (1.5x), one plate
  * cell tall. Positions are texels; x is the content's left edge, y the plate's top.
  */
 final class WordChips {
@@ -43,8 +43,8 @@ final class WordChips {
         word(g, jetPercent(jet), WHITE, x, y);
     }
 
-    // ---- Word chips (CompactHud.wordChip: RELOAD, the held NTGL gun empty, red; SlotRead.reloadRow):
-    // words split at spaces (the strip has no space glyph), GAP apart.
+    // ---- Word chips (CompactHud.wordChip: RELOAD, the held NTGL gun empty, red, SlotRead.reloadRow; FIRE MODE and AMMO,
+    // GunRead): words split at spaces (the strip has no space glyph), GAP apart.
 
     static int wordsWidth(String s) {
         int w = -GAP;
@@ -56,32 +56,48 @@ final class WordChips {
         for (String part : s.split(" ")) x += word(g, part, row, x, y) + GAP;
     }
 
-    /** The jetpack's mode switch key, a tab on the chip's top edge while the slot numbers show: in the slot numbers' style
-     *  (white in the digits' black outline, CompactHud.SLOT_NUM_K), starting at the text's left and running rightward, its
-     *  glyphs' bottom 0.75 px below the plate's top (the outline straddles the border, clear of the text below). The chip
-     *  keeps its size and place. */
+    /** A chip's hotkey, inside the chip before its text: a small key cap (dark, a light edge) holding the key in the slot
+     *  numbers' white digits (CompactHud.SLOT_NUM_K), centred on the text's line. Same on every chip (jetpack, RELOAD, FIRE
+     *  MODE, AMMO). */
     private static final double KEY_S = CompactHud.SLOT_NUM_K / 0.625;
+    private static final int CAP_PAD = K, CAP_EDGE = K / 2;
 
-    /** The key from x (the chip's text left), plate top y. */
-    static void key(GuiGraphics g, String key, int x, int y) {
+    /** The cap's width and the gap after it (texels), 0 without a key. */
+    static int keyWidth(String key) { return key == null ? 0 : (int) Math.round(digitsWidth(key) * KEY_S) + 2 * CAP_PAD + GAP; }
+
+    /** The cap from x, plate top y; returns keyWidth. */
+    static int keyCap(GuiGraphics g, String key, int x, int y) {
+        if (key == null) return 0;
+        int kw = (int) Math.round(digitsWidth(key) * KEY_S), kh = (int) Math.round(DIGIT_H * KEY_S), cy = y + 4 * K;
+        int x1 = x + kw + 2 * CAP_PAD, top = cy - kh / 2 - CAP_PAD, bottom = cy + kh / 2 + CAP_PAD;
+        use(g, FILL);
+        g.fill(x, top, x1, bottom, 0xFF7A808A);   // the cap's edge
+        g.fill(x + CAP_EDGE, top + CAP_EDGE, x1 - CAP_EDGE, bottom - CAP_EDGE, 0xFF1C1F24);
         var pose = g.pose();
         pose.pushPose();
-        pose.translate(x, y + 0.75 * K - DIGIT_H * KEY_S, 0);
+        pose.translate(x + CAP_PAD, cy - kh / 2.0, 0);
         pose.scale((float) KEY_S, (float) KEY_S, 1);
         digits(g, key, 0, 0, key.length(), WHITE, WHITE);
         pose.popPose();
+        return keyWidth(key);
     }
 
-    /** A key's name in at most 3 characters of the digit strip (0-9, A-Z, +), from its locale-free name
-     *  (key.keyboard.left.alt, key.mouse.4); null when unbound. Letters, digits, F keys as they are; punctuation as itself
-     *  (; ' , . - = [ ] \ ` /, CompactAtlas.KEY_GLYPHS); modifiers ALT, SHF, CTL, WIN; keypad KP and its key; mouse LMB,
-     *  RMB, MMB, M4; others the first 3 letters of the name. */
+    /** A key's short name in the digit strip (0-9, A-Z, +), from its locale-free name (key.keyboard.left.alt,
+     *  key.mouse.4); null when unbound. The key itself in at most 3 characters: letters, digits, F keys as they are;
+     *  punctuation as itself (; ' , . - = [ ] \ ` /, CompactAtlas.KEY_GLYPHS); modifiers ALT, SHF, CTL, WIN; keypad KP and
+     *  its key; mouse LMB, RMB, M3 (middle), M4, M5; others the first 3 letters of the name. A binding with a NeoForge key modifier
+     *  gets it in front: ALT+C, CTL+M4, SHF+; . */
     static String keyLabel(KeyMapping k) {
         if (k == null || k.isUnbound()) return null;
-        String n = k.getKey().getName();
+        String key = keyName(k.getKey().getName());
+        String mod = switch (k.getKeyModifier()) { case ALT -> "ALT+"; case CONTROL -> "CTL+"; case SHIFT -> "SHF+"; default -> ""; };
+        return key == null ? null : mod + key;
+    }
+
+    private static String keyName(String n) {
         if (n.startsWith("key.mouse.")) {
             String b = n.substring(10);
-            return switch (b) { case "left" -> "LMB"; case "right" -> "RMB"; case "middle" -> "MMB"; default -> "M" + b; };
+            return switch (b) { case "left" -> "LMB"; case "right" -> "RMB"; case "middle" -> "M3"; default -> "M" + b; };
         }
         String s = n.substring(n.indexOf('.', 4) + 1);   // after key.keyboard.
         String[] parts = s.split("\\.");

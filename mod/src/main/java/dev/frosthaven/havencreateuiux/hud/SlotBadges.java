@@ -11,9 +11,8 @@ import net.minecraft.world.item.ItemStack;
  * A slot's ammo or Mekanism mode ({@link SlotRead}) drawn on the item in the slot numbers' style (digits in their black
  * outline): one line at the bottom right, reaching onto the socket's border art, the corner opposite the slot number,
  * always while the item is in the hotbar or the offhand; ammo white, low (a quarter or less) orange, none red; a mode
- * white, the bucket mode ON green, the Disassembler's OFF grey. Always (not only with the slot numbers), the held items show their key: the selected slot
- * and the offhand socket, each when it holds a Mekanism mode item (Mekanism's item mode key) or an NTGL gun with more than
- * one fire mode (NTGL's fire select; both ; in the pack; for the offhand they act while sneak is held), at the slot
+ * white, the bucket mode ON green, the Disassembler's OFF grey. Always (not only with the slot numbers), a held Mekanism mode item (selected slot, offhand
+ * socket) shows Mekanism's item mode key (a gun's fire select and ammo select keys are on its chips, GunRead), at the slot
  * numbers' size on its socket's bottom left corner: glyphs from the socket's left edge (the outline over the left
  * border), the outline's bottom on the socket's bottom edge, never below the bar or the screen. The reload key is on the RELOAD chip. Every badge has the slot numbers' size ({@link #F}); only a text too wide for the socket at it
  * (the gatling's "100/100"; at most "999/999", SlotRead caps each number) shrinks to span it. With a stack count (bottom
@@ -64,7 +63,7 @@ final class SlotBadges {
         double right = x + EDGE, bottom = s.getCount() > 1 ? y + 8 : y + EDGE;   // above a stack count
         double w = digitsWidth(b.text()) * TS, f = Math.min(F, (right - x + 0.25) / w);   // the slot numbers' size; a wider text shrinks to span the socket
         text(g, b.text(), b.row(), right - w * f, bottom - LINE * f, f);
-        String key = !keyHere || b.key() == null ? null : b.key() == SlotRead.Key.FIRE ? SlotRead.fireSelectKey() : GearStatus.handModeKey();
+        String key = keyHere && b.modeKey() ? GearStatus.handModeKey() : null;
         if (key != null) text(g, key, WHITE, x - 1, y + 17 - OUTLINE - LINE, 1);   // on the socket's bottom left corner, outline on its bottom edge
     }
 

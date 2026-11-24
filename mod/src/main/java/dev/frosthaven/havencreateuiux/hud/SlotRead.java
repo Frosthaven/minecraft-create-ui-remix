@@ -37,12 +37,10 @@ import net.minecraft.world.item.component.ChargedProjectiles;
  * </ul>
  */
 public final class SlotRead {
-    /** A slot's one line (its ammo, else its Mekanism mode), its digit row, and the key its slot may carry while the
-     *  item is held (main hand or offhand): MODE, a Mekanism mode item (Mekanism's item
-     *  mode key); FIRE, an NTGL gun with more than one fire mode (NTGL's fire select key); else null. An
-     *  item with ammo and a mode (the Electric Bow) shows only its ammo. */
-    record Badge(String text, int row, Key key) {}
-    enum Key { MODE, FIRE }
+    /** A slot's one line (its ammo, else its Mekanism mode), its digit row, and whether it is a Mekanism mode item (held,
+     *  its slot shows Mekanism's item mode key). An item with ammo and a mode (the Electric Bow) shows only its ammo. A
+     *  gun's fire mode and ammo choice are chips (GunRead). */
+    record Badge(String text, int row, boolean modeKey) {}
 
     private SlotRead() {}
 
@@ -51,10 +49,10 @@ public final class SlotRead {
         try {
             String[] ammo = ammo(p, s);   // {text, "low" | "empty" | null}
             String[] mode = mode(s);      // {text, "green" | "dim" | null}
-            if (ammo != null) return new Badge(ammo[0], row(ammo[1]), ammo.length > 2 ? Key.FIRE : mode != null ? Key.MODE : null);
+            if (ammo != null) return new Badge(ammo[0], row(ammo[1]), mode != null);
             if (mode == null) return null;
             int modeRow = mode[1] == null ? CompactAtlas.WHITE : mode[1].equals("green") ? CompactAtlas.jetRow('N') : CompactAtlas.DIM;
-            return new Badge(mode[0], modeRow, Key.MODE);
+            return new Badge(mode[0], modeRow, true);
         } catch (RuntimeException | LinkageError e) {
             HudLog.error("slot-read", "reading a slot's ammo or mode failed (" + s.getItem() + ")", e);
             return null;
@@ -66,8 +64,8 @@ public final class SlotRead {
     /** Each number of a badge at most 999 (1200/2000 shows 999/999), so "999/999" is the widest badge. */
     private static final int CAP = 999;
 
-    private static final String NTGL = "com.nukateam.ntgl.common.";
-    private static final String MODIFIERS = NTGL + "util.util.WeaponModifierHelper", STATE = NTGL + "util.util.WeaponStateHelper";
+    static final String NTGL = "com.nukateam.ntgl.common.";
+    static final String MODIFIERS = NTGL + "util.util.WeaponModifierHelper", STATE = NTGL + "util.util.WeaponStateHelper";
     private static Optional<DataComponentType<?>> ammoCount;
     private static Constructor<?> weaponData;
     /** Per stack (ItemStack has identity equality): {read at (ms), capacity, 1 when the counter is a bar or percent}. */
@@ -96,17 +94,14 @@ public final class SlotRead {
     /** NTGL's reload key (key.ntgl.reload, the player's binding) in short form, or null. */
     static String reloadKey() { return ntglKey("KEY_RELOAD", "RELOAD chip: NTGL reload key"); }
 
-    /** NTGL's fire select key (key.ntgl.fire_select), or null. */
-    static String fireSelectKey() { return ntglKey("KEY_FIRE_SELECT", "slot keys: NTGL fire select key"); }
-
-    private static String ntglKey(String field, String what) {
+    static String ntglKey(String field, String what) {
         Object m = Reflect.getStatic("com.nukateam.ntgl.client.input.NtglKeyBinds", field);
         String label = WordChips.keyLabel(m instanceof net.minecraft.client.KeyMapping km ? km : null);
         HudLog.changed("ntgl-" + field, String.valueOf(label), what + " {}", label);
         return label;
     }
 
-    private static boolean isNtgl(ItemStack s) { return Reflect.is(s.getItem(), NTGL + "foundation.item.interfaces.IWeapon"); }
+    static boolean isNtgl(ItemStack s) { return Reflect.is(s.getItem(), NTGL + "foundation.item.interfaces.IWeapon"); }
 
     private static String[] ammo(Player p, ItemStack s) {
         if (isNtgl(s)) return ntgl(p, s);
@@ -143,28 +138,25 @@ public final class SlotRead {
         int count = s.get(ammoCount.get()) instanceof Integer i ? i : 0;
         String state = count == 0 ? "empty" : count <= c[1] * 0.25 ? "low" : null;
         String text = c[2] == 1 ? String.valueOf(Math.round(100.0 * count / c[1])) : Math.min(count, CAP) + "/" + Math.min(c[1], CAP);
-        return c[3] == 1 ? new String[] {text, state, "fire"} : new String[] {text, state};
+        return new String[] {text, state};
     }
 
-    /** {now, capacity (0: no ammo shown), 1 when the counter is a bar or percent, 1 when it has more than one fire mode
-     *  (WeaponModifierHelper.getFireModes: general.fireMode, attachments included)}. */
+    /** {now, capacity (0: no ammo shown), 1 when the counter is a bar or percent}. */
     private static long[] ntglInfo(Player p, ItemStack s, long now) {
         Object data = weaponData(s, p);
-        if (data == null) return new long[] {now, 0, 0, 0};
+        if (data == null) return new long[] {now, 0, 0};
         if (Reflect.callStatic(MODIFIERS, "getWeaponAction", data) instanceof Object action
-                && String.valueOf(Reflect.call(action, "getId")).endsWith(":throw")) return new long[] {now, 0, 0, 0};   // a grenade: its count
+                && String.valueOf(Reflect.call(action, "getId")).endsWith(":throw")) return new long[] {now, 0, 0};   // a grenade: its count
         long max = Reflect.callStatic(MODIFIERS, "getMaxAmmo", data) instanceof Integer m ? m : 0;
         Object holder = Reflect.callStatic(STATE, "getCurrentAmmo", data);
         Object config = holder == null ? null : Reflect.callStatic(MODIFIERS, "getAmmoConfig", Reflect.call(holder, "getId"), data);
         String counter = String.valueOf(config == null ? null : Reflect.call(Reflect.call(config, "getCounter"), "getId"));
         long pct = counter.endsWith(":bar") || counter.endsWith(":percent") ? 1 : 0;
-        long fire = Reflect.callStatic(MODIFIERS, "getFireModes", data) instanceof java.util.Collection<?> modes && modes.size() > 1 ? 1 : 0;
-        HudLog.changed("ntgl:" + s.getItem(), max + " " + counter + " " + fire, "slot ammo: {} holds {} (counter {}, fire modes {})",
-                s.getItem(), max, counter, fire == 1 ? "several: fire select key" : "one");
-        return new long[] {now, max, pct, fire};
+        HudLog.changed("ntgl:" + s.getItem(), max + " " + counter, "slot ammo: {} holds {} (counter {})", s.getItem(), max, counter);
+        return new long[] {now, max, pct};
     }
 
-    private static Object weaponData(ItemStack s, Player p) {
+    static Object weaponData(ItemStack s, Player p) {
         try {
             if (weaponData == null) {
                 Class<?> c = Reflect.cls(NTGL + "data.WeaponData");
