@@ -8,7 +8,8 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * The instrument chips that show words (the Mekanism jetpack, RELOAD, FIRE MODE, AMMO), each with its hotkey in a key cap before the text: text in the digits' pixel font at the follower count's size (1.5x), one plate
- * cell tall. Positions are texels; x is the content's left edge, y the plate's top.
+ * cell tall. Positions are texels; x is the content's left edge, y the plate's top. Every chip's text is at most
+ * {@link ChipText#MAX} characters (the key cap does not count): {@link #fit} cuts a longer one and logs it once.
  */
 final class WordChips {
     private static final float S = 1.5f;
@@ -29,11 +30,17 @@ final class WordChips {
 
     static int width(String s) { return (int) Math.round(digitsWidth(s) * S); }
 
-    // ---- Mekanism jetpack: the mode's word in its colour (NORMAL green, VECTOR orange, HOVER cyan, DISABLED red), then
-    // the hydrogen left (percent, no sign) in white.
+    /** s cut to ChipText.MAX characters, logged once per text that was too long. */
+    static String fit(String s) {
+        String out = ChipText.cut(s);
+        if (out != null && !out.equals(s)) HudLog.once("chip-cut:" + s, "chip text \"{}\" is longer than {} characters, shown as \"{}\"", s, ChipText.MAX, out);
+        return out;
+    }
 
-    private static final String[] JET_WORDS = {"NORMAL", "VECTOR", "HOVER", "DISABLED"};
-    private static String jetWord(GearStatus.Jet jet) { return JET_WORDS[Math.max(0, "NVHD".indexOf(jet.mode()))]; }
+    // ---- Mekanism jetpack: the mode's word in its colour (REG green, VECT orange, HOVR cyan, OFF red), then the
+    // hydrogen left (percent, no sign) in white.
+
+    private static String jetWord(GearStatus.Jet jet) { return fit(ChipText.jet(jet.mode())); }
     private static String jetPercent(GearStatus.Jet jet) { return String.valueOf(Math.round(jet.frac() * 100)); }
 
     static int jetWidth(GearStatus.Jet jet) { return width(jetWord(jet)) + GAP + width(jetPercent(jet)); }
@@ -43,18 +50,12 @@ final class WordChips {
         word(g, jetPercent(jet), WHITE, x, y);
     }
 
-    // ---- Word chips (CompactHud.wordChip: RELOAD, the held NTGL gun empty, red, SlotRead.reloadRow; FIRE MODE and AMMO,
-    // GunRead): words split at spaces (the strip has no space glyph), GAP apart.
+    // ---- Word chips (CompactHud.wordChip: LOAD, the held NTGL gun empty, red, SlotRead.reloadRow; FIRE MODE and AMMO,
+    // GunRead): one word, fit to ChipText.MAX.
 
-    static int wordsWidth(String s) {
-        int w = -GAP;
-        for (String part : s.split(" ")) w += width(part) + GAP;
-        return w;
-    }
+    static int wordsWidth(String s) { return width(fit(s)); }
 
-    static void words(GuiGraphics g, String s, int row, int x, int y) {
-        for (String part : s.split(" ")) x += word(g, part, row, x, y) + GAP;
-    }
+    static void words(GuiGraphics g, String s, int row, int x, int y) { word(g, fit(s), row, x, y); }
 
     /** A chip's hotkey, inside the chip before its text: a small key cap (dark, a light edge) holding the key in the slot
      *  numbers' white digits (CompactHud.SLOT_NUM_K), centred on the text's line. Same on every chip (jetpack, RELOAD, FIRE

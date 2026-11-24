@@ -186,7 +186,9 @@ not a spectator.
   `IJetpackItem.getPrimaryJetpack`, `getJetpackMode`, tank 0; not a gear status any more; the key of
   `MekanismKeyHandler.chestModeSwitchKey` first inside the chip, in a key cap (`WordChips.keyCap` / `keyWidth`, the same on
   every chip), `WordChips.keyLabel`: from the key's locale-free name, at most 3 characters of the strip, a NeoForge key modifier
-  in front as ALT+, CTL+, SHF+). `WordChips` draws the jetpack chip's words at 1.5x. Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
+  in front as ALT+, CTL+, SHF+). `WordChips` draws the jetpack chip's words at 1.5x. Every chip's text is at most 4 characters
+  (the key cap does not count; Shane's rule): the words come from `ChipText` (pure, no game classes: jetpack REG VECT HOVR OFF,
+  LOAD, fire modes, the ammo table), and `WordChips.fit` cuts any longer text to 4 with one `chip text ... is longer` log line. Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
 - Slot badges (`SlotBadges` draws, `SlotRead` reads; the page's `ccSlotBadge`, root CLAUDE.md): called from
   `CompactHud.hotbarItems` (all modes) and after each offhand `slotItem` (`CompactHud`, `VanillaHud`), z 300, bottom right in
   the slot numbers' digits; `jetRow('V')` orange for low ammo, `jetRow('D')` red for none, the bucket mode ON `jetRow('N')` green (OFF white), `DIM` for an enum's OFF; the held items' key (selected slot, offhand) bottom left,
@@ -199,10 +201,13 @@ not a spectator.
   500 ms per stack; `ntgl:throw` weapons (grenades) and capacity 0 left out; guns carry no slot key; a held Mekanism mode item's slot (selected slot,
   offhand) always shows the item mode key. `GunRead` (the held gun, main hand else offhand; NTGL methods looked up by exact
   parameter types, as `getFireMode` has a private ItemStack overload): FIRE MODE chip while `getFireModes(data)` has more
-  than one (`WeaponStateHelper.getFireMode(data)`'s id path in capitals; key `KEY_FIRE_SELECT`), AMMO chip while
-  `getAmmoItems(data)` has more than one (`getAmmoConfig(getCurrentAmmo(data).getId(), data).getAmmoType()`'s id path as
-  words, a few renamed in `GunRead.AMMO_WORDS`; key `KEY_AMMO_SELECT`). `SlotRead.reloadRow`: the held
-  gun (main hand, else offhand) is empty (a low gun shows only its orange count): `CompactHud.instruments` adds the RELOAD chip (its key `NtglKeyBinds.KEY_RELOAD` in the key cap, `SlotRead.reloadKey`, then the word in red). `CrossbowItem`:
+  than one (`WeaponStateHelper.getFireMode(data)`'s id path: AUTO, SEMI, MULT, others its first 4 letters; key
+  `KEY_FIRE_SELECT`), AMMO chip while `getAmmoItems(data)` has more than one (the AmmoHolder `getCurrentAmmo(data).getId()`,
+  the ammo item from the weapon data's "ammo" list, through `ChipText.AMMO`: cgs round_* RND, *_piercing AP, flechette FLEC,
+  flechette_steel STFL, incendiary FIRE, *_blank BLNK, nail NAIL, nail_steel STEL, burnable FUEL, blaze_cake CAKE, rocket
+  RCKT, rocket_small MINI; unknown: the holder's translated `getDescriptionId()`, first 4 letters; key `KEY_AMMO_SELECT`).
+  Check the table against `data/cgs/weapons/*.json` "ammo" lists on a Create Gunsmithing update. `SlotRead.reloadRow`: the held
+  gun (main hand, else offhand) is empty (a low gun shows only its orange count): `CompactHud.instruments` adds the RELOAD chip (its key `NtglKeyBinds.KEY_RELOAD` in the key cap, `SlotRead.reloadKey`, then LOAD in red). `CrossbowItem`:
   `charged_projectiles`. Other `ProjectileWeaponItem`s (bows, Mekanism Electric Bow, Create and TFMG potato cannons,
   Cataclysm Cursed Bow, Ars spell bow, Mystical Agriculture and Aquaculture bows): the inventory's stacks that
   `getAllSupportedProjectiles()` accepts; Power Grid's Electro Zapper (accepts none, battery) left out. Mekanism

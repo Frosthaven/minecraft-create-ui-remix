@@ -64,7 +64,7 @@
   <button id="comfort" aria-pressed="false" title="Farmer's Delight Comfort (shows when hurt with no saturation)">Comfort</button>
   <button id="mekasuit" aria-pressed="false" title="Mekanism MekaSuit energy: a cyan status in the effects rail">MekaSuit</button>
   <button id="mekJetpack" aria-pressed="false" title="Mekanism jetpack (or the MekaSuit jetpack unit): a chip on the instrument plate, its mode's word in its colour and the hydrogen left in white; cycles the modes">Mek jetpack: off</button>
-  <button id="slotBadges" aria-pressed="false" title="Weapons and Mekanism mode items in the hotbar: ammo (loaded/capacity; bows: arrows) bottom right of the slot, low orange, none red; a held gun that is empty shows the RELOAD chip (any gun in the empty set), a mode item's mode bottom right (WRCH, VEIN, ON / OFF); a mode item's key on the slot's bottom left corner; held guns add chips: RELOAD (empty), FIRE MODE, AMMO, each with its key in a key cap. Slots: revolver, shotgun, gatling, nailgun, bow, crossbow, Electric Bow, Configurator, Atomic Disassembler; offhand: portable fluid tank. Cycles off / loaded / empty">Weapons &amp; modes: off</button>
+  <button id="slotBadges" aria-pressed="false" title="Weapons and Mekanism mode items in the hotbar: ammo (loaded/capacity; bows: arrows) bottom right of the slot, low orange, none red; a held gun that is empty shows the RELOAD chip (any gun in the empty set), a mode item's mode bottom right (WRCH, VEIN, ON / OFF); a mode item's key on the slot's bottom left corner; held guns add chips: LOAD (empty), FIRE MODE, AMMO, each with its key in a key cap, at most 4 letters. Slots: revolver, shotgun, gatling, nailgun, bow, crossbow, Electric Bow, Configurator, Atomic Disassembler; offhand: portable fluid tank. Cycles off / loaded / empty">Weapons &amp; modes: off</button>
   <button id="air_mekScuba" aria-pressed="false" title="Mekanism scuba tank in use: its oxygen on the ring, time left (24000 mB at 1 mB a tick under water)">Scuba tank</button>
   <button id="air_suitOxygen" aria-pressed="false" title="Ad Astra space suit in use (no breathable air): its oxygen on the ring, time left (1 mB every 12 ticks)">Space suit</button>
   <button id="gear_jetSuitEnergy" aria-pressed="false" title="Ad Astra Jet Suit: energy, a cyan status">Jet Suit</button>
@@ -222,14 +222,14 @@ tap('mekJetpack', () => {
   press('mekJetpack', !!next); document.getElementById('mekJetpack').textContent = 'Mek jetpack: ' + (next ? JET_NAMES[next] : 'off');
 });
 // Weapons and Mekanism mode items in the hotbar (SlotBadges): a demo set, loaded or empty. gun: an NTGL gun (held empty, red:
-// the RELOAD chip); fire / ammo: its fire mode / ammo when it has several (held: the FIRE MODE / AMMO chips). key: a
+// the RELOAD chip, LOAD); fire / ammo: its fire mode / ammo item when it has several (held: the FIRE MODE / AMMO chips, at most 4 letters). key: a
 // Mekanism mode item's slot key (item mode, default N; the game shows the player's binding).
 const SLOT_DEMO = {
-  loaded: [{ text: '4/6', gun: true, ammo: 'STANDARD' }, { text: '1/2', gun: true, fire: 'SEMI', ammo: 'BUCKSHOT' }, { text: '100/100', gun: true, ammo: 'PIERCING' },
+  loaded: [{ text: '4/6', gun: true, ammo: 'RND' }, { text: '1/2', gun: true, fire: 'SEMI', ammo: 'FLEC' }, { text: '100/100', gun: true, ammo: 'AP' },
     { text: '8/40', row: 'orange', gun: true, fire: 'AUTO', ammo: 'NAIL' },
     { text: '23' }, { text: '1/1' }, { text: '12', key: 'N' }, { text: 'WRCH', key: 'N' }, { text: 'VEIN', key: 'N' }],
-  empty: [{ text: '0/6', row: 'red', gun: true, ammo: 'STANDARD' }, { text: '0/2', row: 'red', gun: true, fire: 'MULTI', ammo: 'DRAGON' },
-    { text: '0/100', row: 'red', gun: true, ammo: 'STANDARD' }, { text: '0/40', row: 'red', gun: true, fire: 'SEMI', ammo: 'STEEL NAIL' }, { text: '0', row: 'red' }, { text: '0/1', row: 'red' },
+  empty: [{ text: '0/6', row: 'red', gun: true, ammo: 'RND' }, { text: '0/2', row: 'red', gun: true, fire: 'MULT', ammo: 'FIRE' },
+    { text: '0/100', row: 'red', gun: true, ammo: 'RND' }, { text: '0/40', row: 'red', gun: true, fire: 'SEMI', ammo: 'STEL' }, { text: '0', row: 'red' }, { text: '0/1', row: 'red' },
     { text: '0', row: 'red', key: 'N' }, { text: 'ITEM', key: 'N' }, { text: 'OFF', row: 'dim', key: 'N' }],
   offhand: { loaded: { text: 'ON', row: 'green', key: 'N' }, empty: { text: 'OFF', key: 'N' } },
 };
