@@ -68,6 +68,7 @@ public final class CompactHud {
 
     public static void register(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.HOTBAR, LAYER, CompactHud::render);
+        event.registerAbove(LAYER, KeyHintsHud.LAYER, KeyHintsHud::render);
         HudLog.once("registered", "layer {} registered above {}; replaces {} layers while active", LAYER, VanillaGuiLayers.HOTBAR, REPLACED.size());
     }
     public static void registerKeys(RegisterKeyMappingsEvent event) {
@@ -116,7 +117,7 @@ public final class CompactHud {
 
     /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 px apart): web
      *  followers (ghost and count), the steampunk armor's clock and compass, the Mekanism jetpack (mode word and
-     *  hydrogen), LOAD (RELOAD) while the held gun is empty (SlotRead.reloadRow), the held gun's FIRE MODE and AMMO (GunRead), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
+     *  hydrogen; its mode key is a key hint, KeyHintsHud), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
      *  top: the plates' top (units; the action bar: over its centre). Returns it, or NaN when there is none. */
     static double instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta, double top) {
         restoreBlend();
@@ -149,13 +150,9 @@ public final class CompactHud {
         }
         GearStatus.Jet jet = GearStatus.jetpack(p);
         if (jet != null) {
-            String key = GearStatus.jetKey();   // the mode switch key, in a key cap before the text
-            int tw = WordChips.keyWidth(key) + WordChips.jetWidth(jet), jw = Math.max(CHIP_W, tw + 8 * K);   // 4 px each side
-            chips.add(new Chip(jw, x -> WordChips.jet(g, jet, x + (jw - tw) / 2 + WordChips.keyCap(g, key, x + (jw - tw) / 2, y0), y0)));
+            int tw = WordChips.jetWidth(jet), jw = Math.max(CHIP_W, tw + 8 * K);   // 4 px each side; its key is a key hint
+            chips.add(new Chip(jw, x -> WordChips.jet(g, jet, x + (jw - tw) / 2, y0)));
         }
-        Integer reload = SlotRead.reloadRow(p);
-        if (reload != null) wordChip(g, chips, ChipText.RELOAD, reload, SlotRead.reloadKey(), y0);   // the held gun is empty (red)
-        for (String[] gun : new String[][] {GunRead.fireMode(p), GunRead.ammo(p)}) if (gun != null) wordChip(g, chips, gun[0], WHITE, gun[1], y0);
         var cooldowns = HudExtras.artifactCooldowns(p, delta);
         if (!cooldowns.isEmpty()) {   // every worn Artifact on cooldown in one chip: its item, shaded by the time left
             int cw = cooldowns.size() * 9 * K;
@@ -175,6 +172,8 @@ public final class CompactHud {
                 }
             }));
         }
+        // The key prompts sit above this: the chips' top, else the bar's top here (GUI px, through the current pose).
+        KeyHintsHud.barTop = g.pose().last().pose().transformPosition(new org.joml.Vector3f(0, chips.isEmpty() ? y(top + 11.5) : y0, 0)).y();
         if (chips.isEmpty()) return Double.NaN;
         int gap = 2 * K, total = -gap;
         for (Chip c : chips) total += c.w() + gap;
@@ -185,12 +184,6 @@ public final class CompactHud {
             x += c.w() + gap;
         }
         return top;
-    }
-
-    /** A chip of words (WordChips.words, 1.5x) in a digit row after its key cap (key, or null), widened to fit, 4 px each side. */
-    private static void wordChip(GuiGraphics g, List<Chip> chips, String words, int row, String key, int y0) {
-        int tw = WordChips.keyWidth(key) + WordChips.wordsWidth(words), w = Math.max(CHIP_W, tw + 8 * K);
-        chips.add(new Chip(w, x -> WordChips.words(g, words, row, x + (w - tw) / 2 + WordChips.keyCap(g, key, x + (w - tw) / 2, y0), y0)));
     }
 
     /** A small floating iron plate at (x, y) texels, w wide (the instrument plate's piece, its caps kept). */
@@ -297,6 +290,8 @@ public final class CompactHud {
         // The effects rail: above the orbs' domes; bar mode: above the tall wings (and the skull); following the side size.
         double railTop = f.orbs ? OrbHud.OY - OrbHud.HOUSING * OrbHud.S : BarHud.TOP - (f.hardcore ? 9 + 2.5 + 1 : 0);
         HudEffects.draw(g, p, f.gear, cx, bottom, scale, sideX(f.ends.x0, f.side) + 1, sideY(railTop, f.side) - 2);
+        // The contextual key hints go above the orbs' domes / the tall wings too, not only the centre plate (GUI px).
+        KeyHintsHud.barTop = Math.min(KeyHintsHud.barTop, g.pose().last().pose().transformPosition(new org.joml.Vector3f(0, y(sideY(railTop, f.side)), 0)).y());
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.

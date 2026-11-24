@@ -51,6 +51,11 @@ public final class HudLayers {
         return hud && PackScreens.retexturedCaller(caller);
     }
 
+    /** Our own draw over a screen (the Escape menu's key hints): no dark mode on it, as on the HUD's layers. */
+    public static void drawingOwn(boolean value) {
+        drawing = value;
+    }
+
     /** ImmediatelyFast is drawing the batched HUD. */
     public static void flushing(boolean value) {
         flushing = value;

@@ -183,16 +183,13 @@ not a spectator.
   its gear's lines), except the jetpack's: `MekanismJetpackHudMixin` (`ItemJetpack.addHUDStrings`) and
   `MekanismJetpackUnitHudMixin` (`ModuleJetpackUnit.addHUDElements`), optional config `mekanism.mixins.json`, leave them
   out while the bar is active, since the instrument plate's jetpack chip shows them (`GearStatus.jetpack`:
-  `IJetpackItem.getPrimaryJetpack`, `getJetpackMode`, tank 0; not a gear status any more; the key of
-  `MekanismKeyHandler.chestModeSwitchKey` first inside the chip, in a key cap (`WordChips.keyCap` / `keyWidth`, the same on
-  every chip), `WordChips.keyLabel`: from the key's locale-free name, at most 3 characters of the strip, a NeoForge key modifier
-  in front as ALT+, CTL+, SHF+). `WordChips` draws the jetpack chip's words at 1.5x. Every chip's text is at most 4 characters
-  (the key cap does not count; Shane's rule): the words come from `ChipText` (pure, no game classes: jetpack REG VECT HOVR OFF,
-  LOAD, fire modes, the ammo table), and `WordChips.fit` cuts any longer text to 4 with one `chip text ... is longer` log line. Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
+  `IJetpackItem.getPrimaryJetpack`, `getJetpackMode`, tank 0; not a gear status any more; its mode key is a key hint).
+  `WordChips` draws the jetpack chip's words at 1.5x; its text is at most 4 characters (Shane's rule): the words come from
+  `ChipText` (pure, no game classes: jetpack REG VECT HOVR OFF, LOAD, fire modes, the ammo table), and `WordChips.fit` cuts
+  any longer text to 4 with one `chip text ... is longer` log line. Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
 - Slot badges (`SlotBadges` draws, `SlotRead` reads; the page's `ccSlotBadge`, root CLAUDE.md): called from
   `CompactHud.hotbarItems` (all modes) and after each offhand `slotItem` (`CompactHud`, `VanillaHud`), z 300, bottom right in
-  the slot numbers' digits; `jetRow('V')` orange for low ammo, `jetRow('D')` red for none, the bucket mode ON `jetRow('N')` green (OFF white), `DIM` for an enum's OFF; the held items' key (selected slot, offhand) bottom left,
-  always. Reads (no compile dependency, bytecode of the pack's jars): NTGL weapons (`IWeapon`; Create
+  the slot numbers' digits; `jetRow('V')` orange for low ammo, `jetRow('D')` red for none, the bucket mode ON `jetRow('N')` green (OFF white), `DIM` for an enum's OFF; no keys on slots (key hints carry them). Reads (no compile dependency, bytecode of the pack's jars): NTGL weapons (`IWeapon`; Create
   Gunsmithing's revolver, shotgun, flintlock, nailgun, gatling, launcher, blazegun, pneumatic hammer): `ntgl:ammo_count`
   each frame over `WeaponModifierHelper.getMaxAmmo(new WeaponData(stack, player))`, the counter from
   `getAmmoConfig(getCurrentAmmo(data).getId(), data).getCounter()` (`ntgl:bar` / `ntgl:percent`: the percent; these are
@@ -200,14 +197,14 @@ not a spectator.
   from a Create backtank, the Blazegun's from burnable fuel or a Blaze Cake, so red and RELOAD apply to them too), both cached
   500 ms per stack; `ntgl:throw` weapons (grenades) and capacity 0 left out; guns carry no slot key; a held Mekanism mode item's slot (selected slot,
   offhand) always shows the item mode key. `GunRead` (the held gun, main hand else offhand; NTGL methods looked up by exact
-  parameter types, as `getFireMode` has a private ItemStack overload): FIRE MODE chip while `getFireModes(data)` has more
+  parameter types, as `getFireMode` has a private ItemStack overload): the Fire mode key hint's state while `getFireModes(data)` has more
   than one (`WeaponStateHelper.getFireMode(data)`'s id path: AUTO, SEMI, MULT, others its first 4 letters; key
-  `KEY_FIRE_SELECT`), AMMO chip while `getAmmoItems(data)` has more than one (the AmmoHolder `getCurrentAmmo(data).getId()`,
+  `key.ntgl.fire_select`), the Ammo key hint's state while `getAmmoItems(data)` has more than one (the AmmoHolder `getCurrentAmmo(data).getId()`,
   the ammo item from the weapon data's "ammo" list, through `ChipText.AMMO`: cgs round_* RND, *_piercing AP, flechette FLEC,
   flechette_steel STFL, incendiary FIRE, *_blank BLNK, nail NAIL, nail_steel STEL, burnable FUEL, blaze_cake CAKE, rocket
-  RCKT, rocket_small MINI; unknown: the holder's translated `getDescriptionId()`, first 4 letters; key `KEY_AMMO_SELECT`).
+  RCKT, rocket_small MINI; unknown: the holder's translated `getDescriptionId()`, first 4 letters; key `key.ntgl.ammo_select`).
   Check the table against `data/cgs/weapons/*.json` "ammo" lists on a Create Gunsmithing update. `SlotRead.reloadRow`: the held
-  gun (main hand, else offhand) is empty (a low gun shows only its orange count): `CompactHud.instruments` adds the RELOAD chip (its key `NtglKeyBinds.KEY_RELOAD` in the key cap, `SlotRead.reloadKey`, then LOAD in red). `CrossbowItem`:
+  gun (main hand, else offhand) is empty (a low gun shows only its orange count): the Reload key hint shows LOAD in red. `CrossbowItem`:
   `charged_projectiles`. Other `ProjectileWeaponItem`s (bows, Mekanism Electric Bow, Create and TFMG potato cannons,
   Cataclysm Cursed Bow, Ars spell bow, Mystical Agriculture and Aquaculture bows): the inventory's stacks that
   `getAllSupportedProjectiles()` accepts; Power Grid's Electro Zapper (accepts none, battery) left out. Mekanism
@@ -220,3 +217,63 @@ not a spectator.
   mode items (`IModeItem`) and the Meka-Tool (`IModuleContainerItem`) as empty (`SlotRead.hideHandHud`), so their "Mode:"
   lines are left out; armor lines and the centred mode-change message stay. Logs: `slot ammo:` /
   `slot mode:` once per item and value change.
+
+## Contextual and stateful key hints (`KeyRules`, `KeyHintsHud`, 1.6.0)
+
+Two parts, each with a client config switch (`[keyHints]` keyPrompts, keyHints; on by default), in their own GUI layer
+(`haven_create_ui_ux:key_hints`, above the bar's layer), only while the bar is active, no screen is open and the HUD shows.
+No plate: game font with a black outline (`Font.drawInBatch8xOutline`); keys in small caps (black, grey edge, the bar's
+digit glyphs at 1.6x: ALT, CTRL, SHIFT, SPACE, M1 left, M2 right, M3 middle, M4, M5; `WordChips.keyName(name, true)`).
+- Contextual key hints: one line centered above the bar's top (the chips' top when chips show, `KeyHintsHud.barTop` from
+  `CompactHud.instruments`), "[keys] words" per action, for the crosshair's target with what the main hand holds. No target
+  name (Jade shows it). Nothing shows when the hand cannot act on the target (no "hold a wrench" rows).
+- Stateful key hints: bottom right (above the right wing in orbs and bars mode), one group per thing ridden, held, worn, a dim
+  heading (its name), rows "[state] words" right-aligned against one column of keys. States: fire mode, ammo kind, LOAD
+  (red, empty gun), a held Mekanism item's mode, the jetpack's mode.
+- Offhand: its own group "<item> (offhand)", every key with sneak first, as the mods do it: NTGL's InputHandler picks the
+  hand by sneaking (fire select, ammo select, reload, unload, attachments, inspect; melee and alt main hand only), and
+  Mekanism's item mode key reaches the offhand only while sneaking (haven-compat ModeHand). States read per stack
+  (`GunRead.fireMode/ammo(p, stack)`, `SlotRead.empty`).
+- Escape menu (`PauseScreen`, `KeyHintsHud.onScreenRender`): the global keys in the stateful key hints' place: Map
+  (JourneyMap's key or Haven Compat's second one, "/" between either key), Add waypoint, Chat, Social menu, Inventory.
+- Keys stay in sync: every cap reads the mapping's current binding each frame (by id), so a rebind, the pack's key moves
+  or a keymap import show at once; an unbound key drops its row.
+- Every row names real key mappings by id, looked up in `options.keyMappings`; a missing or unbound mapping drops the row
+  ("key hints: <id> is unbound" once in the log). Each rule is the mod's own condition, read from its code:
+  Drekki Rancher `DrekkiInteract` (feed, ride, pet, open; inventory key while riding; whistle use / sneak use), Easy
+  Villagers `VillagerEvents.arePickupConditionsMet` (shown as sneak + use while its client config `sneak_pick_up` is on, else its key), Create `IWrenchable` with `create:wrench`, AE2 `IPartItem` on
+  `ae2:cable_bus` with `key.ae2.part_placement_opposite`, block entities that are `MenuProvider` (Open), Mekanism
+  `IModeItem.supportsSlotType` per slot (item mode, head/chest/legs/feet modes) and `IModuleContainerItem` (module
+  tweaker), NTGL guns (all eight gun keys), Ars Nouveau spell books, Building Gadgets 2 gadgets, Chisels & Bits chisels,
+  bitsaws and measuring tape, Steam 'n' Rails' bogey menu on `create:railway_casing` (`BogeyMenuEventsHandler`),
+  Immersive Aircraft (boost, dismount), Ad Astra's Jet Suit (suit flight). Log lines: `key prompts: [...]`, `key hints: [...]`
+  on change. A new rule: find the mod's own check for the key first (bytecode), then add it here.
+
+### Where each hint comes from (order in `KeyRules.prompts`)
+
+General rules first; data adds rows; a fallback only where nothing else spoke. An absent mod's class never matches
+(`Reflect` by name), so a missing mod is no rule, never a crash.
+- `KeyCreate`: Create elevator floors (Contraption Controls on an elevator contraption via
+  `ContraptionHandlerClient.rayTraceContraption`; the WHEEL pseudo-cap, not a key mapping), value boxes and filter slots
+  (`ValueSettingsBehaviour` testHit / mayInteract / onlyVisibleWithWrench / bypassesInput, as `ValueSettingsInputHandler`),
+  schedules to a train-seated mob, shopkeepers (`StockTickerInteractionHandler.getStockTickerPosition`), item application
+  (every `create:item_application` recipe in the level's recipe list: casing on logs and the mods' and KubeJS's own).
+- `KeyFluids`: item, fluid and XP hatches, tanks (Create and TFMG tanks only in creative or a creative tank), buckets on
+  sources (a `SOURCE_ONLY` clip, so flowing liquid in front does not hide them), Mekanism tank bucket mode.
+- `KeyVanilla`: vanilla blocks, entities and held uses by vanilla's own checks (signs, campfire cooking, brushing, leads
+  on fences, armor stands, chest minecarts and boats, Bucketable catch, llama/donkey chests, taming, own pets sit/stand,
+  animals, item frames, cauldrons, ...). `KeyBlocks`: seats, tool uses (`getToolModifiedState`, scrape and wax off before
+  strip), farm words, levers/buttons/doors/trapdoors, Open for screens, Diagonal Blocks angles, hatchery eggs.
+- `KeyMods`: Carry On (its key, else sneak, with both hands empty and its config) and ElevatorID (jump up, sneak down).
+- Data (`assets/haven_create_ui_ux/key_hints/`): `blocks.json` (`KeyData`), `entities.json` and `items.json`
+  (`KeyThingData`: an entity's interact code; an item's use in the air (stateful), on a block or on an entity). Every
+  "when" must hold; one the reader does not know fails, so a row never shows on a guess.
+
+### Remaking the data (after mod updates)
+
+`keyhints/`: `scan.py` lists block classes with their own `useWithoutItem`/`useItemOn`; `scan2.py` lists entity
+interact methods, item `use`/`useOn`/`interactLivingEntity` and right-click event handlers. Agents audit each class from
+bytecode, lang, tooltips and ponder text per `SCHEMA.md` (blocks) and `SCHEMA2.md` (entities, items, events) into
+`data*.jsonl`, `entities*.jsonl`, `items*.jsonl`, `events*.jsonl`; `creative_check.py` lists uses that may need creative.
+`python3 -I keyhints/merge.py` writes the three JSON files and asserts every "when" key is one the readers know: add a
+reader case before a new key. Rows whose condition cannot be written are dropped, not guessed.

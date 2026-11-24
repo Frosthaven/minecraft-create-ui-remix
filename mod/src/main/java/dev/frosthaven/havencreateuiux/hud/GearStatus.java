@@ -75,20 +75,6 @@ final class GearStatus {
         }
     }
 
-    /** The short name of Mekanism's chest mode switch key (the jetpack's and the MekaSuit jetpack unit's mode), or null. */
-    static String jetKey() { return modeKey("chestModeSwitchKey", "jetpack chip"); }
-
-    /** The short name of Mekanism's item mode switch key (key.mekanism.mode: a held mode item, main hand, else offhand), or
-     *  null; a mode item's slot shows it (SlotBadges). Sneak + mouse wheel also changes the mode (main hand, client
-     *  config allowModeScroll). */
-    static String handModeKey() { return modeKey("handModeSwitchKey", "slot modes"); }
-
-    private static String modeKey(String field, String user) {
-        Object k = Reflect.getStatic("mekanism.client.key.MekanismKeyHandler", field);
-        String label = WordChips.keyLabel(k instanceof net.minecraft.client.KeyMapping km ? km : null);
-        HudLog.changed(field, String.valueOf(label), "{}: mode switch key {}", user, label);
-        return label;
-    }
 
     /** A Mekanism item's chemical tank 0: {amount, capacity} (mB), or null. */
     static long[] chemical(ItemStack s) {

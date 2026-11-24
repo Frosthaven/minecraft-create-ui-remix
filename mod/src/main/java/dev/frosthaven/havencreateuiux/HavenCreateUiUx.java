@@ -68,6 +68,7 @@ public final class HavenCreateUiUx {
         modBus.addListener(RegisterKeyMappingsEvent.class, CompactHud::registerKeys);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, CompactHud::onLayerPre);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Render.Post.class, CompactHud::onScreenRender);
+        NeoForge.EVENT_BUS.addListener(ScreenEvent.Render.Post.class, dev.frosthaven.havencreateuiux.hud.KeyHintsHud::onScreenRender);
         NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class, Followers::onChat);
         NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class, Followers::onLogout);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, HudLayers::pre);

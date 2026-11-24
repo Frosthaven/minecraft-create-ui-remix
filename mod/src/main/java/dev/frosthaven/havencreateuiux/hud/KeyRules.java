@@ -1,0 +1,461 @@
+package dev.frosthaven.havencreateuiux.hud;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+
+/**
+ * What the contextual key hints (center, the crosshair's target) and the stateful key hints (bottom right: what the player rides, holds and
+ * wears) show. Every row names real key mappings by their id (`key.ntgl.reload`), looked up in the game's key list: a
+ * mapping that is missing or unbound drops its row (logged once). Each rule is the mod's own condition for that key or
+ * click, read from its code (see mod/CLAUDE.md "Contextual and stateful key hints"). No compile dependency on any mod.
+ */
+final class KeyRules {
+    /** One action: its keys pressed together (in order), its words, and a state tag (fire mode, ammo, mode) or null. */
+    record Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either) {
+        Row(List<KeyMapping> keys, String label, String state, boolean red) { this(keys, label, state, red, false); }
+    }
+    /** A heading (the item's or vehicle's name) and its rows. */
+    record Group(String title, List<Row> rows) {}
+
+    private static final Map<String, KeyMapping> BY_NAME = new HashMap<>();
+    private static int known;
+
+    private KeyRules() {}
+
+    /** A key mapping by id, or null (missing or unbound: the row is dropped, logged once). */
+    static KeyMapping key(String id) {
+        KeyMapping[] all = Minecraft.getInstance().options.keyMappings;
+        if (all.length != known) {
+            BY_NAME.clear();
+            for (KeyMapping k : all) BY_NAME.put(k.getName(), k);
+            known = all.length;
+        }
+        KeyMapping k = BY_NAME.get(id);
+        if (k == null || k.isUnbound()) {
+            HudLog.once("keyrow:" + id, "key hints: {} is {}: its row is left out", id, k == null ? "not a key mapping in this game" : "unbound");
+            return null;
+        }
+        return k;
+    }
+
+    static void add(List<Row> rows, String label, String state, boolean red, String... ids) {
+        List<KeyMapping> keys = new ArrayList<>();
+        for (String id : ids) {
+            KeyMapping k = key(id);
+            if (k == null) return;
+            keys.add(k);
+        }
+        rows.add(new Row(keys, label, state, red));
+    }
+    static void add(List<Row> rows, String label, String... ids) { add(rows, label, null, false, ids); }
+
+    static String id(ItemStack s) { return BuiltInRegistries.ITEM.getKey(s.getItem()).toString(); }
+
+    // ---- Contextual key hints: the crosshair's target, with what the main hand holds ----
+
+    static List<Row> prompts(Minecraft mc, LocalPlayer p) {
+        List<Row> rows = new ArrayList<>();
+        ItemStack hand = p.getMainHandItem();
+        if (KeyCreate.elevator(rows, mc, p)) return rows;     // Create elevator controls (a contraption, not mc.hitResult)
+        if (mc.hitResult instanceof BlockHitResult vb && vb.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
+                && KeyCreate.valueBox(rows, mc, p, hand, vb)) {
+            // Create's boxes and slots take the plain click (never a sneaking one): the block's own sneak rows still apply
+            List<Row> block = new ArrayList<>();
+            KeyData.rows(block, mc, p, hand, mc.level.getBlockState(vb.getBlockPos()), vb);
+            for (Row r : block) if (r.keys().stream().anyMatch(k -> k.getName().equals("key.sneak"))) rows.add(r);
+            return rows;
+        }
+        if (KeyFluids.rows(rows, mc, p, hand)) return rows;   // hatches, tanks, buckets (KeyFluids)
+        if (mc.hitResult instanceof EntityHitResult eh) {
+            Entity e = eh.getEntity();
+            String type = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString();
+            if (KeyCreate.mob(rows, p, e, hand)) return rows;   // Create's handlers run first: schedules, shopkeepers
+            if (type.equals("rancher_companion:drekki")) drekki(rows, p, e, hand);
+            else if (e instanceof Villager v) villager(rows, v);
+            else if (e instanceof net.minecraft.world.entity.vehicle.Boat b) {
+                // vanilla: a boat seats 2 (a chest boat 1); sneak-use opens a chest boat's chest
+                int seats = b instanceof net.minecraft.world.entity.vehicle.ChestBoat ? 1 : 2;
+                if (!p.isSecondaryUseActive() && b.getPassengers().size() < seats) add(rows, "Board", "key.use");
+                if (b instanceof net.minecraft.world.entity.vehicle.ChestBoat) add(rows, "Open chest", "key.sneak", "key.use");
+            } else if (e instanceof net.minecraft.world.entity.vehicle.Minecart m && !m.isVehicle() && !p.isSecondaryUseActive()) add(rows, "Ride", "key.use");
+            else if (type.equals("haven_backports:cushion") && !e.isVehicle()) add(rows, "Sit", "key.use");   // Haven Backports Cushion.interact
+            else {
+                // the audited entity data (its own interact code or an event handler), else vanilla's checks; a trap or a
+                // mob with no hand action shows nothing
+                KeyData.Result data = KeyThingData.entity(rows, mc, p, e, hand);
+                if (data == KeyData.Result.SKIP) return rows;
+                if (rows.isEmpty()) KeyVanilla.entity(rows, p, e, hand);
+            }
+            if (rows.isEmpty()) KeyThingData.itemOnEntity(rows, mc, p, hand, e);   // the held item's own use on it
+            KeyMods.entity(rows, mc, p, e);   // Carry On: carry it (both hands empty)
+        } else if (mc.hitResult instanceof BlockHitResult bh && mc.level != null && mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            var state = mc.level.getBlockState(bh.getBlockPos());
+            String block = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+            // Create's wrench on a wrenchable block: use rotates, sneak-use picks it up (IWrenchable.onWrenched / onSneakWrenched).
+            if (id(hand).equals("create:wrench") && Reflect.is(state.getBlock(), "com.simibubi.create.content.equipment.wrench.IWrenchable")) {
+                add(rows, "Rotate", "key.use");
+                add(rows, "Pick up", "key.sneak", "key.use");
+            } else if (id(hand).equals("create:wrench") && state.is(KeyBlocks.WRENCH_PICKUP)) {
+                add(rows, "Pick up", "key.sneak", "key.use");   // WrenchItem: blocks in create:wrench_pickup, sneak-use
+            } else if (block.equals("ae2:cable_bus") && Reflect.is(hand.getItem(), "appeng.api.parts.IPartItem")) {
+                // AE2 part placement: the opposite-side key held flips the part to the cable's far side (PartPlacement).
+                add(rows, "Place part", "key.use");
+                add(rows, "Place on far side", "key.ae2.part_placement_opposite", "key.use");
+            } else if (KeyCreate.crafter(rows, mc, p, hand, state, bh)) {
+                // Create's mechanical crafter (KeyCreate.crafter)
+            } else if (Reflect.is(state.getBlock(), "dev.frosthaven.ranchercompanion.block.HatcheryBlock")) {
+                KeyBlocks.hatchery(rows, mc, hand, state, bh);
+            } else if (KeyBlocks.farmWord(mc, p, hand, state, bh) != null) {
+                add(rows, KeyBlocks.farmWord(mc, p, hand, state, bh), "key.use");
+            } else if (KeyBlocks.seat(state.getBlock()) && !p.isSecondaryUseActive()) {
+                add(rows, "Sit", "key.use");
+            } else if (!(p.isSecondaryUseActive() && !(hand.isEmpty() && p.getOffhandItem().isEmpty())) && KeyVanilla.block(rows, mc, p, hand, state, bh)) {
+                // vanilla blocks with item-dependent uses (KeyVanilla.block)
+            } else if (KeyBlocks.useWord(state) != null && !(p.isSecondaryUseActive() && !(hand.isEmpty() && p.getOffhandItem().isEmpty()))) {
+                add(rows, KeyBlocks.useWord(state), "key.use");
+            } else {
+                // General rules first-class, the audited data adds to them: data rows, then Open when the block opens a
+                // screen and no data row said Open, then the fallback Use only when nothing applied and the data does not
+                // mark the block as a trap or as having no hand action.
+                boolean sneakingWithItem = p.isSecondaryUseActive() && !(hand.isEmpty() && p.getOffhandItem().isEmpty());
+                KeyData.Result data = KeyData.rows(rows, mc, p, hand, state, bh);
+                if (data != KeyData.Result.SKIP && !sneakingWithItem) {
+                    if (KeyBlocks.opensScreen(mc, state, bh.getBlockPos()) && rows.stream().noneMatch(r -> r.label().equals("Open"))) add(rows, "Open", "key.use");
+                    if (rows.isEmpty() && data == KeyData.Result.NO_ENTRY && KeyBlocks.fallbackUse(state.getBlock(), hand)) add(rows, "Use", "key.use");
+                }
+            }
+            String angles = hand.isEmpty() ? KeyBlocks.diagonal(state.getBlock()) : null;
+            if (angles != null) add(rows, angles, "key.sneak", "key.use");
+            if (rows.isEmpty()) KeyCreate.itemApplication(rows, mc, hand, state);    // Create item application recipes
+            if (rows.isEmpty() && !KeyMods.powerWire(rows, mc, p, hand, state, bh))   // Power Grid wires: terminals only
+                KeyThingData.itemOnBlock(rows, mc, p, hand, state);   // the held item's own use on it
+            KeyMods.block(rows, mc, p, state, bh);   // Carry On: carry it (both hands empty)
+            KeyMods.backpackOnBlock(rows, mc, p, hand, bh);   // a held backpack: sneak-use deposits, restocks or places
+        }
+        return rows;
+    }
+
+    /** Drekki Rancher's DrekkiInteract, in its order: food it eats now feeds; at work a sneak click opens it; an empty hand's
+     *  sneak click pets; a saddled Mature takes its owner on a plain click; else a plain click opens its screen. */
+    private static void drekki(List<Row> rows, LocalPlayer p, Entity d, ItemStack hand) {
+        if (!Reflect.bool(Reflect.call(d, "live"))) return;
+        boolean mine = p.getUUID().equals(Reflect.call(d, "owner")), ghost = Reflect.bool(Reflect.call(d, "ghost"));
+        int job = Reflect.call(d, "job") instanceof Integer j ? j : 0;
+        String interact = "dev.frosthaven.ranchercompanion.entity.DrekkiInteract";
+        if (mine && !ghost && Reflect.bool(Reflect.callStatic(interact, "handFeeds", d, hand))) { add(rows, "Feed", "key.use"); return; }
+        if (job > 0) { if (mine) add(rows, "Drekki inventory", "key.sneak", "key.use"); return; }
+        boolean opens = mine && Reflect.bool(Reflect.callStatic(interact, "opensScreen", hand));
+        if (opens) add(rows, Reflect.bool(Reflect.call(d, "rideable")) && !d.isVehicle() && !p.isPassenger() ? "Ride" : "Drekki inventory", "key.use");
+        if (hand.isEmpty() && !ghost) add(rows, "Pet", "key.sneak", "key.use");
+        else if (opens) add(rows, "Drekki inventory", "key.sneak", "key.use");
+    }
+
+    /** A villager with trades (an adult, not unemployed, not a nitwit) trades on use; Easy Villagers' pick up key picks it
+     *  up when its own conditions allow (VillagerEvents.arePickupConditionsMet). */
+    private static void villager(List<Row> rows, Villager v) {
+        var prof = v.getVillagerData().getProfession();
+        if (!v.isBaby() && prof != VillagerProfession.NONE && prof != VillagerProfession.NITWIT) add(rows, "Trade", "key.use");
+        if (!Reflect.bool(Reflect.callStatic("de.maxhenkel.easyvillagers.events.VillagerEvents", "arePickupConditionsMet", v))) return;
+        // Its sneak + use pickup when the client config allows it (villager.sneak_pick_up, VillagerEvents), else its key.
+        Object cfg = Reflect.getStatic("de.maxhenkel.easyvillagers.Main", "CLIENT_CONFIG");
+        Object sneak = cfg == null ? null : Reflect.get(cfg, "enableRightClickPickup");
+        if (sneak instanceof net.neoforged.neoforge.common.ModConfigSpec.BooleanValue b && b.get()) add(rows, "Pick up", "key.sneak", "key.use");
+        else add(rows, "Pick up", "key.easy_villagers.pick_up");
+    }
+
+    /** The Escape menu's global keys (stateful key hints' place): the map (JourneyMap's key or Haven Compat's second
+     *  one, either), a waypoint, chat, the social menu, the inventory, and the worn backpack while one is worn. */
+    static List<Group> global() {
+        List<Row> rows = new ArrayList<>();
+        List<KeyMapping> map = new ArrayList<>();
+        for (String id : new String[] {"key.journeymap.map_toggle_alt", "key.haven_compat.open_map"}) { KeyMapping k = key(id); if (k != null) map.add(k); }
+        if (!map.isEmpty()) rows.add(new Row(map, "Map", null, false, true));
+        add(rows, "Add waypoint", "key.journeymap.create_waypoint");
+        add(rows, "Chat", "key.chat");
+        add(rows, "Social menu", "key.socialInteractions");
+        add(rows, "Inventory", "key.inventory");
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (p != null && backpack(p)) add(rows, "Worn backpack", "key.sophisticatedbackpacks.open_backpack");
+        if (dev.frosthaven.havencreateuiux.UiConfig.HOTBAR_NUMBERS.get() == dev.frosthaven.havencreateuiux.UiConfig.HotbarNumbers.HOLD)
+            add(rows, "Hotbar numbers (hold)", "key.haven_create_ui_ux.hud_numbers");   // our own key, while the config says Hold
+        List<Group> out = new ArrayList<>();
+        group(out, "Keys", rows);
+        return out;
+    }
+
+    /** The Escape menu's bottom left: the Offline Editor's keys while Axiom can be used here (KeyMods.axiomGlobal). */
+    static List<Group> globalLeft() {
+        List<Row> axiom = new ArrayList<>();
+        KeyMods.axiomGlobal(axiom);
+        List<Group> out = new ArrayList<>();
+        group(out, "Offline Editor", axiom);
+        return out;
+    }
+
+    // ---- Stateful key hints: what the player rides, holds and wears ----
+
+    static List<Group> hints(Minecraft mc, LocalPlayer p) {
+        List<Group> out = new ArrayList<>();
+        Entity v = p.getVehicle();
+        if (v != null) riding(out, p, v);
+        held(out, p);
+        offhand(out, p);
+        worn(out, p);
+        List<Row> carry = new ArrayList<>();
+        KeyMods.carried(carry, p);
+        group(out, "Carrying", carry);
+        List<Row> elevator = new ArrayList<>();
+        KeyMods.elevator(elevator, p);
+        group(out, "Elevator", elevator);
+        List<Row> toolbox = new ArrayList<>();
+        KeyMods.toolbox(toolbox, mc, p);
+        group(out, "Nearby", toolbox);
+        List<Row> axiom = new ArrayList<>();
+        KeyMods.axiom(axiom);
+        group(out, "Offline Editor", axiom);
+        return out;
+    }
+
+    private static void group(List<Group> out, String title, List<Row> rows) { if (!rows.isEmpty()) out.add(new Group(title, rows)); }
+
+    private static void riding(List<Group> out, LocalPlayer p, Entity v) {
+        List<Row> rows = new ArrayList<>();
+        String type = BuiltInRegistries.ENTITY_TYPE.getKey(v.getType()).toString();
+        if (type.equals("rancher_companion:drekki")) {
+            // Drekki Rancher's Riding: jump; Cloud Stompers jumps again in the air, Wings of Hope flies on held jump, Four
+            // Winds dashes on sprint (Riding.holds(drekki, trait)); the inventory key opens its screen (DrekkiInteract).
+            add(rows, "Jump", "key.jump");
+            if (trait(v, "CLOUD_STOMPERS")) add(rows, "Jump again (in the air)", "key.jump");
+            if (trait(v, "WINGS_OF_HOPE")) add(rows, "Fly (hold)", "key.jump");
+            if (trait(v, "FOUR_WINDS")) add(rows, "Dash", "key.sprint");
+            add(rows, "Drekki inventory", "key.inventory");
+            add(rows, "Dismount", "key.sneak");
+        } else if (v instanceof net.minecraft.world.entity.animal.camel.Camel) {
+            add(rows, "Dash", "key.jump");   // vanilla: the camel's dash on the jump key
+            add(rows, v.getType().getDescription().getString() + " inventory", "key.inventory");   // HasCustomInventoryScreen
+            add(rows, "Dismount", "key.sneak");
+        } else if (v instanceof net.minecraft.world.entity.animal.horse.AbstractHorse h) {
+            if (!(v instanceof net.minecraft.world.entity.animal.horse.Llama)) add(rows, "Jump (hold to charge)", "key.jump");   // a llama is not steered
+            // the inventory key opens the mount's own (LocalPlayer: HasCustomInventoryScreen; AbstractHorse needs it tamed)
+            if (h.isTamed()) add(rows, v.getType().getDescription().getString() + " inventory", "key.inventory");
+            add(rows, "Dismount", "key.sneak");
+        } else if (type.startsWith("immersive_aircraft:")) {
+            add(rows, "Boost", "key.immersive_aircraft.boost");
+            add(rows, "Dismount", "key.immersive_aircraft.dismount");
+        }
+        else {
+            // a pig or strider steered by its stick: the stick's use boosts it (ItemSteerable via FoodOnAStickItem)
+            if (v instanceof net.minecraft.world.entity.ItemSteerable && p.getMainHandItem().getItem() instanceof net.minecraft.world.item.FoodOnAStickItem<?>)
+                add(rows, "Boost", "key.use");
+            add(rows, "Dismount", "key.sneak");   // boats, minecarts, seats, cushions: vanilla's sneak dismount
+        }
+        group(out, v.getDisplayName().getString(), rows);
+    }
+
+    /** The offhand's keys: each needs sneak held. NTGL's InputHandler picks the hand by sneaking (fire select, ammo select,
+     *  reload, unload, attachments, inspect; melee and alt are main hand only); Mekanism's item mode key reaches the offhand
+     *  only while sneaking (haven-compat ModeHand). */
+    private static void offhand(List<Group> out, LocalPlayer p) {
+        ItemStack s = p.getOffhandItem();
+        if (s.isEmpty()) return;
+        List<Row> rows = new ArrayList<>();
+        if (SlotRead.isNtgl(s)) {
+            String fire = GunRead.fireMode(p, s), ammo = GunRead.ammo(p, s);
+            if (fire != null) add(rows, "Fire mode", fire, false, "key.sneak", "key.ntgl.fire_select");
+            if (ammo != null) add(rows, "Ammo", ammo, false, "key.sneak", "key.ntgl.ammo_select");
+            boolean empty = SlotRead.empty(p, s);
+            add(rows, "Reload", empty ? ChipText.RELOAD : null, empty, "key.sneak", "key.ntgl.reload");
+            add(rows, "Unload", "key.sneak", "key.ntgl.unload");
+            add(rows, "Attachments", "key.sneak", "key.ntgl.attachments");
+            add(rows, "Inspect", "key.sneak", "key.ntgl.inspect");
+        } else if (mekanismMode(s, EquipmentSlot.OFFHAND)) {
+            SlotRead.Badge b = SlotRead.read(p, s);
+            add(rows, "Mode", b == null ? null : b.text(), false, "key.sneak", "key.mekanism.mode");
+        }
+        group(out, s.getHoverName().getString() + " (offhand)", rows);
+    }
+
+    private static void held(List<Group> out, LocalPlayer p) {
+        ItemStack s = p.getMainHandItem();
+        List<Row> rows = new ArrayList<>();
+        if (SlotRead.isNtgl(s)) {
+            String fire = GunRead.fireMode(p, s), ammo = GunRead.ammo(p, s);
+            if (fire != null) add(rows, "Fire mode", fire, false, "key.ntgl.fire_select");
+            if (ammo != null) add(rows, "Ammo", ammo, false, "key.ntgl.ammo_select");
+            boolean empty = SlotRead.empty(p, s);
+            add(rows, "Reload", empty ? ChipText.RELOAD : null, empty, "key.ntgl.reload");
+            add(rows, "Melee", "key.ntgl.melee");
+            add(rows, "Alt attack", "key.ntgl.alt");
+            add(rows, "Attachments", "key.ntgl.attachments");
+            add(rows, "Inspect", "key.ntgl.inspect");
+            add(rows, "Unload", "key.ntgl.unload");
+        } else if (!s.isEmpty()) {
+            String id = id(s);
+            if (mekanismMode(s, EquipmentSlot.MAINHAND)) {
+                SlotRead.Badge b = SlotRead.read(p, s);
+                add(rows, "Mode", b == null ? null : b.text(), false, "key.mekanism.mode");
+            }
+            if (Reflect.is(s.getItem(), "mekanism.common.content.gear.IModuleContainerItem")) add(rows, "Modules", "key.mekanism.module_tweaker");
+            if (id.startsWith("ars_nouveau:") && id.endsWith("_spell_book")) {
+                add(rows, "Previous spell", "key.ars_nouveau.previous_slot");
+                add(rows, "Next spell", "key.ars_nouveau.next_slot");
+                add(rows, "Spell HUD", "key.ars_nouveau.selection_hud");
+                add(rows, "Open book", "key.ars_nouveau.open_book");
+            } else if (id.startsWith("buildinggadgets2:gadget_")) {
+                add(rows, "Settings", "key.buildinggadgets2.settings_menu");
+                add(rows, "Anchor", "key.buildinggadgets2.anchor");
+                add(rows, "Undo", "key.buildinggadgets2.undo");
+            } else if (id.startsWith("chiselsandbits:chisel") || id.startsWith("chiselsandbits:bitsaw")) {
+                add(rows, "Tool menu", "mod.chiselsandbits.keys.key.modded-tool.open");
+                add(rows, "Undo", "mod.chiselsandbits.keys.key.undo");
+                add(rows, "Redo", "mod.chiselsandbits.keys.key.redo");
+            } else if (id.equals("chiselsandbits:measuring_tape")) {
+                add(rows, "Clear tape", "mod.chiselsandbits.keys.key.measuring-tape.reset");
+            } else if (id.equals("create:railway_casing")) {
+                add(rows, "Bogey style", "railways.keyinfo.bogey_menu");   // BogeyMenuEventsHandler: holding Create's railway casing
+            } else if (id.equals("rancher_companion:drekki_whistle")) {
+                add(rows, "Stay / follow", "key.use");   // WhistleItem.use
+                String order = whistleOrder(p);
+                if (order != null) add(rows, order, "key.sneak", "key.use");
+            }
+            if (rows.isEmpty()) KeyMods.held(rows, p, s);       // Sophisticated backpack, Create sandpaper
+            if (rows.isEmpty()) KeyVanilla.held(rows, s, p);    // eat, drink, block, draw, throw... by the item's use type
+            if (rows.isEmpty()) KeyThingData.itemInAir(rows, p, s);   // the audited item data: its own use in the air
+        }
+        group(out, s.getHoverName().getString(), rows);
+    }
+
+    private static final EquipmentSlot[] ARMOR = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
+    private static final String[] ARMOR_KEY = {"key.mekanism.head_mode", "key.mekanism.chest_mode", "key.mekanism.legs_mode", "key.mekanism.feet_mode"};
+    private static final String[] ARMOR_WORD = {"Helmet mode", "Chest mode", "Legs mode", "Boots mode"};
+
+    /** Worn gear's keys: Mekanism's per-slot mode keys for each piece that takes them (MekanismKeyHandler's own check:
+     *  IModeItem.supportsSlotType), the jetpack's mode as the state; the module tweaker for a module item worn;
+     *  Ad Astra's suit flight with the Jet Suit on. */
+    private static void worn(List<Group> out, LocalPlayer p) {
+        List<Row> rows = new ArrayList<>();
+        String title = null;
+        boolean modules = false;
+        for (int i = 0; i < 4; i++) {
+            ItemStack s = p.getItemBySlot(ARMOR[i]);
+            if (s.isEmpty()) continue;
+            if (mekanismMode(s, ARMOR[i])) {
+                String state = null;
+                if (ARMOR[i] == EquipmentSlot.CHEST) {
+                    GearStatus.Jet jet = GearStatus.jetpack(p);
+                    if (jet != null) state = ChipText.jet(jet.mode());
+                }
+                add(rows, ARMOR_WORD[i], state, false, ARMOR_KEY[i]);
+                if (ARMOR[i] == EquipmentSlot.CHEST) jetpackFlight(rows, p);
+                if (title == null || ARMOR[i] == EquipmentSlot.CHEST) title = s.getHoverName().getString();
+            }
+            modules |= Reflect.is(s.getItem(), "mekanism.common.content.gear.IModuleContainerItem");
+            if (ARMOR[i] == EquipmentSlot.CHEST && id(s).equals("ad_astra:jet_suit")) {
+                add(rows, "Suit flight", "key.ad_astra.toggle_suit_flight");
+                title = s.getHoverName().getString();
+            }
+        }
+        if (modules) add(rows, "Modules", "key.mekanism.module_tweaker");
+        // elytra: jump while falling starts gliding (LocalPlayer.aiStep: tryToStartFallFlying)
+        ItemStack chest = p.getItemBySlot(EquipmentSlot.CHEST);
+        if (!p.onGround() && !p.isFallFlying() && !p.getAbilities().flying && chest.canElytraFly(p)) {
+            add(rows, "Glide", "key.jump");
+            if (title == null) title = chest.getHoverName().getString();
+        }
+        group(out, title == null ? "Worn" : title, rows);
+    }
+
+    /** The worn Mekanism jetpack's flight (JetpackMode): Normal and Vector fly while jump is held; Hover rises on jump and
+     *  sinks on sneak; Disabled: none. An empty tank tags the row red. */
+    private static void jetpackFlight(List<Row> rows, LocalPlayer p) {
+        GearStatus.Jet jet = GearStatus.jetpack(p);
+        if (jet == null || jet.mode() == 'D') return;
+        boolean empty = jet.frac() <= 0f;
+        if (jet.mode() == 'H') {
+            add(rows, "Rise (hold)", empty ? "EMPTY" : null, empty, "key.jump");
+            add(rows, "Sink (hold)", "key.sneak");
+        } else add(rows, "Fly (hold)", empty ? "EMPTY" : null, empty, "key.jump");
+    }
+
+    private static boolean isBackpack(ItemStack s) { return Reflect.is(s.getItem(), "net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackItem"); }
+
+    /** A worn Sophisticated backpack (the chest slot or a Curios slot): its open key works only then. */
+    private static boolean backpack(LocalPlayer p) {
+        if (isBackpack(p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST))) return true;
+        Object handler = Reflect.callStatic("top.theillusivec4.curios.api.CuriosApi", "getCuriosInventory", p);
+        if (handler instanceof java.util.Optional<?> o && o.isPresent())
+            return Reflect.bool(Reflect.call(o.get(), "isEquipped", (java.util.function.Predicate<ItemStack>) KeyRules::isBackpack));
+        return false;
+    }
+
+    /** The whistle's sneak order, as GoHere.command decides it: a hostile looked at within GoHere.RANGE, in front of the
+     *  block behind it (Enemy, alive, not invulnerable, not a creeper: CombatGoals.fair's rule) is an attack, which only a
+     *  drekki of stage 2 or more takes (none when the player's drekki here is younger); else Go here. */
+    private static String whistleOrder(LocalPlayer p) {
+        double range = Reflect.num(Reflect.getStatic("dev.frosthaven.ranchercompanion.entity.GoHere", "RANGE"), 64f);
+        var eye = p.getEyePosition();
+        var look = p.getViewVector(1f);
+        var hit = p.level().clip(new net.minecraft.world.level.ClipContext(eye, eye.add(look.scale(range)), net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, p));
+        double dist = hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? range : hit.getLocation().distanceTo(eye);
+        var mob = net.minecraft.world.entity.projectile.ProjectileUtil.getEntityHitResult(p, eye, eye.add(look.scale(dist)),
+                p.getBoundingBox().expandTowards(look.scale(dist)).inflate(1), e -> e instanceof net.minecraft.world.entity.monster.Enemy
+                        && e instanceof net.minecraft.world.entity.LivingEntity l && l.isAlive() && !l.isInvulnerable()
+                        && !(e instanceof net.minecraft.world.entity.monster.Creeper), dist * dist);
+        if (mob != null) {
+            for (Entity d : p.level().getEntitiesOfClass(Entity.class, p.getBoundingBox().inflate(range),
+                    e -> BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString().equals("rancher_companion:drekki") && p.getUUID().equals(Reflect.call(e, "owner"))))
+                if (Reflect.num(Reflect.call(d, "stage"), 3f) < 2) return null;   // "too young": the order does nothing
+            return "Attack";
+        }
+        // a Create seat (Drekki Rancher's CreateSeats): one on a contraption first (its own look-ray walk), else the seat
+        // block looked at. A job seat (a train's: conductor; beside a Stock Ticker: stock keeper) hires; a taken one: nothing
+        Object seat = Reflect.callStatic("dev.frosthaven.ranchercompanion.compat.create.CreateSeats", "onContraption", p, Math.min(range, dist));
+        if (seat != null) {
+            if (!Reflect.bool(Reflect.call(seat, "free"))) return null;
+            return Reflect.num(Reflect.call(seat, "role"), 0f) > 0 ? "Hire" : "Sit";
+        }
+        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            var pos = hit.getBlockPos();
+            var block = p.level().getBlockState(pos).getBlock();
+            if (Reflect.is(block, "com.simibubi.create.content.contraptions.actors.seat.SeatBlock")) {
+                if (Reflect.bool(Reflect.callStatic("com.simibubi.create.content.contraptions.actors.seat.SeatBlock", "isSeatOccupied", p.level(), pos))) return null;
+                for (var d : net.minecraft.core.Direction.Plane.HORIZONTAL) for (int y = 0; y <= 1; y++)
+                    if (Reflect.is(p.level().getBlockState(pos.relative(d).above(y)).getBlock(), "com.simibubi.create.content.logistics.stockTicker.StockTickerBlock")) return "Hire";
+                return "Sit";
+            }
+        }
+        return hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? null : "Go here";
+    }
+
+    /** Drekki Rancher: whether this drekki holds a trait (Riding.holds(DrekkiEntity, Trait)). */
+    private static boolean trait(Entity d, String name) {
+        Class<?> t = Reflect.cls("dev.frosthaven.ranchercompanion.trait.Trait");
+        if (t == null || !t.isEnum()) return false;
+        try {
+            @SuppressWarnings({"unchecked", "rawtypes"}) Object v = Enum.valueOf((Class) t, name);
+            return Reflect.bool(Reflect.callStatic("dev.frosthaven.ranchercompanion.entity.Riding", "holds", d, v));
+        } catch (IllegalArgumentException e) {
+            HudLog.once("trait:" + name, "key hints: Drekki Rancher has no trait {}", name);
+            return false;
+        }
+    }
+
+    /** Mekanism's mode key condition: an IModeItem that supports this slot. */
+    private static boolean mekanismMode(ItemStack s, EquipmentSlot slot) {
+        return Reflect.is(s.getItem(), "mekanism.common.item.interfaces.IModeItem") && Reflect.bool(Reflect.call(s.getItem(), "supportsSlotType", s, slot));
+    }
+}

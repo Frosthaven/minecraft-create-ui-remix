@@ -166,7 +166,8 @@ mods that reuse vanilla hearts look vanilla.
   clock and compass, the Mekanism jetpack's chip (a jetpack or a MekaSuit's jetpack unit: the mode's word in its colour, REG (Regular) green,
   VECT orange, HOVR cyan, OFF (Disabled) red, then the hydrogen left, percent with no sign, in white in the follower count's
   digits, the word too, in capitals (A to Z in the digit strip, square cornered like the digits, 6 px apart, with four mode colour rows); the chest mode
-  switch key comes first, inside the chip, in a key cap (`ccChipKey`, game `WordChips.keyCap`: a small dark cap with a
+  switch key comes first (page only: the game since 1.6.0 shows keys as key hints, mod/CLAUDE.md, and draws no key cap
+  on chips and no RELOAD, FIRE MODE or AMMO chip), inside the chip, in a key cap (`ccChipKey`: a small dark cap with a
   light edge holding the key in the slot numbers' white digits, centred on the text's line; the same cap on every chip:
   jetpack, RELOAD (LOAD), FIRE MODE, AMMO; Mekanism's default G; the game shortens a long key name to 3: ALT, SHF, CTL, TAB, M4,
   KP5); this chip widens to fit its key and text with 4 px each side;

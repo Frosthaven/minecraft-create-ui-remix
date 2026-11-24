@@ -26,22 +26,24 @@ final class GunRead {
 
     private GunRead() {}
 
-    static String[] fireMode(Player p) {
-        Object data = heldGun(p);
+    /** The gun's fire mode word (more than one mode), or null. */
+    static String fireMode(Player p, ItemStack s) {
+        Object data = gun(p, s);
         if (data == null || !lookup()) return null;
         try {
             if (!(fireModes.invoke(null, data) instanceof Collection<?> modes) || modes.size() < 2) return null;
             String mode = ChipText.fireMode(path(fireMode.invoke(null, data)));
-            HudLog.changed("fire-mode", mode, "FIRE MODE chip: {} of {} modes", mode, modes.size());
-            return new String[] {mode, SlotRead.ntglKey("KEY_FIRE_SELECT", "FIRE MODE chip: NTGL fire select key")};
+            HudLog.changed("fire-mode:" + s.getItem(), mode, "key hints: fire mode {} of {} modes", mode, modes.size());
+            return mode;
         } catch (ReflectiveOperationException | RuntimeException e) {
-            HudLog.error("fire-mode-chip", "reading the held gun's fire mode failed (no FIRE MODE chip)", e);
+            HudLog.error("fire-mode-chip", "reading the held gun's fire mode failed (no fire mode state)", e);
             return null;
         }
     }
 
-    static String[] ammo(Player p) {
-        Object data = heldGun(p);
+    /** The gun's loaded ammo kind (it takes more than one), or null. */
+    static String ammo(Player p, ItemStack s) {
+        Object data = gun(p, s);
         if (data == null || !lookup()) return null;
         try {
             if (!(ammoItems.invoke(null, data) instanceof Collection<?> kinds) || kinds.size() < 2) return null;
@@ -49,20 +51,17 @@ final class GunRead {
             if (holder == null) return null;
             String id = String.valueOf(Reflect.call(holder, "getId"));
             String words = ChipText.ammo(id, name(holder));
-            HudLog.changed("ammo-kind", words, "AMMO chip: {} ({}) of {} kinds", words, id, kinds.size());
-            return new String[] {words, SlotRead.ntglKey("KEY_AMMO_SELECT", "AMMO chip: NTGL ammo select key")};
+            HudLog.changed("ammo-kind:" + s.getItem(), words, "key hints: ammo {} ({}) of {} kinds", words, id, kinds.size());
+            return words;
         } catch (ReflectiveOperationException | RuntimeException e) {
-            HudLog.error("ammo-chip", "reading the held gun's ammo failed (no AMMO chip)", e);
+            HudLog.error("ammo-chip", "reading the held gun's ammo failed (no ammo state)", e);
             return null;
         }
     }
 
-    /** The held NTGL gun's WeaponData (main hand, else offhand), or null. */
-    private static Object heldGun(Player p) {
-        for (ItemStack s : new ItemStack[] {p.getMainHandItem(), p.getOffhandItem()}) {
-            if (!s.isEmpty() && SlotRead.isNtgl(s)) return SlotRead.weaponData(s, p);
-        }
-        return null;
+    /** The stack's NTGL WeaponData, or null when it is no NTGL gun. */
+    private static Object gun(Player p, ItemStack s) {
+        return !s.isEmpty() && SlotRead.isNtgl(s) ? SlotRead.weaponData(s, p) : null;
     }
 
     /** A holder's id path ("ntgl:auto" -> "auto"); "" when there is none. */

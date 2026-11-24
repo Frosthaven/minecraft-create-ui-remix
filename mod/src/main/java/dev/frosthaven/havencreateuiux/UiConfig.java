@@ -37,6 +37,8 @@ public final class UiConfig {
     public static final ModConfigSpec.EnumValue<HotbarNumbers> HOTBAR_NUMBERS;
     public static final ModConfigSpec.DoubleValue HUD_SCALE;
     public static final ModConfigSpec.DoubleValue SIDE_SCALE;
+    public static final ModConfigSpec.BooleanValue KEY_PROMPTS;
+    public static final ModConfigSpec.BooleanValue KEY_HINTS;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -53,6 +55,12 @@ public final class UiConfig {
                 .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.0, 0.5, 2.0);
         SIDE_SCALE = b.comment("The side bars' size (orbs or meters, the offhand, the dash), relative to their design; they stay attached to the action bar.")
                 .translation("haven_create_ui_ux.config.side_scale").defineInRange("sideScale", 1.0, 0.6, 2.0);
+        b.pop();
+        b.push("keyHints");
+        KEY_PROMPTS = b.comment("Contextual key hints: the keys for what you look at (ride, trade, rotate with a wrench), one line above the action bar.")
+                .translation("haven_create_ui_ux.config.key_prompts").define("keyPrompts", true);
+        KEY_HINTS = b.comment("Stateful key hints: the keys for what you ride, hold and wear (a gun's reload and ammo, a MekaSuit's modes), bottom right of the screen.")
+                .translation("haven_create_ui_ux.config.key_hints").define("keyHints", true);
         b.pop();
         SPEC = b.build();
     }

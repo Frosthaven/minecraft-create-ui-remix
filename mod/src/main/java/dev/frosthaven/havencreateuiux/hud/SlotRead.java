@@ -26,7 +26,7 @@ import net.minecraft.world.item.component.ChargedProjectiles;
  * component over {@code WeaponModifierHelper.getMaxAmmo(WeaponData)}; the ammo's counter type ({@code ntgl:bar},
  * {@code ntgl:percent}: Blazegun, Pneumatic Hammer) as a percent without sign; thrown weapons (grenades: the stack
  * count is the ammo) and weapons without a magazine are left out. Low (a quarter or less, above 0) is orange, empty red. An
- * empty held gun shows the RELOAD chip in red ({@link #reloadRow}; its key {@code key.ntgl.reload}, {@link #reloadKey}).</li>
+ * empty held gun shows LOAD in red on its Reload key hint ({@link #empty}, KeyRules).</li>
  * <li>Crossbows: loaded (the {@code charged_projectiles} component) over 1.</li>
  * <li>Every other projectile weapon (bows, the Electric Bow, Create's and TFMG's potato cannons, Cataclysm's Cursed Bow):
  * the inventory's items its {@code getAllSupportedProjectiles()} accepts (arrows, potato cannon ammo). Power Grid's
@@ -40,7 +40,7 @@ public final class SlotRead {
     /** A slot's one line (its ammo, else its Mekanism mode), its digit row, and whether it is a Mekanism mode item (held,
      *  its slot shows Mekanism's item mode key). An item with ammo and a mode (the Electric Bow) shows only its ammo. A
      *  gun's fire mode and ammo choice are chips (GunRead). */
-    record Badge(String text, int row, boolean modeKey) {}
+    record Badge(String text, int row) {}
 
     private SlotRead() {}
 
@@ -49,10 +49,10 @@ public final class SlotRead {
         try {
             String[] ammo = ammo(p, s);   // {text, "low" | "empty" | null}
             String[] mode = mode(s);      // {text, "green" | "dim" | null}
-            if (ammo != null) return new Badge(ammo[0], row(ammo[1]), mode != null);
+            if (ammo != null) return new Badge(ammo[0], row(ammo[1]));
             if (mode == null) return null;
             int modeRow = mode[1] == null ? CompactAtlas.WHITE : mode[1].equals("green") ? CompactAtlas.jetRow('N') : CompactAtlas.DIM;
-            return new Badge(mode[0], modeRow, true);
+            return new Badge(mode[0], modeRow);
         } catch (RuntimeException | LinkageError e) {
             HudLog.error("slot-read", "reading a slot's ammo or mode failed (" + s.getItem() + ")", e);
             return null;
@@ -76,29 +76,16 @@ public final class SlotRead {
         return state == null ? CompactAtlas.WHITE : CompactAtlas.jetRow(state.equals("empty") ? 'D' : 'V');
     }
 
-    /** The RELOAD chip's row (red) while the held NTGL gun (main hand, else offhand) is empty; null otherwise (a low gun
-     *  shows only its orange slot count). */
-    static Integer reloadRow(Player p) {
+    /** True while this NTGL gun is empty (its Reload key hint shows LOAD in red; a low gun shows only its orange slot count). */
+    static boolean empty(Player p, ItemStack s) {
         try {
-            for (ItemStack s : new ItemStack[] {p.getMainHandItem(), p.getOffhandItem()}) {
-                if (!isNtgl(s)) continue;
-                String[] a = ntgl(p, s);
-                if (a != null) return "empty".equals(a[1]) ? row(a[1]) : null;
-            }
+            if (!isNtgl(s)) return false;
+            String[] a = ntgl(p, s);
+            return a != null && "empty".equals(a[1]);
         } catch (RuntimeException | LinkageError e) {
-            HudLog.error("reload-chip", "reading the held gun's ammo failed (no RELOAD chip)", e);
+            HudLog.error("reload-state", "reading a gun's ammo failed (no LOAD state)", e);
+            return false;
         }
-        return null;
-    }
-
-    /** NTGL's reload key (key.ntgl.reload, the player's binding) in short form, or null. */
-    static String reloadKey() { return ntglKey("KEY_RELOAD", "RELOAD chip: NTGL reload key"); }
-
-    static String ntglKey(String field, String what) {
-        Object m = Reflect.getStatic("com.nukateam.ntgl.client.input.NtglKeyBinds", field);
-        String label = WordChips.keyLabel(m instanceof net.minecraft.client.KeyMapping km ? km : null);
-        HudLog.changed("ntgl-" + field, String.valueOf(label), what + " {}", label);
-        return label;
     }
 
     static boolean isNtgl(ItemStack s) { return Reflect.is(s.getItem(), NTGL + "foundation.item.interfaces.IWeapon"); }
