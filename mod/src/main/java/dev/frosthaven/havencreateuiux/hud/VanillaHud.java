@@ -52,6 +52,7 @@ final class VanillaHud {
 
         CompactHud.hotbarItems(g, mc, p, attack, cx, bottom, f.slotNums);
         CompactHud.slotItem(g, mc, p, p.getOffhandItem(), cx + (int) ox + 1, bottom - 19, 10);   // vanilla's offhand spot
+        SlotBadges.slot(g, p, p.getOffhandItem(), cx + (int) ox + 1, bottom - 19);
         int h = (int) Math.ceil((50 - top + 1) * scale);   // later HUD layers stack above the rows
         mc.gui.leftHeight = Math.max(mc.gui.leftHeight, h);
         mc.gui.rightHeight = Math.max(mc.gui.rightHeight, h);

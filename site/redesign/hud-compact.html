@@ -63,7 +63,8 @@
   <button id="nourished" aria-pressed="false" title="Farmer's Delight Nourishment">Nourishment</button>
   <button id="comfort" aria-pressed="false" title="Farmer's Delight Comfort (shows when hurt with no saturation)">Comfort</button>
   <button id="mekasuit" aria-pressed="false" title="Mekanism MekaSuit energy: a cyan status in the effects rail">MekaSuit</button>
-  <button id="mekJetpack" aria-pressed="false" title="Mekanism jetpack (or the MekaSuit jetpack unit): a chip on the instrument plate, its mode's letter and the hydrogen around its edge; cycles the modes">Mek jetpack: off</button>
+  <button id="mekJetpack" aria-pressed="false" title="Mekanism jetpack (or the MekaSuit jetpack unit): a chip on the instrument plate, its mode's word in its colour and the hydrogen left in white; cycles the modes">Mek jetpack: off</button>
+  <button id="slotBadges" aria-pressed="false" title="Weapons and Mekanism mode items in the hotbar: ammo (loaded/capacity; bows: arrows) bottom right of the slot, low orange, none red; a held gun that is empty shows the RELOAD chip (any gun in the empty set), a mode item's mode bottom right (WRCH, VEIN, ON / OFF); the held items' key (mode item or multi-fire-mode gun) on the slot's bottom left corner, always; the RELOAD chip's key as its tab, always. Slots: revolver, shotgun, gatling, nailgun, bow, crossbow, Electric Bow, Configurator, Atomic Disassembler; offhand: portable fluid tank. Cycles off / loaded / empty">Weapons &amp; modes: off</button>
   <button id="air_mekScuba" aria-pressed="false" title="Mekanism scuba tank in use: its oxygen on the ring, time left (24000 mB at 1 mB a tick under water)">Scuba tank</button>
   <button id="air_suitOxygen" aria-pressed="false" title="Ad Astra space suit in use (no breathable air): its oxygen on the ring, time left (1 mB every 12 ticks)">Space suit</button>
   <button id="gear_jetSuitEnergy" aria-pressed="false" title="Ad Astra Jet Suit: energy, a cyan status">Jet Suit</button>
@@ -111,7 +112,7 @@ const st = { health: 16, absorb: 0, armor: 14, food: 15, saturation: 8, xp: 0.45
   jump: null, cast: null, attack: null, creative: false, t: 0,
   spectator: false, maxHealth: 20, leftHanded: false, dash: null, holdHeal: 4, exhaustion: 2.4, itemName: '', nameAt: -1e9, actionBar: '',
   nourished: false, comfort: false, mekasuit: 0, aircraft: false, hull: 0.7, engine: null, train: null, flamingo: null, steampunk: false,
-  artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, jetpack: null, hotbarNumbers: 'hold', orbs: new URLSearchParams(location.search).has('orbs'), manaPrimary: 'irons',   // bars: the game's default
+  artifactCooldowns: [], toolboxSlots: [], gear: {}, airGear: false, schematicSlot: null, followers: 0, jetpack: null, slotBadges: [], offhandBadge: null, hotbarNumbers: 'hold', orbs: new URLSearchParams(location.search).has('orbs'), manaPrimary: 'irons',   // bars: the game's default
   layout: new URLSearchParams(location.search).has('vanilla') ? 'vanilla' : 'bar',
   effectsAnchor: new URLSearchParams(location.search).has('railEffects') ? 'bar' : 'topLeft' };   // the config's "Buffs and debuffs": top left of the screen is the default
 const ITEMS = ['Brass Hand', 'Wrench', 'Andesite Alloy', 'Cogwheel', 'Iron Pickaxe', 'Bread', 'Torch', 'Water Bucket', 'Goggles'];
@@ -219,6 +220,22 @@ tap('mekJetpack', () => {
   const next = JET_MODES[(JET_MODES.indexOf(st.jetpack ? st.jetpack.mode : null) + 1) % JET_MODES.length];
   st.jetpack = next ? { mode: next, fuel: st.jetpack ? st.jetpack.fuel : 0.8 } : null;
   press('mekJetpack', !!next); document.getElementById('mekJetpack').textContent = 'Mek jetpack: ' + (next ? JET_NAMES[next] : 'off');
+});
+// Weapons and Mekanism mode items in the hotbar (SlotBadges): a demo set, loaded or empty. gun: an NTGL gun (held empty, red:
+// the RELOAD chip). key: the key its slot shows while held (Mekanism item mode, default N; a gun with several fire modes:
+// NTGL fire select, default B; the game shows the player's binding).
+const SLOT_DEMO = {
+  loaded: [{ text: '4/6', gun: true }, { text: '1/2', gun: true, key: 'B' }, { text: '100/100', gun: true }, { text: '8/40', row: 'orange', gun: true, key: 'B' },
+    { text: '23' }, { text: '1/1' }, { text: '12', key: 'N' }, { text: 'WRCH', key: 'N' }, { text: 'VEIN', key: 'N' }],
+  empty: [{ text: '0/6', row: 'red', gun: true }, { text: '0/2', row: 'red', gun: true, key: 'B' }, { text: '0/100', row: 'red', gun: true },
+    { text: '0/40', row: 'red', gun: true, key: 'B' }, { text: '0', row: 'red' }, { text: '0/1', row: 'red' },
+    { text: '0', row: 'red', key: 'N' }, { text: 'ITEM', key: 'N' }, { text: 'OFF', row: 'dim', key: 'N' }],
+  offhand: { loaded: { text: 'ON', row: 'green', key: 'N' }, empty: { text: 'OFF', key: 'N' } },
+};
+tap('slotBadges', () => {
+  const next = { off: 'loaded', loaded: 'empty', empty: 'off' }[st.slotDemo || 'off'];
+  st.slotDemo = next; st.slotBadges = SLOT_DEMO[next] || []; st.offhandBadge = SLOT_DEMO.offhand[next] || null;
+  press('slotBadges', next !== 'off'); document.getElementById('slotBadges').textContent = 'Weapons & modes: ' + next;
 });
 setInterval(() => { if (st.jetpack && st.jetpack.mode !== 'D') { st.jetpack.fuel = st.jetpack.fuel <= 0.02 ? 0.8 : st.jetpack.fuel - 0.002; render(); } }, 100);
 for (const id of Object.keys(GEAR_START)) tap('gear_' + id, () => {

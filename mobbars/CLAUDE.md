@@ -11,7 +11,7 @@ Designed on the redesign page `mob-bars.html`. A flat, dim bar over every living
 blocks (default 10): hostile (`Enemy`, bosses included) #a83a3a, players #4a76b8, every other mob #5c9a46, each kind
 toggled in the client config (`haven_mob_health_bars-client.toml`); `notHostileWhen` WHEN_DAMAGED (default) or ALWAYS
 (the green bars only below full health, after the damage trail drains). Not the player, the mount the player rides
-(`hasIndirectPassenger`), armor stands, invisible or dying entities.
+(`hasIndirectPassenger`), entities not in the client level (a mob held with Carry On is a drawn copy), armor stands, invisible or dying entities.
 - Beyond the range, only the entity under the crosshair gets a bar (`LookTarget`, config `lookedAt` default true,
   `lookRange` default 64, 8-128): once per client tick a vanilla-style pick (`ProjectileUtil.getEntityHitResult`,
   boxes inflated by pick radius) from the camera, then a block raycast (`ClipContext` OUTLINE, fluid NONE) eye to hit
@@ -23,5 +23,14 @@ toggled in the client config (`haven_mob_health_bars-client.toml`); `notHostileW
 - The pieces are coplanar and never overlap (edge strips, fill with a lighter top strip, trail, empty backing): no
   z-fighting, no doubled alpha.
 - Damage trail per entity (`WeakHashMap`): holds the pre-hit health 400 ms, then drains over 600 ms; healing clears it.
+- Armour durability strip (`ArmourWear`, config `armourDurability` default true): with damageable armour worn, the bar
+  splits at the same size, health on the top 75 %, the durability left (sum of max damage - damage over sum of max
+  damage) on the bottom 25 % (0.35 of 1.4 model px) in steel grey #9aa1a8, no trail. Slots HEAD, CHEST, LEGS, FEET and BODY (wolf armour; horse
+  armour only with a `max_damage` component, vanilla's is not damageable), plus a Drekki's barding
+  (`DrekkiEntity.bardingItem()` by MethodHandle). Below 100 % it counts as damaged for WHEN_DAMAGED. Computed at most once
+  per client tick per entity (`WeakHashMap`, keyed by game time), only for entities that passed the other filters.
+  The client sees other entities' wear: vanilla resends a worn stack when its components change (`equipmentHasChanged`).
+  Drekki Rancher (to 0.5.1) keeps the barding stack on the server only (synced: tier and glint), so the client reads
+  EMPTY and a Drekki gets no strip until that mod syncs the stack.
 - Iris: skipped in the shadow pass (`IrisApi.isRenderingShadowPass`, by reflection). Hidden with F1.
 - Log prefix `[mob bars]` (`Log`): config state on change, Iris found or not, errors once.

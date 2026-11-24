@@ -8,5 +8,6 @@
   "haven_mob_health_bars.config.friendly_players": "Friendly players",
   "haven_mob_health_bars.config.hostile_players": "Hostile players",
   "haven_mob_health_bars.config.looked_at": "Bar on the entity you look at",
-  "haven_mob_health_bars.config.look_range": "Look range (blocks)"
+  "haven_mob_health_bars.config.look_range": "Look range (blocks)",
+  "haven_mob_health_bars.config.armour": "Armour durability on the bar"
 }

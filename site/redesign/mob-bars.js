@@ -10,7 +10,7 @@ const MOB_KINDS = {
   player: { name: 'Friendly players', col: '#4a76b8', on: true, test: 'Player', ex: 'players who have not hit a player in 30 s' },
   attacker: { name: 'Hostile players', col: '#a8409a', on: true, test: 'hit any player in the last 30 s', ex: 'any PvP, you or anyone near; shown even with friendly players off' },
 };
-const MOB_BAR = { w: 14, h: 1.4, lift: 6, back: 'rgba(10,11,14,0.62)', edge: 'rgba(0,0,0,0.7)' };   // model px (16 = a block)
+const MOB_BAR = { w: 14, h: 1.4, lift: 6, back: 'rgba(10,11,14,0.62)', edge: 'rgba(0,0,0,0.7)', armour: '#9aa1a8', armourShare: 0.25 };   // model px (16 = a block)
 
 // --- An orthographic 3/4 camera over model space (x right, y up, z toward the viewer; 16 units = a block). ---
 const CAM = { yaw: -32 * Math.PI / 180, pitch: 14 * Math.PI / 180, s: 6.5, ox: 430, oy: 400 };
@@ -87,7 +87,7 @@ function tintedGrass(img) {
 }
 
 /** The night scene: sky, moon and stars, then the lit world (ground and mob) darkened to night, then the bar. */
-function mobScene(canvas, { skin, grass, kind, hp, max, trail }) {
+function mobScene(canvas, { skin, grass, kind, hp, max, trail, armour = null }) {
   const g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
   g.fillStyle = vgrad(g, 0, H, [[0, '#04060d'], [0.55, '#0c1226'], [1, '#141c36']]); g.fillRect(0, 0, W, H);
   for (let i = 0; i < 70; i++) {   // stars: fixed points, a few brighter
@@ -118,16 +118,19 @@ function mobScene(canvas, { skin, grass, kind, hp, max, trail }) {
 
   // The bar faces the camera, half a block above the head (where the game puts name tags).
   const top = project([0, 32 + MOB_BAR.lift, 0]);
-  mobBar(g, top.x, top.y, MOB_BAR.w * CAM.s, MOB_BAR.h * CAM.s, kind, hp, max, trail);
+  mobBar(g, top.x, top.y, MOB_BAR.w * CAM.s, MOB_BAR.h * CAM.s, kind, hp, max, trail, armour);
 }
 
-/** The bar: a dim backing, the health in the kind's flat colour, recent damage as a trail of the same colour at 50% opacity that drains away. */
-function mobBar(g, cx, cy, w, h, kind, hp, max, trail = hp) {
+/** The bar: a dim backing, the health in the kind's flat colour, recent damage as a trail of the same colour at 50% opacity that drains away.
+ *  armour (0..1, null without damageable armour): the worn armour's durability left as the bottom 25% (the bar keeps its size; the split on a whole pixel). */
+function mobBar(g, cx, cy, w, h, kind, hp, max, trail = hp, armour = null) {
   const x = Math.round(cx - w / 2), y = Math.round(cy - h / 2), col = MOB_KINDS[kind].col;
+  const hh = armour == null ? h : Math.round(h * (1 - MOB_BAR.armourShare));   // the health part's height, whole pixels
   g.fillStyle = MOB_BAR.edge; g.fillRect(x - 1, y - 1, w + 2, h + 2);
   g.fillStyle = MOB_BAR.back; g.fillRect(x, y, w, h);
   const fw = w * Math.max(0, hp) / max, tw = w * Math.max(0, trail) / max;
-  if (tw > fw) { g.fillStyle = col + '80'; g.fillRect(x + fw, y, tw - fw, h); }
-  g.fillStyle = col; g.fillRect(x, y, fw, h);
+  if (tw > fw) { g.fillStyle = col + '80'; g.fillRect(x + fw, y, tw - fw, hh); }
+  g.fillStyle = col; g.fillRect(x, y, fw, hh);
+  if (armour != null) { g.fillStyle = MOB_BAR.armour; g.fillRect(x, y + hh, w * Math.max(0, Math.min(1, armour)), h - hh); }
   g.fillStyle = 'rgba(255,255,255,0.08)'; g.fillRect(x, y, fw, 1);   // one faint top line, so the flat fill still reads as a bar
 }

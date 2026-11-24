@@ -220,12 +220,12 @@ final class HudDraw {
         for (int dy = -5; dy <= 5; dy += 5) for (int dx = -5; dx <= 5; dx += 5) {
             if (dx == 0 && dy == 0) continue;
             int cx = x;
-            for (int i = 0; i < s.length(); i++) { char c = s.charAt(i); part(g, digitU(c), digitV(BLACK), digitW(c), DIGIT_H, cx + dx, y + dy); cx += digitAdv(c); }
+            for (int i = 0; i < s.length(); i++) { char c = s.charAt(i); part(g, digitU(c), digitV(c, BLACK), digitW(c), DIGIT_H, cx + dx, y + dy); cx += digitAdv(c); }
         }
         int cx = x;
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            part(g, digitU(c), digitV(i < brightChars ? bright : rest), digitW(c), DIGIT_H, cx, y);
+            part(g, digitU(c), digitV(c, i < brightChars ? bright : rest), digitW(c), DIGIT_H, cx, y);
             cx += digitAdv(c);
         }
     }

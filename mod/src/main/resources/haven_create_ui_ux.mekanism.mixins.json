@@ -3,6 +3,6 @@
   "minVersion": "0.8",
   "package": "dev.frosthaven.havencreateuiux.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["MekanismJetpackHudMixin", "MekanismJetpackUnitHudMixin"],
+  "client": ["MekanismJetpackHudMixin", "MekanismJetpackUnitHudMixin", "MekanismHandHudMixin"],
   "injectors": { "defaultRequire": 0 }
 }

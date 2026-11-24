@@ -57,7 +57,8 @@ function ccDial(g, cx, cy, r, a, kind) {
 /** Every chip's plate width (the steampunk armor's: two dials and margins). */
 const CC_CHIP_W = 21;
 /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 apart): web
- *  followers, the steampunk clock and compass, the Mekanism jetpack, the Artifacts on cooldown (one chip). Only when needed.
+ *  followers, the steampunk clock and compass, the Mekanism jetpack, RELOAD (the held gun empty, red; a low gun only its
+ *  orange count; game: SlotRead.reloadRow), the Artifacts on cooldown (one chip). Only when needed.
  *  top: the plates' top (default: over the centre plate). Returns it, or null when there is none. */
 function ccInstruments(g, s, top) {
   const h = 9, y = top ?? CC.plate.mid - h - 2.5, cy = y + h / 2, chips = [];
@@ -71,7 +72,17 @@ function ccInstruments(g, s, top) {
     ccDial(g, x + 6, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
     ccDial(g, x + 15, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
   }]);
-  if (s.jetpack) chips.push([W, x => ccJetChip(g, x + (W - ccJetChip.width(s.jetpack)) / 2, cy, s.jetpack)]);
+  if (s.jetpack) {   // the mode switch key, always a tab on its top edge; the chip keeps its size
+    const key = CC_JET_KEY;
+    const tw = ccJetChip.width(s.jetpack), jw = Math.max(W, tw + 8);
+    chips.push([jw, x => { ccJetChip(g, x + (jw - tw) / 2, cy, s.jetpack); if (key) ccJetKey(g, key, x + (jw - tw) / 2, y); }]);
+  }
+  const held = (s.slotBadges || [])[s.slot];
+  const wordChip = (words, col, key) => {   // words in the follower count's digits, widened to fit (4 each side), key a top-edge tab (always)
+    const tw = ccWords.width(words), w = Math.max(W, tw + 8);
+    chips.push([w, x => { ccWords(g, words, x + (w - tw) / 2, cy, col); if (key) ccJetKey(g, key, x + (w - tw) / 2, y); }]);
+  };
+  if (held && held.gun && held.row === 'red') wordChip('RELOAD', CC_SLOT_INK.red, CC_RELOAD_KEY);   // the held gun empty; its reload key always
   const cds = s.artifactCooldowns || [];
   if (cds.length) {   // every Artifact on cooldown in one chip: its icon (placeholder gem), shaded by what is left
     const cw = cds.length * 9, w = Math.max(W, cw + 3);
@@ -87,15 +98,32 @@ function ccInstruments(g, s, top) {
   for (const [w, draw] of chips) { ccFloatPlate(g, x, y, w, h); draw(x); x += w + 2; }
   return y;
 }
-/** The Mekanism jetpack's chip (a jetpack, or a MekaSuit's jetpack unit): the hydrogen left (percent, no sign) in the
- *  digits' pixel font at the follower count's size, coloured by the mode: N normal green, V vector orange, H hover
- *  cyan, D disabled red. (x, cy): its left edge and centre line. */
+/** The Mekanism jetpack's chip (a jetpack, or a MekaSuit's jetpack unit): the mode's word in its colour (Normal green,
+ *  Vector orange, Hover cyan, Disabled red, in capitals), then the hydrogen left (percent, no sign) in white, both in
+ *  the follower count's digits; the chip widens to fit, 4 px each side. (x, cy): text left, centre line. */
 const CC_JET = { D: '#ff5a4e', V: '#ffa040', N: '#62e07a', H: '#3fe0ff' };
-function ccJetChip(g, x, cy, jet) {
-  ccNumber(g, String(Math.round(jet.fuel * 100)), x, cy - 2.35, CC_JET[jet.mode], 'rgba(0,0,0,0.8)', 0.94);
+const CC_JET_WORD = { N: 'NORMAL', V: 'VECTOR', H: 'HOVER', D: 'DISABLED' };
+/** The jetpack's mode switch key, a tab on the chip's top edge: the slot numbers' style (white, black outline,
+ *  CC_SLOT_NUM.k) from the text's left x, running rightward, its glyphs' bottom 0.75 below the plate's top y. */
+function ccJetKey(g, key, x, y) {
+  ccOutlinedNumber(g, key, x, y + 0.75 - 5 * CC_SLOT_NUM.k, '#ffffff', CC_SLOT_NUM.k);
 }
-/** The content's width. */
-ccJetChip.width = jet => ccNumberWidth(String(Math.round(jet.fuel * 100)), 0.94);
+/** The RELOAD chip (the held gun empty, red): NTGL's reload key (default R; the game: the binding). */
+const CC_RELOAD_KEY = 'R';
+/** Words in the follower count's digits split at spaces (no space glyph), 2 apart; (x, cy): left, centre line. */
+function ccWords(g, words, x, cy, col) {
+  for (const w of words.split(' ')) { ccNumber(g, w, x, cy - 2.35, col, 'rgba(0,0,0,0.8)', 0.94); x += ccNumberWidth(w, 0.94) + 2; }
+}
+ccWords.width = words => words.split(' ').reduce((a, w) => a + ccNumberWidth(w, 0.94) + 2, -2);
+/** Mekanism's chest mode switch key, in the game its bound key's short name (at most 3: G, ALT, SHF, M4; WordChips.keyLabel). */
+const CC_JET_KEY = 'G';   // Mekanism's default
+function ccJetChip(g, x, cy, jet) {
+  const word = CC_JET_WORD[jet.mode];
+  ccNumber(g, word, x, cy - 2.35, CC_JET[jet.mode], 'rgba(0,0,0,0.8)', 0.94);
+  ccNumber(g, String(Math.round(jet.fuel * 100)), x + ccNumberWidth(word, 0.94) + 2, cy - 2.35, '#f2f2f2', 'rgba(0,0,0,0.8)', 0.94);
+}
+/** The content's width: the word, 2, the number. */
+ccJetChip.width = jet => ccNumberWidth(CC_JET_WORD[jet.mode], 0.94) + 2 + ccNumberWidth(String(Math.round(jet.fuel * 100)), 0.94);
 /** Create's marks over hotbar slots: toolbox-linked slots (red liquid corner chips), the schematic tool's slot (cyan). */
 function ccSlotMarks(g, s) {
   for (const i of s.toolboxSlots || []) ccToolboxChips(g, i, false);

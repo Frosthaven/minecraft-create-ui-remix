@@ -21,12 +21,12 @@ final class CompactAtlas {
     static final List<String> WING_LIQUIDS = List.of("blood", "poison", "wither", "frozen", "absorb", "broth", "hunger", "saturation",
             "mount", "irons", "ars", "armor", "air", "tank", "flamingo", "hull");
     static final List<String> XP_LIQUIDS = List.of("xp", "jump", "cooldown", "cast", "train", "engine");
-    static final String DIGITS = "0123456789/:+smh";
+    static final String DIGITS = "0123456789/:+smhABCDEFGHIJKLMNOPQRSTUVWXYZ";
     // 0.625 digit rows: effect times in their kind's tint (BUFF, DEBUFF, CYAN for the MekaSuit and fuelled
     // gear), never by time left.
     static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3, RED = 4, CYAN = 5, BUFF = 6, DEBUFF = 7;
-    /** The digit rows in the jetpack modes' colours: N normal, V vector, H hover, D disabled. */
-    static int jetRow(char mode) { return 8 + "NVHD".indexOf(mode); }
+    /** The digit rows in the jetpack modes' colours: N normal, V vector, H hover, D disabled (the chip's mode word). */
+    static int jetRow(char mode) { return 8 + Math.max(0, "NVHD".indexOf(mode)); }
     static final String GLYPHS = "0123456789/:+";
     static final List<String> TINTS = List.of("blood", "poison", "wither", "frozen", "broth", "hunger", "mount", "irons", "ars",
             "armor", "air", "tank", "flamingo", "hull", "black");
@@ -55,7 +55,7 @@ final class CompactAtlas {
             {"socket", 0, 0, 18, 18}, {"selection", 20, 0, 24, 23}, {"offhand ghost", 46, 0, 18, 18}, {"skull plate", 66, 0, 9, 10},
             {"level window", 78, 0, 10, 5}, {"icon window", 90, 0, 9, 7}, {"window icons", 100, 0, 35, 7},
             {"XP casing", 0, 26, 177, 3}, {"wing liquids", 0, 30, 32, 80}, {"XP liquids", 0, 112, 177, 24},
-            {"digits 0.625", 0, 140, 56, 32}, {"glyphs 0.6", 180, 20, 39, 53}, {"level glyphs 0.85", 180, 76, 39, 15},
+            {"digits 0.625", 0, 140, 252, 48}, {"key glyphs", 0, 242, 60, 8}, {"glyphs 0.6", 180, 20, 39, 53}, {"level glyphs 0.85", 180, 76, 39, 15},
             {"follower plate", 0, 190, 24, 9}, {"gear row", 30, 190, 32, 12}, {"groove", 80, 190, 32, 4}, {"dash cog", 120, 190, 18, 18},
             {"effect frames", 140, 190, 46, 10}, {"toolbox chips", 0, 210, 18, 18}, {"toolbox chips lit", 20, 210, 18, 18},
             {"toolbox selection", 40, 210, 24, 23}, {"schematic frame", 66, 210, 18, 18}, {"instrument plate", 86, 210, 24, 9},
@@ -112,8 +112,12 @@ final class CompactAtlas {
     static int winIconU(String n) { return WIN_ICON_U + WIN_ICON * WIN_ICONS.indexOf(n); }
     static int wingLiquidV(String n) { return (30 + 5 * WING_LIQUIDS.indexOf(n)) * K; }
     static int xpLiquidV(String n) { return (112 + 4 * XP_LIQUIDS.indexOf(n)) * K; }
-    static int digitU(char c) { return 28 * DIGITS.indexOf(c); }   // cells 3.5 px apart
-    static int digitW(char c) { return (c == 'm' ? 5 : 3) * 5; }   // glyphs 3 font px wide (m: 5), 5 texels a font px
+    /** Key punctuation for key tabs (a binding such as ; or '), a strip of its own at (0, 242) in white and black only. */
+    static final String KEY_GLYPHS = ";',.-=[]\\`";
+    static int digitU(char c) { int k = KEY_GLYPHS.indexOf(c); return 48 * (k >= 0 ? k : DIGITS.indexOf(c)); }   // cells 6 px apart
+    /** A character's row: the key strip's white or black for its punctuation, else digitV(row). */
+    static int digitV(char c, int row) { return KEY_GLYPHS.indexOf(c) >= 0 ? (242 + (row == BLACK ? 4 : 0)) * K : digitV(row); }
+    static int digitW(char c) { return (c == 'm' || c == 'M' || c == 'W' ? 5 : c == 'N' ? 4 : 3) * 5; }   // glyphs 3 font px wide (m, M, W: 5; N: 4), 5 texels a font px
     static int digitAdv(char c) { return digitW(c) + 5; }
     static int digitV(int row) { return (140 + 4 * row) * K; }
     static final int DIGIT_H = 25;

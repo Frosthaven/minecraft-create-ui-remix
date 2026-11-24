@@ -11,11 +11,13 @@
 <header>
   <h1>Mob health bars (concept)</h1>
   <p>A flat, dim bar half a block above every mob within 10 blocks, and above the one you look at up to 64 blocks away (no block in between), facing the camera. The fill is the mob's health in
-     its kind's colour; recent damage stays as a trail of its colour at 50% opacity that drains away. Config (haven-mob-health-bars): which kinds get bars (below), the range (default 10 blocks), and the looked-at bar and its range (default on, 64 blocks).</p>
+     its kind's colour; recent damage stays as a trail of its colour at 50% opacity that drains away. Config (haven-mob-health-bars): which kinds get bars (below), the range (default 10 blocks), and the looked-at bar and its range (default on, 64 blocks).
+     With damageable armour worn (armour slots, wolf, horse and Drekki barding), the bottom 25% of the bar is the armour's durability left in steel grey (config: Armour durability on the bar, default on); worn armour counts as damaged for the not-hostile bars.</p>
 </header>
 <div class="bar">
   <button id="hit" title="Hit the zombie for 3">Damage</button>
   <button id="kind" title="The bar's colour for each kind (cycles)">Kind: Hostile</button>
+  <button id="armour" title="Worn armour's durability left: the bottom 25% of the bar (cycles)">Armour: none</button>
 </div>
 <div class="compare">
   <div class="scene" style="grid-column:1/-1"><span class="label after">Night, a zombie 4 blocks away</span><canvas id="scene" width="860" height="520" style="width:100%;height:auto"></canvas></div>
@@ -46,17 +48,22 @@ for (const [id, k] of Object.entries(MOB_KINDS)) {
   row.insertAdjacentHTML('beforeend', `<span>${k.name}<small>${k.test}: ${k.ex}</small></span>`);
   document.getElementById('kinds').append(row);
 }
-const st = { kind: 'hostile', hp: 13, max: 20, trail: 13, hitAt: 0 };
+const st = { kind: 'hostile', hp: 13, max: 20, trail: 13, hitAt: 0, armour: null };
+const ARMOURS = [null, 0.6, 0.25, 1];
 let art = null;
 function render() {
   if (!art) return;
   const k = Math.min(1, Math.max(0, (performance.now() - st.hitAt - 400) / 600));   // the trail waits, then drains
-  mobScene(document.getElementById('scene'), { ...art, kind: st.kind, hp: st.hp, max: st.max, trail: st.hp + (st.trail - st.hp) * (1 - k) });
+  mobScene(document.getElementById('scene'), { ...art, kind: st.kind, hp: st.hp, max: st.max, trail: st.hp + (st.trail - st.hp) * (1 - k), armour: st.armour });
   if (k < 1) requestAnimationFrame(render); else st.trail = st.hp;
 }
 document.getElementById('hit').onclick = () => { st.trail = st.hp; st.hp = st.hp > 3 ? st.hp - 3 : st.max; if (st.hp === st.max) st.trail = st.max; st.hitAt = performance.now(); render(); };
 document.getElementById('kind').onclick = e => {
   st.kind = kinds[(kinds.indexOf(st.kind) + 1) % kinds.length]; e.target.textContent = 'Kind: ' + MOB_KINDS[st.kind].name; render();
+};
+document.getElementById('armour').onclick = e => {
+  st.armour = ARMOURS[(ARMOURS.indexOf(st.armour) + 1) % ARMOURS.length];
+  e.target.textContent = 'Armour: ' + (st.armour == null ? 'none' : Math.round(st.armour * 100) + '%'); render();
 };
 (async () => {
   const tex = await packTextures();

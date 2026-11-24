@@ -163,11 +163,39 @@ mods that reuse vanilla hearts look vanilla.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
   Nourishment and Comfort; MekaSuit energy and fuelled gear (statuses, below); Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
   liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns (one chip for all, no well behind the icons), Immersive Armors steampunk
-  clock and compass, the Mekanism jetpack's chip (a jetpack or a MekaSuit's jetpack unit: the hydrogen left, percent with no sign, in the
-  digits' pixel font at the follower count's size, coloured by the mode: green normal, orange vector, cyan hover, red
-  disabled, four colour rows of the digit strip; Mekanism's own HUD lines are left out, its mode-change message stays; `ccJetChip`) and the Haven Link web follower count (ghost) as chips above the bar, each on a floating plate of its own, all as wide as the steampunk one (21 px) with the content centred, in a row centred
+  clock and compass, the Mekanism jetpack's chip (a jetpack or a MekaSuit's jetpack unit: the mode's word in its colour, Normal green,
+  Vector orange, Hover cyan, Disabled red, then the hydrogen left, percent with no sign, in white in the follower count's
+  digits, the word too, in capitals (A to Z in the digit strip, square cornered like the digits, 6 px apart, with four mode colour rows); always the
+  chest mode switch key sits as a tab on the chip's top edge (`ccJetKey`: the
+  slot numbers' style, white in the black outline, from the text's left running rightward, the glyphs' bottom 0.75 below the plate's
+  top; Mekanism's default G; the game shortens a long key name to 3: ALT, SHF, CTL, TAB, M4, KP5), the chip's size unchanged; this chip
+  widens to fit its text with 4 px each side, the others stay 21 px;
+  Mekanism's own HUD lines are left out, its mode-change message stays; `ccJetChip`) and the Haven Link web follower count (ghost) as chips above the bar, each on a floating plate of its own, all as wide as the steampunk one (21 px) with the content centred, in a row centred
   over the bar (2 px apart). Followers come
   from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped following").
+- Slot badges (`ccSlotBadge` / `ccSlotBadges` in `hud-compact-status.js`; game `SlotBadges`, read by `SlotRead`): every hotbar
+  slot and the offhand socket holding an ammo weapon or a Mekanism mode item shows, in the slot numbers' style (white in the
+  black outline, `CC_SLOT_NUM`), bottom right (the corner opposite the number), always: a weapon's loaded/capacity ("4/6";
+  NTGL ammo with a bar or percent counter, the Blazegun and Pneumatic Hammer: the percent, no sign), a bow's arrows in the
+  inventory, a crossbow's 1/1 or 0/1; low ammo (a quarter or less, above 0) in orange, none in red (`CC_SLOT_INK`, the
+  jetpack's VECTOR and DISABLED rows); a mode item's mode in at most 4 capitals (Configurator ITEM FLUD CHEM ENRG HEAT EMTY ROT WRCH, Atomic Disassembler
+  NORM SLOW FAST VEIN OFF, Flamethrower CMBT HEAT INFR, portable fluid tank bucket mode ON (green, the jetpack's NORMAL)
+  / OFF (white); the Electric Bow shows only its arrows), the Disassembler's OFF in grey; one line per slot. Always (not only with the slot numbers), the
+  held items show their key: the selected slot and the offhand socket, each when it holds a Mekanism mode item (Mekanism's
+  item mode key) or a gun with more than one fire mode (nailgun, shotgun, launcher: NTGL's fire select key); both `;` in the
+  pack, defaults N and B; for the offhand they act while sneak is held (NTGL; Mekanism with haven-compat 0.39.0+). Only the
+  hotbar slot numbers keep the numbers rule. In game the player's binding, at most 3 characters, punctuation as itself: `;` `'` `,` `.`
+  `-` `=` `[` `]` `\` `` ` `` from a key-glyph strip at (0, 242) of the parts atlas, white and black rows. The key is drawn at the slot numbers' size, on the
+  socket's bottom left corner (from its left edge, the outline over the left border; the outline's bottom on the socket's
+  bottom edge, so it never hangs below the bar or the screen); every badge at the slot numbers' size (`CC_SLOT_BADGE_F`, game `SlotBadges.F`, 1), its corner 0.5 past the
+  item's right and bottom edges so the outline lies on the socket's border art (`CC_SLOT_BADGE_EDGE`); only a text too wide
+  for the socket at that size (the gatling's "100/100", "60/100") shrinks to span the socket; each number caps at 999
+  (1200/2000 shows 999/999, 1500 arrows 999), so "999/999" is the widest. Page button Weapons & modes
+  (off / loaded / empty: revolver, shotgun, gatling, nailgun, bow, crossbow, Electric Bow, Configurator, Atomic
+  Disassembler; the offhand a fluid tank). A held NTGL gun (main hand, else offhand) that is empty (red count) adds a
+  RELOAD chip to the chips row (the word in red; a low gun shows only its orange count; widened to fit with 4 px each side; always
+  NTGL's reload key, default R, as the jetpack's top-edge tab; `CC_RELOAD_KEY`). NTGL's own ammo layer (`ntgl:ammo`, bottom right of the screen) is hidden while the bar draws. Mekanism's top-left lines
+  for held mode items and the Meka-Tool ("Mode: Wrench") are left out too (the slot shows the mode); its armor lines stay.
 - Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`), where the client config "Buffs and debuffs" puts them
   (the page's Effects button; `?railEffects` starts on the rail): **top left of the screen** (the default,
   `ccEffectsTopLeft`, `CC_CORNER`): buffs in the first row, debuffs in the row below as vanilla orders them, both at
@@ -235,6 +263,8 @@ mods that reuse vanilla hearts look vanilla.
 A night scene (vanilla zombie skin, orthographic 3/4 view; `tools/extract.py` takes the zombie skin and grass top, and
 skips entity skins from packs because Fresh Animations remaps them) with a flat, dim bar half a block over the head.
 Three kinds: hostile red, not hostile green, players blue; each toggled in the client config, range 10 blocks.
+With damageable armour worn the bar splits (same size): health on the top 75 %, the armour's durability left on the
+bottom 25 % in steel grey, split on a whole pixel on the page (`mobBar(..., armour)`, page button Armour; config "Armour durability on the bar", default on).
 
 ## Inventory Redesign (`site/redesign/inventory.html`), work in progress
 

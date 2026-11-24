@@ -115,6 +115,8 @@ function vanillaHud(s, font) {
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);
   ccAttackShade(g, s, [sx, sy]);
+  ccSlotBadges(g, s);   // ammo and modes on their slots
+  ccSlotBadge(g, s, s.offhandBadge, (s.leftHanded ? V.end[0] : -V.end[0] - 18) + 1, V.end[1] + 1, true);
   ccSlotNumbers(g, s);
   return c;
 }

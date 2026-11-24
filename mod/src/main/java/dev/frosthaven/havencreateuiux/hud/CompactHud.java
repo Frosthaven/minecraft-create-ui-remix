@@ -50,7 +50,8 @@ public final class CompactHud {
             id("create", "train_hud"), id("mekanism", "energy_level"), id("immersive_aircraft", "ia_overlay"),
             id("immersive_armors", "ia_overlay"), id("artifacts", "helium_flamingo_charge"), id("artifacts", "artifact_cooldowns"),
             id("farmersdelight", "comfort"), id("farmersdelight", "nourishment"),
-            id("creatingspace", "remaining_oxygen"));   // its O2 dial: a gear status now (GearStatus)
+            id("creatingspace", "remaining_oxygen"),   // its O2 dial: a gear status now (GearStatus)
+            id("ntgl", "ammo"));   // NTGL's ammo counter (bottom right of the screen): the weapon's slot shows it (SlotBadges)
 
     /** The bar's size in game (the config's "action bar size", 1.0 by default: the hotbar at vanilla's size). */
     public static float scale() { return (float) (double) UiConfig.HUD_SCALE.get(); }
@@ -114,8 +115,8 @@ public final class CompactHud {
     private static final int CHIP_W = 21 * K;
 
     /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 px apart): web
-     *  followers (ghost and count), the steampunk armor's clock and compass, the Mekanism jetpack (mode letter and
-     *  hydrogen), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
+     *  followers (ghost and count), the steampunk armor's clock and compass, the Mekanism jetpack (mode word and
+     *  hydrogen), RELOAD while the held gun is empty (SlotRead.reloadRow), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
      *  top: the plates' top (units; the action bar: over its centre). Returns it, or NaN when there is none. */
     static double instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta, double top) {
         restoreBlend();
@@ -147,7 +148,16 @@ public final class CompactHud {
             }));
         }
         GearStatus.Jet jet = GearStatus.jetpack(p);
-        if (jet != null) chips.add(new Chip(CHIP_W, x -> jetChip(g, jet, x + (CHIP_W - jetWidth(jet)) / 2, y0)));
+        if (jet != null) {
+            String key = GearStatus.jetKey();   // the mode switch key, always a tab on its top edge
+            int tw = WordChips.jetWidth(jet), jw = Math.max(CHIP_W, tw + 8 * K);   // 4 px each side
+            chips.add(new Chip(jw, x -> {
+                WordChips.jet(g, jet, x + (jw - tw) / 2, y0);
+                if (key != null) WordChips.key(g, key, x + (jw - tw) / 2, y0);
+            }));
+        }
+        Integer reload = SlotRead.reloadRow(p);
+        if (reload != null) wordChip(g, chips, "RELOAD", reload, SlotRead.reloadKey(), y0);   // the held gun is empty (red); its reload key always
         var cooldowns = HudExtras.artifactCooldowns(p, delta);
         if (!cooldowns.isEmpty()) {   // every worn Artifact on cooldown in one chip: its item, shaded by the time left
             int cw = cooldowns.size() * 9 * K;
@@ -179,6 +189,16 @@ public final class CompactHud {
         return top;
     }
 
+    /** A chip of words (WordChips.words, 1.5x) in a digit row, widened to fit with 4 px each side; key: a tab on its top
+     *  edge from the text's left (while the slot numbers show), or null. */
+    private static void wordChip(GuiGraphics g, List<Chip> chips, String words, int row, String key, int y0) {
+        int tw = WordChips.wordsWidth(words), w = Math.max(CHIP_W, tw + 8 * K);
+        chips.add(new Chip(w, x -> {
+            WordChips.words(g, words, row, x + (w - tw) / 2, y0);
+            if (key != null) WordChips.key(g, key, x + (w - tw) / 2, y0);
+        }));
+    }
+
     /** A small floating iron plate at (x, y) texels, w wide (the instrument plate's piece, its caps kept). */
     private static void floatPlate(GuiGraphics g, int x, int y, int w) {
         int cap = 4 * K;
@@ -186,24 +206,6 @@ public final class CompactHud {
         g.blit(PARTS, x, y, cap, IPLATE_H, IPLATE_U, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
         g.blit(PARTS, x + cap, y, w - 2 * cap, IPLATE_H, IPLATE_U + cap, OVER_V, IPLATE_W - 2 * cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
         g.blit(PARTS, x + w - cap, y, cap, IPLATE_H, IPLATE_U + IPLATE_W - cap, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
-    }
-
-    /** The jetpack chip: the hydrogen left (percent, no sign) in the digits' pixel font at the follower count's size
-     *  (1.5x), coloured by the mode (N green, V orange, H cyan, D red). */
-    private static String jetPercent(GearStatus.Jet jet) { return String.valueOf(Math.round(jet.frac() * 100)); }
-
-    /** The chip's content width in texels. */
-    private static int jetWidth(GearStatus.Jet jet) { return (int) Math.round(digitsWidth(jetPercent(jet)) * 1.5); }
-
-    /** The jetpack chip's content at (x, y) texels, one plate cell tall. */
-    private static void jetChip(GuiGraphics g, GearStatus.Jet jet, int x, int y) {
-        String t = jetPercent(jet);
-        var pose = g.pose();
-        pose.pushPose();
-        pose.translate(x, y + 4 * K, 0);
-        pose.scale(1.5f, 1.5f, 1);
-        digits(g, t, 0, -DIGIT_H / 2, t.length(), jetRow(jet.mode()), jetRow(jet.mode()));
-        pose.popPose();
     }
 
     /** A dial face from the atlas with its hand at angle a (radians, clockwise from up). */
@@ -316,6 +318,7 @@ public final class CompactHud {
         double ox = f.ends.offhand + 1, oyItem = offhandY(f) + 1 - 50;
         pose.translate(ox - Math.floor(ox), oyItem - Math.floor(oyItem), 0);
         slotItem(g, mc, p, p.getOffhandItem(), cx + (int) Math.floor(ox), bottom + (int) Math.floor(oyItem), 10);
+        SlotBadges.slot(g, p, p.getOffhandItem(), cx + (int) Math.floor(ox), bottom + (int) Math.floor(oyItem));
         pose.popPose();
         HudEffects.corner(g, p, f.gear, cx, bottom, scale, g.guiWidth());   // the config's default; the rail is drawn above
         // The bar is about 31 px tall: later HUD layers (mod texts, Create's prompts) stack above it.
@@ -338,11 +341,12 @@ public final class CompactHud {
         part(g, SOCKET_U, 0, 18 * K, 18 * K, x(ux), y(uy));
         if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(ux), y(uy));
     }
-    /** The hotbar's items at vanilla's exact spots (GUI px), then the attack cooldown's veil over the selected one, then
-     *  the slot numbers when shown (HudFrame.slotNums). */
+    /** The hotbar's items at vanilla's exact spots (GUI px), then the attack cooldown's veil over the selected one, the
+     *  weapons' ammo and mode items' modes (SlotBadges), then the slot numbers when shown (HudFrame.slotNums). */
     static void hotbarItems(GuiGraphics g, Minecraft mc, LocalPlayer p, Float attack, int cx, int bottom, boolean numbers) {
         for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
         if (attack != null) attackVeil(g, cx - 88 + 20 * p.getInventory().selected, bottom - 19, attack);
+        SlotBadges.hotbar(g, p, cx, bottom);   // ammo and modes bottom right, the acting slot's key on its bottom left corner
         if (numbers) slotNumbers(g, cx, bottom);
     }
 

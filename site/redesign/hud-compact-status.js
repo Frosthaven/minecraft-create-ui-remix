@@ -137,6 +137,30 @@ function ccSlotNumbers(g, s) {
   }
 }
 
+/** A weapon's ammo or a Mekanism mode item's mode on its slot (the game: SlotBadges / SlotRead), in the slot numbers'
+ *  style: one line bottom right (opposite the number), always while in the hotbar or offhand; ammo white, low (a quarter
+ *  or less) orange, none red; a mode white (the bucket mode ON green, OFF white; the Disassembler's OFF grey); an item with ammo and a mode (the Electric Bow) shows its ammo. Always
+ *  (not only with the slot numbers), the held items (selected slot, offhand) show their key at the slot numbers' size on the socket's bottom
+ *  left corner (from its left edge, the outline's bottom on its bottom edge: never below the bar). Every badge at the slot numbers' size
+ *  (CC_SLOT_BADGE_F, the game's SlotBadges.F), the badge's corner on the socket's border art (CC_SLOT_BADGE_EDGE); only a
+ *  text too wide for the socket at it (the gatling's "100/100"; at most "999/999": each number caps at 999) shrinks to
+ *  span the socket. b: { text, row, key } (rows 'white' | 'dim' | 'green' | 'orange' | 'red'); (x, y): the item's top left. */
+const CC_SLOT_INK = { white: '#ffffff', dim: '#9aa3ad', green: '#62e07a', orange: '#ffa040', red: '#ff5a4e' };   // the jetpack's NORMAL, VECTOR and DISABLED rows (CC_JET)
+const CC_SLOT_BADGE_EDGE = 16.5;   // glyphs to 0.5 past the item's right and bottom edges: the outline on the socket's border
+const CC_SLOT_BADGE_F = 1;   // the slot numbers' size; a text too wide for the socket at it shrinks to span it
+function ccSlotBadge(g, s, b, x, y, keyHere) {
+  if (!b) return;
+  const k = CC_SLOT_NUM.k, line = 5 * k, F = CC_SLOT_BADGE_F;
+  const key = keyHere && b.key ? b.key : null;   // always, not only with the slot numbers
+  const right = x + CC_SLOT_BADGE_EDGE, w = ccNumberWidth(b.text, k), f = Math.min(F, (right - x + 0.25) / w);
+  ccOutlinedNumber(g, b.text, right - w * f, y + CC_SLOT_BADGE_EDGE - line * f, CC_SLOT_INK[b.row || 'white'], k * f);
+  if (key) ccOutlinedNumber(g, key, x - 1, y + 17 - k - line, '#ffffff', k);   // the socket's bottom left corner, the outline's bottom on its bottom edge
+}
+/** Every hotbar slot's badge (s.slotBadges[i]). */
+function ccSlotBadges(g, s) {
+  for (let i = 0; i < 9; i++) { const [x, y] = CC.slot(i); ccSlotBadge(g, s, (s.slotBadges || [])[i], x + 1, y + 1, i === s.slot); }   // the held one's key
+}
+
 /** Absorption: gold segments from the health's end, as far as they fit (the number gives the rest). */
 function ccAbsorb(g, s, [x, y, w, h], max) {
   if (!s.absorb) return;

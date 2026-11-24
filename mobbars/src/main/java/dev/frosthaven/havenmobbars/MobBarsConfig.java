@@ -15,6 +15,7 @@ public final class MobBarsConfig {
     public static final ModConfigSpec.EnumValue<When> NOT_HOSTILE_WHEN;
     public static final ModConfigSpec.BooleanValue FRIENDLY_PLAYERS;
     public static final ModConfigSpec.BooleanValue HOSTILE_PLAYERS;
+    public static final ModConfigSpec.BooleanValue ARMOUR;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -36,6 +37,8 @@ public final class MobBarsConfig {
                 .translation("haven_mob_health_bars.config.friendly_players").define("friendlyPlayers", true);
         HOSTILE_PLAYERS = b.comment("Bars on players who hit any player in the last 30 seconds (magenta), whatever the friendly players setting.")
                 .translation("haven_mob_health_bars.config.hostile_players").define("hostilePlayers", true);
+        ARMOUR = b.comment("The worn armour's durability left as the bar's bottom strip (armour slots, horse, wolf and Drekki barding), when the mob wears damageable armour. Worn armour counts as damaged for notHostileWhen.")
+                .translation("haven_mob_health_bars.config.armour").define("armourDurability", true);
         SPEC = b.build();
     }
 

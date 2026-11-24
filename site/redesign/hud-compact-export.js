@@ -13,12 +13,15 @@
 //     (0, 236) wing casing 32x4 (clear of the selection cell's rows 0..23); (0, 26) XP casing 177x3.
 //     (0, 30 + 5 k) full wing meters (the game crops their inner 0.5-inset area), WING_LIQUIDS;
 //     (0, 112 + 4 k) full XP pipes, XP_LIQUIDS.
-//     (0, 140 + 4 r) digits "0123456789/:+smh" at 0.625, 3.5 apart (m is 5 wide): white, dim, green, black, red, cyan
-//     (MekaSuit), buff, debuff (effect times: the kind's tint), then the jetpack modes' colours normal, vector, hover, disabled (rows 8 to 11).
+//     (0, 140 + 4 r) digits "0123456789/:+smhA..Z" at 0.625, 6 apart (m, M and W 5 wide, N 4): white, dim, green,
+//     black, red, cyan (MekaSuit), buff, debuff (effect times: the kind's tint), then the jetpack modes' colours
+//     normal, vector, hover, disabled (rows 8 to 11; the chip's mode word).
+//     (0, 242 + 4 r) key punctuation ";',.-=[]\\`" at 0.625, 6 apart: white, black (key tabs only; CompactAtlas.KEY_GLYPHS).
 //     (180, 20 + 3.5 r) digits "0123456789/:+" at 0.6, 3 apart, TINTS rows (meter and orb numbers, the tank time).
 //     (180, 76 + 5 r) the same at CC_LEVEL.k (0.85, the level): green, dim, black.
 //     (0, 190) follower plate 24x9; gear row centred (46, 196); groove (80, 190) 32x4; dash cog centred (129, 199);
-//     effect frames 10x10 at (140|152|164|176, 190) (buff, debuff, ambient, MekaSuit and fuelled gear); overlays at y 210 (see compactExports).
+//     effect frames 10x10 at (140|152|164|176, 190) (buff, debuff, ambient, MekaSuit and fuelled gear); overlays at
+//     y 210 (see compactExports).
 //   orbs (384 x 320): orb pieces centred in cells. Small cells (32 x 32): cell n centred at (28 + 32 (n % 11),
 //     34.5 + 32 floor(n / 11)), ORB_CELLS. Ring cells (48 x 48): centred at (28 + 64 m, 290.5), RING_CELLS. Centres are
 //     28 and 2.5 modulo 32, so the material textures (256 px tiles) line up with the page's.
@@ -27,8 +30,9 @@ const CCX = {
   wingLiquids: ['blood', 'poison', 'wither', 'frozen', 'absorb', 'broth', 'hunger', 'saturation', 'mount', 'irons', 'ars',
     'armor', 'air', 'tank', 'flamingo', 'hull'],
   xpLiquids: ['xp', 'jump', 'cooldown', 'cast', 'train', 'engine'],
-  digits: '0123456789/:+smh', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0', CC_EFFECT_INK.gear, CC_EFFECT_INK.buff, CC_EFFECT_INK.debuff,
+  digits: '0123456789/:+smhABCDEFGHIJKLMNOPQRSTUVWXYZ', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0', CC_EFFECT_INK.gear, CC_EFFECT_INK.buff, CC_EFFECT_INK.debuff,
     CC_JET.N, CC_JET.V, CC_JET.H, CC_JET.D],
+  keyGlyphs: ";',.-=[]\\`",
   glyphs: '0123456789/:+',
   tints: ['blood', 'poison', 'wither', 'frozen', 'broth', 'hunger', 'mount', 'irons', 'ars', 'armor', 'air', 'tank', 'flamingo', 'hull', 'black'],
   levelRows: ['#80ff20', '#3a5a2a', '#000000'],
@@ -172,7 +176,8 @@ function compactExports() {
   };
   CCX.wingLiquids.forEach((n, k) => fullMeter(0, 30 + 5 * k, MW, 4, n, 10));
   CCX.xpLiquids.forEach((n, k) => fullMeter(0, 112 + 4 * k, CC.xp.x1 - CC.xp.x0, CC.xp.h, n, 18));
-  CCX.digitRows.forEach((col, r) => [...CCX.digits].forEach((ch, k) => ccNumber(g, ch, 3.5 * k, 140 + 4 * r, col, null, 0.625)));
+  CCX.digitRows.forEach((col, r) => [...CCX.digits].forEach((ch, k) => ccNumber(g, ch, 6 * k, 140 + 4 * r, col, null, 0.625)));
+  ['#ffffff', '#000000'].forEach((col, r) => [...CCX.keyGlyphs].forEach((ch, k) => ccNumber(g, ch, 6 * k, 242 + 4 * r, col, null, 0.625)));
   CCX.tints.forEach((n, r) => [...CCX.glyphs].forEach((ch, k) => ccNumber(g, ch, 180 + 3 * k, 20 + 3.5 * r, ccxTint(n), null, 0.6)));
   CCX.levelRows.forEach((col, r) => [...CCX.glyphs].forEach((ch, k) => ccNumber(g, ch, 180 + 3 * k, 76 + 5 * r, col === '#000000' ? 'rgba(0,0,0,0.9)' : col, null, CC_LEVEL.k)));
   // The follower plate: the bar's plate style, a ghost at its left.

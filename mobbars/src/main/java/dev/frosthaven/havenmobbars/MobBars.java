@@ -20,7 +20,8 @@ import org.joml.Matrix4f;
 /**
  * Floating health bars (designed on the redesign page mob-bars.html): a flat, dim bar above every living entity within
  * {@link MobBarsConfig#RANGE} blocks (and the one under the crosshair further out, {@link LookTarget}), facing the camera, coloured by kind (hostile = {@link Enemy}, players, every
- * other mob), with recent damage as a trail of its colour at 50% opacity that waits, then drains.
+ * other mob), with recent damage as a trail of its colour at 50% opacity that waits, then drains. With damageable armour
+ * worn ({@link ArmourWear}), the bottom 25% of the bar is the armour's durability left, in steel grey.
  *
  * Drawn from {@link RenderLivingEvent.Post} into the entity pass's own buffers with the name tag background's render
  * type, like a name tag: Iris shader packs and Sodium handle it as they handle name tags, it is depth-tested (walls
@@ -33,6 +34,8 @@ public final class MobBars {
     private static final float W = 14, H = 1.4f, EDGE = 0.15f, NAME_GAP = 0.04f;   // NAME_GAP: blocks between bar and tag
     private static final int BACK = argb(158, 10, 11, 14), EDGE_COL = argb(179, 0, 0, 0);
     private static final int HOSTILE = 0xa83a3a, NOT_HOSTILE = 0x5c9a46, PLAYER = 0x4a76b8, ATTACKER = 0xa8409a;
+    private static final int ARMOUR = 0xff9aa1a8;   // the armour durability strip: a neutral steel grey
+    private static final float ARMOUR_SHARE = 0.25f;   // the strip's share of the bar's height (the bar keeps its size)
     private static final long ATTACKER_MS = 30_000;   // a player who hit any player stays magenta this long
     private static final Map<Player, Long> ATTACKERS = new WeakHashMap<>();
     private static final java.util.Set<Integer> LOGGED_KINDS = new java.util.HashSet<>();   // a first-draw line per colour
@@ -53,7 +56,7 @@ public final class MobBars {
     private static final Map<LivingEntity, Trail> TRAILS = new WeakHashMap<>();
     private static Method shadowPass;   // Iris: IrisApi.getInstance().isRenderingShadowPass(), when Iris is installed
     private static Object irisApi;
-    private static boolean irisChecked, loggedFar;
+    private static boolean irisChecked, loggedFar, loggedArmour;
 
     private MobBars() {}
 
@@ -75,11 +78,14 @@ public final class MobBars {
         Minecraft mc = Minecraft.getInstance();
         LivingEntity e = event.getEntity();
         boolean on = MobBarsConfig.ENABLED.get();
-        LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {} ({}), friendly players {}, hostile players {})",
+        LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {} ({}), friendly players {}, hostile players {}, armour durability {})",
                 on ? "on" : "off", MobBarsConfig.RANGE.get(), MobBarsConfig.HOSTILE.get(),
-                MobBarsConfig.NOT_HOSTILE.get(), MobBarsConfig.NOT_HOSTILE_WHEN.get(), MobBarsConfig.FRIENDLY_PLAYERS.get(), MobBarsConfig.HOSTILE_PLAYERS.get());
+                MobBarsConfig.NOT_HOSTILE.get(), MobBarsConfig.NOT_HOSTILE_WHEN.get(), MobBarsConfig.FRIENDLY_PLAYERS.get(), MobBarsConfig.HOSTILE_PLAYERS.get(),
+                MobBarsConfig.ARMOUR.get());
         if (!on || mc.player == null || mc.options.hideGui || e == mc.player || e instanceof ArmorStand) return;
         if (e.hasIndirectPassenger(mc.player)) return;   // the mount the player rides (and any mount under it)
+        // only entities that are in the world: a mob held with Carry On is drawn as a copy that is not, so no bar on it
+        if (mc.level == null || mc.level.getEntity(e.getId()) != e) return;
         if (e.isInvisibleTo(mc.player) || e.isDeadOrDying() || inShadowPass()) return;
         int range = MobBarsConfig.RANGE.get();
         boolean far = e.distanceToSqr(mc.player) > (double) range * range;
@@ -101,8 +107,13 @@ public final class MobBars {
         }
         float max = Math.max(1, e.getMaxHealth()), hp = Math.max(0, Math.min(max, e.getHealth()));
         float trail = trail(e, hp);
-        // Other mobs WHEN_DAMAGED: no bar at full health (once the damage trail has drained).
-        if (col == NOT_HOSTILE && MobBarsConfig.NOT_HOSTILE_WHEN.get() == MobBarsConfig.When.WHEN_DAMAGED && hp >= max && trail <= hp) return;
+        // Worn armour's durability left (ArmourWear: once per client tick per entity), NONE without damageable armour.
+        float armour = MobBarsConfig.ARMOUR.get() ? ArmourWear.of(e, mc.level.getGameTime()) : ArmourWear.NONE;
+        // Other mobs WHEN_DAMAGED: no bar at full health (once the damage trail has drained) and full armour.
+        if (col == NOT_HOSTILE && MobBarsConfig.NOT_HOSTILE_WHEN.get() == MobBarsConfig.When.WHEN_DAMAGED && hp >= max && trail <= hp
+                && (armour == ArmourWear.NONE || armour >= 1)) return;
+        if (armour != ArmourWear.NONE && !loggedArmour) { loggedArmour = true; LOG.once("armour", "first armour strip drawn: {} ({}% durability left)",
+                e.getType().getDescriptionId(), Math.round(armour * 100)); }
 
         if (far && !loggedFar) { loggedFar = true; LOG.once("far", "first bar on a looked-at entity beyond the range: {} ({} blocks away)", e.getType().getDescriptionId(),
                 String.format("%.1f", Math.sqrt(e.distanceToSqr(mc.player)))); }
@@ -127,6 +138,8 @@ public final class MobBars {
         int light = LightTexture.FULL_BRIGHT;
         float x0 = -W / 2, x1 = W / 2, y0 = -H / 2, y1 = H / 2;
         float fx = x0 + W * hp / max, tx = x0 + W * Math.max(hp, trail) / max;
+        // With worn armour the bar splits: health on the top 75%, the armour's durability left on the bottom 25%.
+        float hy = armour == ArmourWear.NONE ? y1 : y1 - H * ARMOUR_SHARE;
         // Coplanar pieces that never overlap (no z-fighting, no doubled alpha): the edge as four strips, then the
         // fill (its top strip a little lighter), the trail and the empty backing side by side.
         quad(vc, m, x0 - EDGE, y0 - EDGE, x1 + EDGE, y0, EDGE_COL, light);
@@ -135,10 +148,15 @@ public final class MobBars {
         quad(vc, m, x1, y0, x1 + EDGE, y1, EDGE_COL, light);
         if (fx > x0) {
             quad(vc, m, x0, y0, fx, y0 + EDGE, 0xff000000 | mix(col, 0xffffff, 0.08f), light);
-            quad(vc, m, x0, y0 + EDGE, fx, y1, 0xff000000 | col, light);
+            quad(vc, m, x0, y0 + EDGE, fx, hy, 0xff000000 | col, light);
         }
-        if (tx > fx) quad(vc, m, fx, y0, tx, y1, TRAIL_OVER_BACK.applyAsInt(col), light);
-        if (x1 > tx) quad(vc, m, tx, y0, x1, y1, BACK, light);
+        if (tx > fx) quad(vc, m, fx, y0, tx, hy, TRAIL_OVER_BACK.applyAsInt(col), light);
+        if (x1 > tx) quad(vc, m, tx, y0, x1, hy, BACK, light);
+        if (armour != ArmourWear.NONE) {
+            float ax = x0 + W * armour;
+            if (ax > x0) quad(vc, m, x0, hy, ax, y1, ARMOUR, light);
+            if (x1 > ax) quad(vc, m, ax, hy, x1, y1, BACK, light);
+        }
         pose.popPose();
     }
 
