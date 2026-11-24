@@ -6,7 +6,7 @@ import static dev.frosthaven.havencreateuiux.hud.HudDraw.*;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The jetpack chip's words (its mode key is a key hint, KeyHintsHud) and key names for the key hint caps: text in the digits' pixel font at the follower count's size (1.5x), one plate
+ * Chip words and key names for the key hint caps: text in the digits' pixel font at the follower count's size (1.5x), one plate
  * cell tall. Positions are texels; x is the content's left edge, y the plate's top. Every chip's text is at most
  * {@link ChipText#MAX} characters (the key cap does not count): {@link #fit} cuts a longer one and logs it once.
  */
@@ -34,19 +34,6 @@ final class WordChips {
         String out = ChipText.cut(s);
         if (out != null && !out.equals(s)) HudLog.once("chip-cut:" + s, "chip text \"{}\" is longer than {} characters, shown as \"{}\"", s, ChipText.MAX, out);
         return out;
-    }
-
-    // ---- Mekanism jetpack: the mode's word in its colour (REG green, VECT orange, HOVR cyan, OFF red), then the
-    // hydrogen left (percent, no sign) in white.
-
-    private static String jetWord(GearStatus.Jet jet) { return fit(ChipText.jet(jet.mode())); }
-    private static String jetPercent(GearStatus.Jet jet) { return String.valueOf(Math.round(jet.frac() * 100)); }
-
-    static int jetWidth(GearStatus.Jet jet) { return width(jetWord(jet)) + GAP + width(jetPercent(jet)); }
-
-    static void jet(GuiGraphics g, GearStatus.Jet jet, int x, int y) {
-        x += word(g, jetWord(jet), jetRow(jet.mode()), x, y) + GAP;
-        word(g, jetPercent(jet), WHITE, x, y);
     }
 
     /** A key's short name in the digit strip (0-9, A-Z, +), from its locale-free name (key.keyboard.left.alt,

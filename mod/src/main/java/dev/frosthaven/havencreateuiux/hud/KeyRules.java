@@ -24,8 +24,11 @@ import net.minecraft.world.phys.EntityHitResult;
  */
 final class KeyRules {
     /** One action: its keys pressed together (in order), its words, and a state tag (fire mode, ammo, mode) or null. */
-    record Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either) {
-        Row(List<KeyMapping> keys, String label, String state, boolean red) { this(keys, label, state, red, false); }
+    /** off: a control shown although it cannot act now (its words red), so every control of a device stays in view. */
+    record Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either, int tint, boolean off) {
+        Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either, int tint) { this(keys, label, state, red, either, tint, false); }
+        Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either) { this(keys, label, state, red, either, -1, false); }
+        Row(List<KeyMapping> keys, String label, String state, boolean red) { this(keys, label, state, red, false, -1, false); }
     }
     /** A heading (the item's or vehicle's name) and its rows. */
     record Group(String title, List<Row> rows) {}
@@ -177,7 +180,8 @@ final class KeyRules {
     }
 
     /** The Escape menu's global keys (stateful key hints' place): the map (JourneyMap's key or Haven Compat's second
-     *  one, either), a waypoint, chat, the social menu, the inventory, and the worn backpack while one is worn. */
+     *  one, either), a waypoint, chat, the social menu, the inventory, swap offhand, Block Factory's dodge roll, and
+     *  the worn backpack while one is worn. */
     static List<Group> global() {
         List<Row> rows = new ArrayList<>();
         List<KeyMapping> map = new ArrayList<>();
@@ -187,6 +191,8 @@ final class KeyRules {
         add(rows, "Chat", "key.chat");
         add(rows, "Social menu", "key.socialInteractions");
         add(rows, "Inventory", "key.inventory");
+        add(rows, "Swap offhand", "key.swapOffhand");
+        add(rows, "Dodge roll", "key.block_factorys_bosses.dodge_roll");   // Block Factory's Bosses (no row without it)
         LocalPlayer p = Minecraft.getInstance().player;
         if (p != null && backpack(p)) add(rows, "Worn backpack", "key.sophisticatedbackpacks.open_backpack");
         if (dev.frosthaven.havencreateuiux.UiConfig.HOTBAR_NUMBERS.get() == dev.frosthaven.havencreateuiux.UiConfig.HotbarNumbers.HOLD)
@@ -352,23 +358,39 @@ final class KeyRules {
         for (int i = 0; i < 4; i++) {
             ItemStack s = p.getItemBySlot(ARMOR[i]);
             if (s.isEmpty()) continue;
-            if (mekanismMode(s, ARMOR[i])) {
+            // A MekaSuit piece always shows its mode key (red words while none of its modules has a mode); other Mekanism
+            // gear while it takes the key (IModeItem.supportsSlotType: Free Runners, the jetpack)
+            boolean meka = Reflect.is(s.getItem(), "mekanism.common.item.gear.ItemMekaSuitArmor"), hasMode = mekanismMode(s, ARMOR[i]);
+            if (hasMode || meka) {
                 String state = null;
-                if (ARMOR[i] == EquipmentSlot.CHEST) {
-                    GearStatus.Jet jet = GearStatus.jetpack(p);
-                    if (jet != null) state = ChipText.jet(jet.mode());
-                }
+                GearStatus.Jet jet = ARMOR[i] == EquipmentSlot.CHEST ? GearStatus.jetpack(p) : null;
+                if (jet != null) state = jet.name().toUpperCase(java.util.Locale.ROOT);   // Mekanism's own word for the mode
+                else if (hasMode) state = modeName(s);   // Free Runners and other mode gear: the mode it is in
+                int before = rows.size();
                 add(rows, ARMOR_WORD[i], state, false, ARMOR_KEY[i]);
+                if (rows.size() > before && (jet != null || !hasMode)) {   // the jetpack's mode word in its colour; a piece without a mode: red words
+                    Row r = rows.remove(rows.size() - 1);
+                    rows.add(new Row(r.keys(), r.label(), r.state(), false, r.either(), jet != null ? CompactAtlas.jetRow(jet.mode()) : -1, !hasMode));
+                }
                 if (ARMOR[i] == EquipmentSlot.CHEST) jetpackFlight(rows, p);
-                if (title == null || ARMOR[i] == EquipmentSlot.CHEST) title = s.getHoverName().getString();
+                if (meka) title = "MekaSuit";   // the suit, not its chest piece's name ("MekaSuit Bodyarmor")
+                else if (title == null || ARMOR[i] == EquipmentSlot.CHEST) title = s.getHoverName().getString();
             }
             modules |= Reflect.is(s.getItem(), "mekanism.common.content.gear.IModuleContainerItem");
             if (ARMOR[i] == EquipmentSlot.CHEST && id(s).equals("ad_astra:jet_suit")) {
+                // its flight toggle, then flying on jump with the energy left (red EMPTY and red words at none)
+                Float energy = GearStatus.jetSuit(p);
                 add(rows, "Suit flight", "key.ad_astra.toggle_suit_flight");
+                boolean dry = energy != null && energy <= 0f;
+                control(rows, "Fly (hold)", energy == null ? null : fuel(energy), dry, dry, "key.jump");
                 title = s.getHoverName().getString();
             }
         }
-        if (modules) add(rows, "Modules", "key.mekanism.module_tweaker");
+        if (modules) {   // a MekaSuit's energy on its Modules row: what its modules and modes run on (red EMPTY at none)
+            HudExtras.Suit suit = HudExtras.mekaSuit(p);
+            add(rows, "Modules", suit == null ? null : fuel(suit.frac()), suit != null && suit.frac() <= 0f, "key.mekanism.module_tweaker");
+        }
+        for (int i = 0; i < 4; i++) moduleReadouts(rows, p, p.getItemBySlot(ARMOR[i]));
         // elytra: jump while falling starts gliding (LocalPlayer.aiStep: tryToStartFallFlying)
         ItemStack chest = p.getItemBySlot(EquipmentSlot.CHEST);
         if (!p.onGround() && !p.isFallFlying() && !p.getAbilities().flying && chest.canElytraFly(p)) {
@@ -378,16 +400,28 @@ final class KeyRules {
         group(out, title == null ? "Worn" : title, rows);
     }
 
-    /** The worn Mekanism jetpack's flight (JetpackMode): Normal and Vector fly while jump is held; Hover rises on jump and
-     *  sinks on sneak; Disabled: none. An empty tank tags the row red. */
+    /** A fuel or charge left as a state tag: "73%", or EMPTY (shown red) at none. */
+    static String fuel(float frac) { return frac <= 0f ? "EMPTY" : Math.max(1, Math.round(frac * 100)) + "%"; }
+
+    /** The worn Mekanism jetpack's flight (JetpackMode), both controls always shown with the hydrogen left on the first:
+     *  jump flies (Normal, Vector, and rises in Hover), sneak sinks (Hover only). A control the mode or an empty tank
+     *  stops is shown with red words (Row.off), so the controls and the fuel stay in view in every mode. */
     private static void jetpackFlight(List<Row> rows, LocalPlayer p) {
         GearStatus.Jet jet = GearStatus.jetpack(p);
-        if (jet == null || jet.mode() == 'D') return;
-        boolean empty = jet.frac() <= 0f;
-        if (jet.mode() == 'H') {
-            add(rows, "Rise (hold)", empty ? "EMPTY" : null, empty, "key.jump");
-            add(rows, "Sink (hold)", "key.sneak");
-        } else add(rows, "Fly (hold)", empty ? "EMPTY" : null, empty, "key.jump");
+        if (jet == null) return;
+        boolean empty = jet.frac() <= 0f, disabled = jet.mode() == 'D';
+        control(rows, "Fly (hold)", fuel(jet.frac()), empty, disabled || empty, "key.jump");
+        control(rows, "Sink (hold)", null, false, jet.mode() != 'H' || empty, "key.sneak");
+    }
+
+    /** A row that may be off (its words red: the control cannot act now). */
+    private static void control(List<Row> rows, String label, String state, boolean red, boolean off, String... ids) {
+        int before = rows.size();
+        add(rows, label, state, red, ids);
+        if (off && rows.size() > before) {
+            Row r = rows.remove(rows.size() - 1);
+            rows.add(new Row(r.keys(), r.label(), r.state(), r.red(), r.either(), r.tint(), true));
+        }
     }
 
     private static boolean isBackpack(ItemStack s) { return Reflect.is(s.getItem(), "net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackItem"); }
@@ -455,6 +489,23 @@ final class KeyRules {
     }
 
     /** Mekanism's mode key condition: an IModeItem that supports this slot. */
+    /** A MekaSuit piece's module readouts (GearStatus.mekaModules): a row each, the module's name and its readout as a
+     *  tag (red when Mekanism shows it as a warning), on the Module Tweaker's key: modules have no key of their own, they
+     *  are switched there. */
+    private static void moduleReadouts(List<Row> rows, LocalPlayer p, ItemStack s) {
+        for (GearStatus.Readout r : GearStatus.mekaModules(p, s)) add(rows, r.name(), r.text(), r.warning(), "key.mekanism.module_tweaker");
+    }
+
+    /** A Mekanism mode item's current mode by Mekanism's own name (IAttachmentBasedModeItem.getMode: an enum with
+     *  getTextComponent), upper case; null when it has none to read. */
+    private static String modeName(ItemStack s) {
+        Object m = Reflect.call(s.getItem(), "getMode", s);
+        if (m == null) return null;
+        Object t = Reflect.call(m, "getTextComponent");
+        String n = t instanceof net.minecraft.network.chat.Component c ? c.getString() : m instanceof Enum<?> e ? e.name() : null;
+        return n == null ? null : n.toUpperCase(java.util.Locale.ROOT);
+    }
+
     private static boolean mekanismMode(ItemStack s, EquipmentSlot slot) {
         return Reflect.is(s.getItem(), "mekanism.common.item.interfaces.IModeItem") && Reflect.bool(Reflect.call(s.getItem(), "supportsSlotType", s, slot));
     }

@@ -277,3 +277,17 @@ bytecode, lang, tooltips and ponder text per `SCHEMA.md` (blocks) and `SCHEMA2.m
 `data*.jsonl`, `entities*.jsonl`, `items*.jsonl`, `events*.jsonl`; `creative_check.py` lists uses that may need creative.
 `python3 -I keyhints/merge.py` writes the three JSON files and asserts every "when" key is one the readers know: add a
 reader case before a new key. Rows whose condition cannot be written are dropped, not guessed.
+
+### Worn devices, fuel and other mods' HUDs (1.6.0)
+
+- No jetpack chip above the bar. Mekanism's jetpack (also a MekaSuit's jetpack unit): the Chest mode row names the mode
+  in Mekanism's words and its colour (`CompactAtlas.jetRow`); `Fly (hold)` (jump) and `Sink (hold)` (sneak, Hover only)
+  always show, red words when the mode or an empty tank stops them (`Row.off`); the hydrogen is a white `%` tag on Fly
+  (red EMPTY) and a cyan status (the Jetpack item's icon). Ad Astra's Jet Suit: Suit flight, then Fly with its energy.
+- MekaSuit: every piece's mode row (red without a mode module), its energy on Modules, each enabled module's readout
+  (`GearStatus.mekaModules`, Mekanism's own HUD elements) as a row on the Module Tweaker key and as a cyan status.
+- While the bar is active these other HUDs are left out (mixins): Mekanism's jetpack lines, the MekaSuit HUD's battery
+  icons, module icons and compass, Ad Astra's space suit overlay (not in a rocket). Oxygen stays on the breathing meter.
+- The right-side legend draws at `HINTS_SCALE` (0.84) with `GROUP_GAP` between groups; its height and any overlap with
+  JourneyMap's minimap are logged (`key hints: N lines fit`, `the stack's top ... JourneyMap minimap`).
+- `%` is a glyph of the digits strip (key punctuation row, white); regenerate `parts.png` with `tools/hudpack.py`.

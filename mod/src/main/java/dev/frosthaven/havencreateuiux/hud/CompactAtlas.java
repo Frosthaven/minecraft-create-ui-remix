@@ -113,7 +113,7 @@ final class CompactAtlas {
     static int wingLiquidV(String n) { return (30 + 5 * WING_LIQUIDS.indexOf(n)) * K; }
     static int xpLiquidV(String n) { return (112 + 4 * XP_LIQUIDS.indexOf(n)) * K; }
     /** Key punctuation for key tabs (a binding such as ; or '), a strip of its own at (0, 242) in white and black only. */
-    static final String KEY_GLYPHS = ";',.-=[]\\`";
+    static final String KEY_GLYPHS = ";',.-=[]\\`%";   // key punctuation, and % for the key hints' fuel tags (white, black)
     static int digitU(char c) { int k = KEY_GLYPHS.indexOf(c); return 48 * (k >= 0 ? k : DIGITS.indexOf(c)); }   // cells 6 px apart
     /** A character's row: the key strip's white or black for its punctuation, else digitV(row). */
     static int digitV(char c, int row) { return KEY_GLYPHS.indexOf(c) >= 0 ? (242 + (row == BLACK ? 4 : 0)) * K : digitV(row); }

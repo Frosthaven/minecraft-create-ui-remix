@@ -152,6 +152,7 @@ const CC_DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111
   '111100111001111', '111100111101111', '111001010010010', '111101111101111', '111101111001111'];
 CC_DIGITS['/'] = '001001010100100';
 CC_DIGITS[':'] = '000010000010000';
+CC_DIGITS['%'] = '101001010100101';   // a fuel or charge tag in the key hints (white key punctuation row)
 CC_DIGITS['+'] = '000010111010000';
 // Key punctuation for key tabs (the player's binding: Mekanism's item mode ;, its chest mode '), white only (KEY_GLYPHS)
 CC_DIGITS[';'] = '000010000010100'; CC_DIGITS["'"] = '010010010000000'; CC_DIGITS[','] = '000000000010100'; CC_DIGITS['.'] = '000000000000010';

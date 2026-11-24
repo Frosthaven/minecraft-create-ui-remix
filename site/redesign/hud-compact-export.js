@@ -16,7 +16,7 @@
 //     (0, 140 + 4 r) digits "0123456789/:+smhA..Z" at 0.625, 6 apart (m, M and W 5 wide, N 4): white, dim, green,
 //     black, red, cyan (MekaSuit), buff, debuff (effect times: the kind's tint), then the jetpack modes' colours
 //     normal, vector, hover, disabled (rows 8 to 11; the chip's mode word).
-//     (0, 242 + 4 r) key punctuation ";',.-=[]\\`" at 0.625, 6 apart: white, black (key tabs only; CompactAtlas.KEY_GLYPHS).
+//     (0, 242 + 4 r) key punctuation and % ";',.-=[]\\`%" at 0.625, 6 apart: white, black (key caps and state tags; CompactAtlas.KEY_GLYPHS).
 //     (180, 20 + 3.5 r) digits "0123456789/:+" at 0.6, 3 apart, TINTS rows (meter and orb numbers, the tank time).
 //     (180, 76 + 5 r) the same at CC_LEVEL.k (0.85, the level): green, dim, black.
 //     (0, 190) follower plate 24x9; gear row centred (46, 196); groove (80, 190) 32x4; dash cog centred (129, 199);
@@ -32,7 +32,7 @@ const CCX = {
   xpLiquids: ['xp', 'jump', 'cooldown', 'cast', 'train', 'engine'],
   digits: '0123456789/:+smhABCDEFGHIJKLMNOPQRSTUVWXYZ', digitRows: ['#ffffff', '#9aa3ad', '#80ff20', '#000000', '#ffb0a0', CC_EFFECT_INK.gear, CC_EFFECT_INK.buff, CC_EFFECT_INK.debuff,
     CC_JET.N, CC_JET.V, CC_JET.H, CC_JET.D],
-  keyGlyphs: ";',.-=[]\\`",
+  keyGlyphs: ";',.-=[]\\`%",
   glyphs: '0123456789/:+',
   tints: ['blood', 'poison', 'wither', 'frozen', 'broth', 'hunger', 'mount', 'irons', 'ars', 'armor', 'air', 'tank', 'flamingo', 'hull', 'black'],
   levelRows: ['#80ff20', '#3a5a2a', '#000000'],

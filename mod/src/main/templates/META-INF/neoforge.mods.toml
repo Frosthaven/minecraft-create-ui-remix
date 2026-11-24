@@ -33,9 +33,13 @@ config="${mod_id}.sophisticated.mixins.json"
 [[mixins]]
 config="${mod_id}.bosses.mixins.json"
 
-# Targets Mekanism (its jetpack's HUD lines; the instrument plate's chip shows them), so optional.
+# Targets Mekanism (its jetpack's HUD lines and the MekaSuit HUD; the key hints and statuses show them), so optional.
 [[mixins]]
 config="${mod_id}.mekanism.mixins.json"
+
+# Targets Ad Astra (its space suit overlay: oxygen and battery, shown as statuses and key hint tags), so optional.
+[[mixins]]
+config="${mod_id}.adastra.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="neoforge"

@@ -116,8 +116,7 @@ public final class CompactHud {
     private static final int CHIP_W = 21 * K;
 
     /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 px apart): web
-     *  followers (ghost and count), the steampunk armor's clock and compass, the Mekanism jetpack (mode word and
-     *  hydrogen; its mode key is a key hint, KeyHintsHud), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
+     *  followers (ghost and count), the steampunk armor's clock and compass, the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
      *  top: the plates' top (units; the action bar: over its centre). Returns it, or NaN when there is none. */
     static double instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta, double top) {
         restoreBlend();
@@ -147,11 +146,6 @@ public final class CompactHud {
                 double fwd = -Math.sin(yaw) * dx + Math.cos(yaw) * dz, right = -Math.cos(yaw) * dx - Math.sin(yaw) * dz;
                 dial(g, COMPASS_U, x + 3 * K / 2 + 9 * K, y0, (float) Math.atan2(right, fwd), 0xFFD84030);
             }));
-        }
-        GearStatus.Jet jet = GearStatus.jetpack(p);
-        if (jet != null) {
-            int tw = WordChips.jetWidth(jet), jw = Math.max(CHIP_W, tw + 8 * K);   // 4 px each side; its key is a key hint
-            chips.add(new Chip(jw, x -> WordChips.jet(g, jet, x + (jw - tw) / 2, y0)));
         }
         var cooldowns = HudExtras.artifactCooldowns(p, delta);
         if (!cooldowns.isEmpty()) {   // every worn Artifact on cooldown in one chip: its item, shaded by the time left

@@ -14,9 +14,6 @@ final class ChipText {
     /** The RELOAD chip's word (the held gun is empty). */
     static final String RELOAD = "LOAD";
 
-    /** Mekanism jetpack modes by their letter (N normal, V vector, H hover, D disabled). */
-    private static final Map<Character, String> JET = Map.of('N', "REG", 'V', "VECT", 'H', "HOVR", 'D', "OFF");
-
     /** NTGL fire mode id paths that do not read well as their first 4 letters. */
     private static final Map<String, String> FIRE = Map.of("multi", "MULT");
 
@@ -32,8 +29,6 @@ final class ChipText {
             Map.entry("cgs:rocket", "RCKT"), Map.entry("cgs:rocket_small", "MINI"));
 
     private ChipText() {}
-
-    static String jet(char mode) { return JET.getOrDefault(mode, JET.get('N')); }
 
     /** A fire mode by its id's path ("auto", "semi", "multi"). */
     static String fireMode(String path) { return FIRE.getOrDefault(path, letters(path)); }
