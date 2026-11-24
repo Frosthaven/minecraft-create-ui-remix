@@ -15,8 +15,8 @@ import net.neoforged.neoforge.capabilities.ItemCapability;
  * same cyan kind, told apart by the worn item's icon and the tooltip's name. Each is
  * read the way the mod's own HUD or item bar reads it (bytecode of the 1.21.1 jars in the pack):
  * <ul>
- *   <li>Mekanism jetpack: hydrogen, its chemical tank 0 (Capabilities.CHEMICAL's item capability; its HUD's rule).</li>
- *   <li>MekaSuit chestplate with the jetpack unit enabled: hydrogen, tank 0 (ModuleJetpackUnit's HUD element).</li>
+ *   <li>Mekanism jetpack (also a MekaSuit's jetpack unit): not a status; its mode and hydrogen are the instrument
+ *   plate's chip ({@link #jetpack}).</li>
  *   <li>Ad Astra Jet Suit (full set): its energy (JetSuitItem.getEnergy). The Jet Suit has no separate fuel.</li>
  *   <li>Create Jetpack in flight: the backtank air it drains out of water ({@link HudStats#jetpackFlight}).</li>
  * </ul>
@@ -43,11 +43,6 @@ final class GearStatus {
         if (fl != null) out.add(new Gear("create_jetpack", fl.air() / fl.cap(), Component.literal("Jetpack air (backtank)"),
                 Component.literal((int) fl.air() + " s of " + (int) fl.cap() + " s"), fl.icon()));
         try {
-            mekanism(p, out);
-        } catch (RuntimeException | LinkageError e) {
-            HudLog.error("gear-mekanism", "reading Mekanism gear failed (its statuses left out)", e);
-        }
-        try {
             adAstra(p, out);
         } catch (RuntimeException | LinkageError | ReflectiveOperationException e) {
             HudLog.error("gear-adastra", "reading Ad Astra suits failed (their statuses left out)", e);
@@ -61,30 +56,25 @@ final class GearStatus {
 
     // --- Mekanism -------------------------------------------------------------------------------------------------
 
-    private static void mekanism(Player p, List<Gear> out) {
-        Class<?> jetpack = Reflect.cls("mekanism.common.item.gear.ItemJetpack"),
-                suit = Reflect.cls("mekanism.common.item.gear.ItemMekaSuitArmor");
-        if (jetpack == null) return;
-        for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.HEAD}) {
-            ItemStack s = p.getItemBySlot(slot);
-            Object item = s.getItem();
-            if (jetpack.isInstance(item)) tank(s, "mek_jetpack", "Jetpack hydrogen", out);
-            else if (suit.isInstance(item) && slot == EquipmentSlot.CHEST && jetpackUnit(item, s))
-                tank(s, "meka_jetpack", "MekaSuit jetpack hydrogen", out);
+    /** The worn Mekanism jetpack (a jetpack, or a MekaSuit chestplate with its jetpack unit on): its mode's letter
+     *  (D disabled, V vector, N normal, H hover) and the hydrogen left, for the instrument plate's chip; null without one. */
+    record Jet(char mode, float frac) {}
+
+    static Jet jetpack(Player p) {
+        try {
+            if (!(Reflect.callStatic("mekanism.common.item.interfaces.IJetpackItem", "getPrimaryJetpack", p) instanceof ItemStack s) || s.isEmpty()) return null;
+            Object mode = Reflect.call(s.getItem(), "getJetpackMode", s);
+            long[] c = chemical(s);
+            if (!(mode instanceof Enum<?> m) || c == null) return null;
+            char letter = switch (m.name()) { case "DISABLED" -> 'D'; case "VECTOR" -> 'V'; case "HOVER" -> 'H'; default -> 'N'; };
+            HudLog.changed("jetpack", s.getItem() + " " + letter, "jetpack chip: {} in mode {} ({})", s.getItem(), m.name(), letter);
+            return new Jet(letter, (float) c[0] / c[1]);
+        } catch (RuntimeException | LinkageError e) {
+            HudLog.error("gear-jetpack", "reading the Mekanism jetpack failed (no chip)", e);
+            return null;
         }
     }
 
-    /** The MekaSuit chestplate's jetpack unit is installed and enabled (isModuleEnabled(stack, JETPACK_UNIT)). */
-    private static boolean jetpackUnit(Object item, ItemStack s) {
-        Object unit = Reflect.getStatic("mekanism.common.registries.MekanismModules", "JETPACK_UNIT");
-        return unit != null && Reflect.bool(Reflect.call(item, "isModuleEnabled", s, unit));
-    }
-
-    /** A Mekanism item's chemical tank 0 (amount / capacity), as its HUD reads it. */
-    private static void tank(ItemStack s, String id, String name, List<Gear> out) {
-        long[] c = chemical(s);
-        if (c != null) out.add(new Gear(id, (float) c[0] / c[1], Component.literal(name), amount(c[0], c[1], "mB"), s));
-    }
     /** A Mekanism item's chemical tank 0: {amount, capacity} (mB), or null. */
     static long[] chemical(ItemStack s) {
         Object multi = Reflect.getStatic("mekanism.common.capabilities.Capabilities", "CHEMICAL");

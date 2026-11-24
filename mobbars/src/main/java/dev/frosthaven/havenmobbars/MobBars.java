@@ -75,10 +75,11 @@ public final class MobBars {
         Minecraft mc = Minecraft.getInstance();
         LivingEntity e = event.getEntity();
         boolean on = MobBarsConfig.ENABLED.get();
-        LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {}, friendly players {}, hostile players {})",
+        LOG.changed("enabled", on, "mob health bars {} (range {} blocks; hostile {}, other mobs {} ({}), friendly players {}, hostile players {})",
                 on ? "on" : "off", MobBarsConfig.RANGE.get(), MobBarsConfig.HOSTILE.get(),
-                MobBarsConfig.NOT_HOSTILE.get(), MobBarsConfig.FRIENDLY_PLAYERS.get(), MobBarsConfig.HOSTILE_PLAYERS.get());
+                MobBarsConfig.NOT_HOSTILE.get(), MobBarsConfig.NOT_HOSTILE_WHEN.get(), MobBarsConfig.FRIENDLY_PLAYERS.get(), MobBarsConfig.HOSTILE_PLAYERS.get());
         if (!on || mc.player == null || mc.options.hideGui || e == mc.player || e instanceof ArmorStand) return;
+        if (e.hasIndirectPassenger(mc.player)) return;   // the mount the player rides (and any mount under it)
         if (e.isInvisibleTo(mc.player) || e.isDeadOrDying() || inShadowPass()) return;
         int range = MobBarsConfig.RANGE.get();
         boolean far = e.distanceToSqr(mc.player) > (double) range * range;
@@ -100,6 +101,8 @@ public final class MobBars {
         }
         float max = Math.max(1, e.getMaxHealth()), hp = Math.max(0, Math.min(max, e.getHealth()));
         float trail = trail(e, hp);
+        // Other mobs WHEN_DAMAGED: no bar at full health (once the damage trail has drained).
+        if (col == NOT_HOSTILE && MobBarsConfig.NOT_HOSTILE_WHEN.get() == MobBarsConfig.When.WHEN_DAMAGED && hp >= max && trail <= hp) return;
 
         if (far && !loggedFar) { loggedFar = true; LOG.once("far", "first bar on a looked-at entity beyond the range: {} ({} blocks away)", e.getType().getDescriptionId(),
                 String.format("%.1f", Math.sqrt(e.distanceToSqr(mc.player)))); }

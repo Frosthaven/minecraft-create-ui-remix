@@ -388,6 +388,7 @@ function compactHud(s, font) {
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);   // its chips over the ring, glowing
   ccAttackShade(g, s, [sx, sy]);   // over the item (the game: after the items)
+  ccSlotNumbers(g, s);   // over the items and the attack veil (the game: last of the hotbar)
   ccInstruments(g, s);
   side(offSide, () => ccHardcore(g, s));
   ccEffects(g, s, s.effectIcons || {});   // the rail above the left wing, or the screen's top left corner

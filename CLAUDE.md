@@ -151,7 +151,8 @@ mods that reuse vanilla hearts look vanilla.
   with its m:ss time) / Helium Flamingo / aircraft hull or a groove, then the mana pools (primary first; one mod: the
   last row a groove; none: gears). Liquids carry the orbs' looks (cloud, broth, galaxy at half strength); AppleSkin's
   exhaustion is the solid strip under food (above).
-- XP pipe: lime with the cloud texture; a charging spell (galaxy), a camel's dash cooldown, a jump charge, a train's
+- XP pipe: lime with the cloud texture; a charging spell (galaxy), a camel's dash cooldown (and a ridden drekki's Four Winds dash, Drekki Rancher's public
+  `dashCooldown()` by reflection, with the camel's icon), a jump charge, a train's
   speed or an aircraft engine take it over, the level window growing to 9 x 7 to show their icon (5 tall).
 - Hardcore: a skull on a small floating plate above the offhand socket (no trims).
 - Breath and the backtank move smoothly in game (`Smooth`: eased between the game's steps; the tank time stays exact).
@@ -161,8 +162,11 @@ mods that reuse vanilla hearts look vanilla.
   attack cooldown shades the selected socket (attack indicator crosshair or hotbar; per frame); creative hides health, food, armor, air.
 - Mod elements (`hud-compact-mods.js`, from decompiling every jar that registers HUD layers): Farmer's Delight
   Nourishment and Comfort; MekaSuit energy and fuelled gear (statuses, below); Immersive Aircraft hull and engine; Create train speed, toolbox slots (red
-  liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns, Immersive Armors steampunk
-  clock and compass, and the Haven Link web follower count (ghost) on an instrument plate above the bar. Followers come
+  liquid tubes) and schematic slot (cyan frame); Artifacts Helium Flamingo and cooldowns (one chip for all, no well behind the icons), Immersive Armors steampunk
+  clock and compass, the Mekanism jetpack's chip (a jetpack or a MekaSuit's jetpack unit: the hydrogen left, percent with no sign, in the
+  digits' pixel font at the follower count's size, coloured by the mode: green normal, orange vector, cyan hover, red
+  disabled, four colour rows of the digit strip; Mekanism's own HUD lines are left out, its mode-change message stays; `ccJetChip`) and the Haven Link web follower count (ghost) as chips above the bar, each on a floating plate of its own, all as wide as the steampunk one (21 px) with the content centred, in a row centred
+  over the bar (2 px apart). Followers come
   from Haven Link's chat lines ("[Web] Name is following you on the web map" / "stopped following").
 - Buffs and debuffs (`hud-compact-effects.js`, `CC_EFFECTS`), where the client config "Buffs and debuffs" puts them
   (the page's Effects button; `?railEffects` starts on the rail): **top left of the screen** (the default,
@@ -197,9 +201,14 @@ mods that reuse vanilla hearts look vanilla.
   under it all round (`ccOrbRingTrack`, atlas cell `ringTrack`).
 - Client config (`UiConfig`, Mods > Config in game): meter display Almost Vanilla | Orbs | Bars (default Bars; Almost Vanilla
   below), buffs and debuffs Top left of the screen | Action bar (default Top left), primary mana pool Iron's | Ars,
-  action bar size (1.0).
+  hotbar numbers While the numbers key is held | Always (default hold), action bar size (1.0).
 - Numbers (value / max in the liquid's tint, the liquid dimmed behind them): on the page by hovering a meter; in game
   while a key is held (Left Alt by default, rebindable in Controls) and while a screen is open.
+- Hotbar numbers (`ccSlotNumbers`, `CC_SLOT_NUM`; game `CompactHud.slotNumbers`): 1 to 9 at each socket's top left in the
+  effects' white digits (0.625 set at 1.2x, font px 0.75) in their black outline, the outline's corner on the item's top
+  left, clear of the item count (bottom right) and over the items, the attack veil and the selection. Config "Hotbar
+  numbers": Hold (the default: with the meter numbers, key held or a screen open; the page's All numbers) or Always (page
+  button Hotbar numbers). Every meter display (Bars, Orbs, Almost Vanilla) and left-handed (the hotbar does not move).
 
 ## Almost Vanilla (the compact page's Layout toggle, `?vanilla`; `hud-vanilla*.js`): in game via the mod (VanillaHud), an option (Bars is the default)
 

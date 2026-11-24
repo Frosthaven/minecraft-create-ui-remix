@@ -115,5 +115,6 @@ function vanillaHud(s, font) {
   ccSelection(g, sx, sy, toolboxSel);
   if (toolboxSel) ccToolboxChips(g, s.slot, true);
   ccAttackShade(g, s, [sx, sy]);
+  ccSlotNumbers(g, s);
   return c;
 }

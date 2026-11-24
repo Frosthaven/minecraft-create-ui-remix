@@ -13,6 +13,9 @@
   "haven_create_ui_ux.config.effects_anchor": "Buffs and debuffs",
   "haven_create_ui_ux.config.effects_anchor.top_left": "Top left of the screen",
   "haven_create_ui_ux.config.effects_anchor.action_bar": "Action bar",
+  "haven_create_ui_ux.config.hotbar_numbers": "Hotbar numbers",
+  "haven_create_ui_ux.config.hotbar_numbers.hold": "While the numbers key is held",
+  "haven_create_ui_ux.config.hotbar_numbers.always": "Always",
   "haven_create_ui_ux.config.hud_scale": "Action bar size",
   "haven_create_ui_ux.config.side_scale": "Side bars size"
 }

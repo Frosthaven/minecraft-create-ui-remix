@@ -9,7 +9,9 @@ Classes: `HavenMobHealthBars` (registers config, config screen, the RenderLiving
 
 Designed on the redesign page `mob-bars.html`. A flat, dim bar over every living entity within `MobBarsConfig` `range`
 blocks (default 10): hostile (`Enemy`, bosses included) #a83a3a, players #4a76b8, every other mob #5c9a46, each kind
-toggled in the client config (`haven_mob_health_bars-client.toml`). Not the player, armor stands, invisible or dying entities.
+toggled in the client config (`haven_mob_health_bars-client.toml`); `notHostileWhen` WHEN_DAMAGED (default) or ALWAYS
+(the green bars only below full health, after the damage trail drains). Not the player, the mount the player rides
+(`hasIndirectPassenger`), armor stands, invisible or dying entities.
 - Beyond the range, only the entity under the crosshair gets a bar (`LookTarget`, config `lookedAt` default true,
   `lookRange` default 64, 8-128): once per client tick a vanilla-style pick (`ProjectileUtil.getEntityHitResult`,
   boxes inflated by pick radius) from the camera, then a block raycast (`ClipContext` OUTLINE, fluid NONE) eye to hit

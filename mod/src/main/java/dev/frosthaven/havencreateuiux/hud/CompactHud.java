@@ -107,59 +107,103 @@ public final class CompactHud {
 
     // ---- Drawing, in texels relative to (screen centre, screen bottom) -------------------------------------------
 
-    /** The instrument plate above the bar: web followers (ghost and count), the steampunk armor's clock and compass, the
-     *  worn Artifacts on cooldown (their item, shaded by the time left). Only while there is one. top: the plate's top
-     *  (units; the action bar: over its centre). Returns the plate's top, or NaN when there is none. */
+    /** One floating chip above the bar: its plate's width (texels) and what it draws at the plate's left edge. */
+    private record Chip(int w, java.util.function.IntConsumer draw) {}
+
+    /** Every chip's plate width: the steampunk armor's (two dials and its margins); content is centred in it. */
+    private static final int CHIP_W = 21 * K;
+
+    /** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 px apart): web
+     *  followers (ghost and count), the steampunk armor's clock and compass, the Mekanism jetpack (mode letter and
+     *  hydrogen), the worn Artifacts on cooldown (one chip: each item, shaded by the time left). Only while there is one.
+     *  top: the plates' top (units; the action bar: over its centre). Returns it, or NaN when there is none. */
     static double instruments(GuiGraphics g, Minecraft mc, LocalPlayer p, float delta, double top) {
         restoreBlend();
+        int y0 = y(top);
+        List<Chip> chips = new java.util.ArrayList<>();
         int followers = Followers.count();
-        boolean steam = HudExtras.steampunk(p);
-        var cooldowns = HudExtras.artifactCooldowns(p, delta);
-        String fol = String.valueOf(followers);
-        int fw = (int) Math.round(digitsWidth(fol) * 1.5);   // the count at 1.5x
-        int w = (followers > 0 ? 9 * K + fw + K : 0) + (steam ? 18 * K : 0) + cooldowns.size() * 9 * K;
-        if (w == 0) return Double.NaN;
-        w += 3 * K;
-        int x0 = -w / 2, y0 = y(top), cap = 4 * K;
-        use(g, PARTS);
-        g.blit(PARTS, x0, y0, cap, IPLATE_H, IPLATE_U, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
-        g.blit(PARTS, x0 + cap, y0, w - 2 * cap, IPLATE_H, IPLATE_U + cap, OVER_V, IPLATE_W - 2 * cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
-        g.blit(PARTS, x0 + w - cap, y0, cap, IPLATE_H, IPLATE_U + IPLATE_W - cap, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
-        int cur = x0 + 2 * K;
         if (followers > 0) {
-            part(g, 2 * K, GHOST_PLATE_V, 8 * K, GHOST_PLATE_H, cur, y0);   // the ghost from the follower plate
-            var pose = g.pose();
-            pose.pushPose();
-            pose.translate(cur + 9 * K, y0 + 4 * K, 0);
-            pose.scale(1.5f, 1.5f, 1);
-            digits(g, fol, 0, -DIGIT_H / 2, 9, WHITE, WHITE);
-            pose.popPose();
-            cur += 9 * K + fw + K;
+            String fol = String.valueOf(followers);
+            int fw = (int) Math.round(digitsWidth(fol) * 1.5);   // the count at 1.5x
+            chips.add(new Chip(CHIP_W, x -> {
+                int at = x + (CHIP_W - 9 * K - fw) / 2 - K;   // the ghost, 1 px, the count: centred (its sprite has 1 px of air on the left)
+                part(g, 2 * K, GHOST_PLATE_V, 8 * K, GHOST_PLATE_H, at, y0);   // the ghost from the follower plate
+                var pose = g.pose();
+                pose.pushPose();
+                pose.translate(at + 9 * K, y0 + 4 * K, 0);
+                pose.scale(1.5f, 1.5f, 1);
+                digits(g, fol, 0, -DIGIT_H / 2, 9, WHITE, WHITE);
+                pose.popPose();
+            }));
         }
-        if (steam && mc.level != null) {
-            float day = mc.level.getTimeOfDay(delta);
-            dial(g, CLOCK_U, cur, y0, day * Mth.TWO_PI, 0xFFFFF3C8);
-            var spawn = mc.level.getSharedSpawnPos();
-            double dx = spawn.getX() + 0.5 - p.getX(), dz = spawn.getZ() + 0.5 - p.getZ(), yaw = Math.toRadians(p.getViewYRot(delta));
-            double fwd = -Math.sin(yaw) * dx + Math.cos(yaw) * dz, right = -Math.cos(yaw) * dx - Math.sin(yaw) * dz;
-            dial(g, COMPASS_U, cur + 9 * K, y0, (float) Math.atan2(right, fwd), 0xFFD84030);
-            cur += 18 * K;
+        if (HudExtras.steampunk(p) && mc.level != null) {
+            chips.add(new Chip(CHIP_W, x -> {
+                float day = mc.level.getTimeOfDay(delta);
+                dial(g, CLOCK_U, x + 3 * K / 2, y0, day * Mth.TWO_PI, 0xFFFFF3C8);
+                var spawn = mc.level.getSharedSpawnPos();
+                double dx = spawn.getX() + 0.5 - p.getX(), dz = spawn.getZ() + 0.5 - p.getZ(), yaw = Math.toRadians(p.getViewYRot(delta));
+                double fwd = -Math.sin(yaw) * dx + Math.cos(yaw) * dz, right = -Math.cos(yaw) * dx - Math.sin(yaw) * dz;
+                dial(g, COMPASS_U, x + 3 * K / 2 + 9 * K, y0, (float) Math.atan2(right, fwd), 0xFFD84030);
+            }));
         }
-        for (Object[] cd : cooldowns) {
-            var pose = g.pose();
-            use(g, FILL);
-            g.fill(cur + 6, y0 + 6, cur + 9 * K - 6, y0 + 9 * K - 6, 0xFF060708);
-            pose.pushPose();
-            pose.translate(cur + K, y0 + K, 0);
-            pose.scale(K * 7f / 16, K * 7f / 16, 1);
-            use(g, ITEM);
-            g.renderItem((ItemStack) cd[0], 0, 0);
-            pose.popPose();
-            use(g, FILL);
-            g.fill(cur + K, y0 + K, cur + 8 * K, y0 + K + (int) (7 * K * (float) cd[1]), 0x99000000);
-            cur += 9 * K;
+        GearStatus.Jet jet = GearStatus.jetpack(p);
+        if (jet != null) chips.add(new Chip(CHIP_W, x -> jetChip(g, jet, x + (CHIP_W - jetWidth(jet)) / 2, y0)));
+        var cooldowns = HudExtras.artifactCooldowns(p, delta);
+        if (!cooldowns.isEmpty()) {   // every worn Artifact on cooldown in one chip: its item, shaded by the time left
+            int cw = cooldowns.size() * 9 * K;
+            chips.add(new Chip(Math.max(CHIP_W, cw + 3 * K), x -> {
+                int cur = x + (Math.max(CHIP_W, cw + 3 * K) - cw) / 2;
+                var pose = g.pose();
+                for (Object[] cd : cooldowns) {
+                    pose.pushPose();
+                    pose.translate(cur + K, y0 + K, 0);
+                    pose.scale(K * 7f / 16, K * 7f / 16, 1);
+                    use(g, ITEM);
+                    g.renderItem((ItemStack) cd[0], 0, 0);
+                    pose.popPose();
+                    use(g, FILL);
+                    g.fill(cur + K, y0 + K, cur + 8 * K, y0 + K + (int) (7 * K * (float) cd[1]), 0x99000000);
+                    cur += 9 * K;
+                }
+            }));
+        }
+        if (chips.isEmpty()) return Double.NaN;
+        int gap = 2 * K, total = -gap;
+        for (Chip c : chips) total += c.w() + gap;
+        int x = -total / 2;
+        for (Chip c : chips) {
+            floatPlate(g, x, y0, c.w());
+            c.draw().accept(x);
+            x += c.w() + gap;
         }
         return top;
+    }
+
+    /** A small floating iron plate at (x, y) texels, w wide (the instrument plate's piece, its caps kept). */
+    private static void floatPlate(GuiGraphics g, int x, int y, int w) {
+        int cap = 4 * K;
+        use(g, PARTS);
+        g.blit(PARTS, x, y, cap, IPLATE_H, IPLATE_U, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
+        g.blit(PARTS, x + cap, y, w - 2 * cap, IPLATE_H, IPLATE_U + cap, OVER_V, IPLATE_W - 2 * cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
+        g.blit(PARTS, x + w - cap, y, cap, IPLATE_H, IPLATE_U + IPLATE_W - cap, OVER_V, cap, IPLATE_H, PARTS_SIZE, PARTS_SIZE);
+    }
+
+    /** The jetpack chip: the hydrogen left (percent, no sign) in the digits' pixel font at the follower count's size
+     *  (1.5x), coloured by the mode (N green, V orange, H cyan, D red). */
+    private static String jetPercent(GearStatus.Jet jet) { return String.valueOf(Math.round(jet.frac() * 100)); }
+
+    /** The chip's content width in texels. */
+    private static int jetWidth(GearStatus.Jet jet) { return (int) Math.round(digitsWidth(jetPercent(jet)) * 1.5); }
+
+    /** The jetpack chip's content at (x, y) texels, one plate cell tall. */
+    private static void jetChip(GuiGraphics g, GearStatus.Jet jet, int x, int y) {
+        String t = jetPercent(jet);
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(x, y + 4 * K, 0);
+        pose.scale(1.5f, 1.5f, 1);
+        digits(g, t, 0, -DIGIT_H / 2, t.length(), jetRow(jet.mode()), jetRow(jet.mode()));
+        pose.popPose();
     }
 
     /** A dial face from the atlas with its hand at angle a (radians, clockwise from up). */
@@ -204,8 +248,8 @@ public final class CompactHud {
         int cx = g.guiWidth() / 2, bottom = g.guiHeight();
         HudFrame f = new HudFrame(mc, p, delta, NUMBERS.isDown());
         boolean corner = HudEffects.atCorner();
-        HudLog.changed("config", f.vanilla + "/" + f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side + "/" + corner, "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {}), effects {}",
-                f.vanilla ? "Almost Vanilla" : f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side, corner ? "top left" : "action bar");
+        HudLog.changed("config", f.vanilla + "/" + f.orbs + "/" + f.primaryArs + "/" + scale + "/" + f.side + "/" + corner + "/" + UiConfig.HOTBAR_NUMBERS.get(), "config: meter display {}, primary mana {}, size {}, side bars size {} (wing scale {}), effects {}, hotbar numbers {}",
+                f.vanilla ? "Almost Vanilla" : f.orbs ? "orbs" : "bars", f.primaryArs ? "Ars" : "Iron's", scale, UiConfig.SIDE_SCALE.get(), f.side, corner ? "top left" : "action bar", UiConfig.HOTBAR_NUMBERS.get() == UiConfig.HotbarNumbers.ALWAYS ? "always" : "hold");
         HudLog.changed("mode", (f.hurtable ? "survival" : "creative") + (f.lefty ? ", left-handed" : "") + (f.hardcore ? ", hardcore" : ""),
                 "mode: {}{}{}", f.hurtable ? "survival" : "creative (vitals hidden)", f.lefty ? ", left-handed (offhand on the right)" : "", f.hardcore ? ", hardcore (skull)" : "");
         // Mod extras, each read as the mod's own HUD reads it (HudExtras); null / -1 when absent or not showing.
@@ -260,7 +304,7 @@ public final class CompactHud {
         pose.popPose();
 
         // Items, at vanilla's exact spots (mods that mark hotbar slots line up); the offhand's in its socket.
-        hotbarItems(g, mc, p, attack, cx, bottom);
+        hotbarItems(g, mc, p, attack, cx, bottom, f.slotNums);
         pose.pushPose();
         // In its socket (bars: centred on the meter block), at the side bars' size.
         if (f.side != 1) {
@@ -294,10 +338,32 @@ public final class CompactHud {
         part(g, SOCKET_U, 0, 18 * K, 18 * K, x(ux), y(uy));
         if (p.getOffhandItem().isEmpty()) part(g, GHOST_U, 0, 18 * K, 18 * K, x(ux), y(uy));
     }
-    /** The hotbar's items at vanilla's exact spots (GUI px), then the attack cooldown's veil over the selected one. */
-    static void hotbarItems(GuiGraphics g, Minecraft mc, LocalPlayer p, Float attack, int cx, int bottom) {
+    /** The hotbar's items at vanilla's exact spots (GUI px), then the attack cooldown's veil over the selected one, then
+     *  the slot numbers when shown (HudFrame.slotNums). */
+    static void hotbarItems(GuiGraphics g, Minecraft mc, LocalPlayer p, Float attack, int cx, int bottom, boolean numbers) {
         for (int i = 0; i < 9; i++) slotItem(g, mc, p, p.getInventory().getItem(i), cx - 88 + 20 * i, bottom - 19, i + 1);
         if (attack != null) attackVeil(g, cx - 88 + 20 * p.getInventory().selected, bottom - 19, attack);
+        if (numbers) slotNumbers(g, cx, bottom);
+    }
+
+    /** The slot numbers' size (font px, the 0.625 set at 1.2x) and their glyphs' offset from the item's top left (GUI px):
+     *  the outline's corner on the item's, clear of the count (bottom right). The page's CC_SLOT_NUM. */
+    static final double SLOT_NUM_K = 0.75, SLOT_NUM_AT = 1.5;   // inside the selection ring (its line reaches 1.2 px into the socket)
+    /** 1 to 9 at each socket's top left, white in the digits' black outline, in front of the items and their counts. */
+    static void slotNumbers(GuiGraphics g, int cx, int bottom) {
+        var pose = g.pose();
+        pose.pushPose();
+        pose.translate(0, 0, 300);   // over the item models, their counts (200) and the attack veil (250)
+        use(g, PARTS);
+        restoreBlend();
+        for (int i = 0; i < 9; i++) {
+            pose.pushPose();
+            pose.translate(cx - 88 + 20 * i + SLOT_NUM_AT, bottom - 19 + SLOT_NUM_AT, 0);
+            pose.scale((float) (SLOT_NUM_K / 0.625 / K), (float) (SLOT_NUM_K / 0.625 / K), 1);
+            digits(g, String.valueOf(i + 1), 0, 0, 1, WHITE, WHITE);
+            pose.popPose();
+        }
+        pose.popPose();
     }
 
     /** The offhand socket's top (units): orbs: level with the hotbar; bars: centred on the wing's meter block. */
@@ -314,10 +380,19 @@ public final class CompactHud {
         String mountIcon = p.getVehicle() instanceof Camel ? "camel" : "horse";
         if (cast != null) return new Take("cast", "flask", cast);
         if (jumpable != null && jumpable.getJumpCooldown() > 0) return new Take("cooldown", mountIcon, 1);
+        if (drekkiDashing(p)) return new Take("cooldown", "camel", 1);   // a drekki's Four Winds dash, as a camel's
         if (jumpable != null && p.getJumpRidingScale() > 0) return new Take("jump", mountIcon, p.getJumpRidingScale());
         if (train != null) return new Take("train", "train", train);
         if (engine != null) return new Take("engine", "engine", engine);
         return null;
+    }
+
+    /** The ridden drekki (Drekki Rancher) is cooling down from its Four Winds dash: its public dashCooldown() > 0,
+     *  read by reflection (no compile dependency); false without the mod or the method. */
+    private static boolean drekkiDashing(LocalPlayer p) {
+        var v = p.getVehicle();
+        if (v == null || !v.getClass().getName().equals("dev.frosthaven.ranchercompanion.entity.DrekkiEntity")) return false;
+        return Reflect.call(v, "dashCooldown") instanceof Float f && f > 0;
     }
 
     /** The shared pipe: XP, or a takeover (first wins: a charging spell (Iron's), a mount's dash cooldown or jump, a

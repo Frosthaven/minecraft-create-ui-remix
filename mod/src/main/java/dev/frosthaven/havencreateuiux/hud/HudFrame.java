@@ -32,7 +32,7 @@ final class HudFrame {
     final Minecraft mc;
     final LocalPlayer p;
     final long now;
-    final boolean vanilla, orbs, hurtable, lefty, nums, underwater, showArmor, showBreath, hardcore, regen, comfort, nourished, hunger;
+    final boolean vanilla, orbs, hurtable, lefty, nums, slotNums, underwater, showArmor, showBreath, hardcore, regen, comfort, nourished, hunger;
     final float hp, maxHp, absorb, saturation, exhaustion;
     final int armor, food;
     final long hurtSince, healSince;
@@ -61,6 +61,7 @@ final class HudFrame {
         hurtable = mc.gameMode != null && mc.gameMode.canHurtPlayer();
         lefty = p.getMainArm() == HumanoidArm.LEFT;
         nums = numbersKey || mc.screen != null;
+        slotNums = nums || UiConfig.HOTBAR_NUMBERS.get() == UiConfig.HotbarNumbers.ALWAYS;   // the hotbar's 1 to 9
         underwater = p.isEyeInFluid(FluidTags.WATER);
         tank = AirGear.read(p, underwater);   // the Create backtank or other breathing gear in use: seconds {left, capacity}
         int air = p.getAirSupply(), maxAir = p.getMaxAirSupply();

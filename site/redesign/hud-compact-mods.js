@@ -54,34 +54,48 @@ function ccDial(g, cx, cy, r, a, kind) {
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(a) * (r - 1.2), cy - Math.cos(a) * (r - 1.2)); g.stroke();
   if (kind === 'compass') { g.strokeStyle = '#e8e8e8'; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - Math.sin(a) * (r - 1.6), cy + Math.cos(a) * (r - 1.6)); g.stroke(); }
 }
-/** The instrument plate above the bar: steampunk clock and compass, then Artifacts cooldown icons. Only when needed.
- *  y: the plate's top (default: over the centre plate). Returns the plate's top, or null when there is none. */
+/** Every chip's plate width (the steampunk armor's: two dials and margins). */
+const CC_CHIP_W = 21;
+/** The chips above the bar, each on a floating plate of its own, in a row centred over the bar (2 apart): web
+ *  followers, the steampunk clock and compass, the Mekanism jetpack, the Artifacts on cooldown (one chip). Only when needed.
+ *  top: the plates' top (default: over the centre plate). Returns it, or null when there is none. */
 function ccInstruments(g, s, top) {
-  const items = [];
-  if (s.followers) items.push('ghost');
-  if (s.steampunk) items.push('clock', 'compass');
-  for (const cd of s.artifactCooldowns || []) items.push(cd);
-  if (!items.length) return null;
-  const cellW = it => it === 'ghost' ? 9 + ccNumberWidth(String(s.followers), 0.94) + 1 : 9;   // the count at 0.94 (1.5x)
-  const cell = 9, w = items.reduce((a, it) => a + cellW(it), 0) + 3, h = 9, x = -w / 2, y = top ?? CC.plate.mid - h - 2.5, r = CC.plate.r;
-  ccFloatPlate(g, x, y, w, h);
-  let cur = x + 2;
-  items.forEach((it) => {
-    const cx = cur + cell / 2 - 0.5, cy = y + h / 2; cur += cellW(it);
-    if (it === 'ghost') {   // a pale ghost (web map viewers) and how many
-      ccInstruments.ghost(g, cx, cy);
-      return ccNumber(g, String(s.followers), cx + 4, cy - 2.35, ccTint('#9ac8ff'), 'rgba(0,0,0,0.8)', 0.94);
-    }
-    if (it === 'clock') return ccDial(g, cx, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
-    if (it === 'compass') return ccDial(g, cx, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
-    // An artifact on cooldown: its icon (placeholder gem) in a small well, shaded by what is left of the cooldown.
-    rrect(g, cx - 3.6, cy - 3.6, 7.2, 7.2, 0.8); g.fillStyle = '#060708'; g.fill();
-    g.beginPath(); g.moveTo(cx, cy - 2.6); g.lineTo(cx + 2.4, cy); g.lineTo(cx, cy + 2.6); g.lineTo(cx - 2.4, cy); g.closePath();
-    g.fillStyle = it.color; g.fill();
-    g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(cx - 3.6, cy - 3.6, 7.2, 7.2 * it.left);
-  });
+  const h = 9, y = top ?? CC.plate.mid - h - 2.5, cy = y + h / 2, chips = [];
+  const W = CC_CHIP_W;   // every chip the steampunk chip's width, its content centred
+  if (s.followers) chips.push([W, x => {   // a pale ghost (web map viewers) and how many
+    const at = x + (W - 9 - ccNumberWidth(String(s.followers), 0.94)) / 2;
+    ccInstruments.ghost(g, at + 4, cy);
+    ccNumber(g, String(s.followers), at + 8, cy - 2.35, ccTint('#9ac8ff'), 'rgba(0,0,0,0.8)', 0.94);
+  }]);
+  if (s.steampunk) chips.push([W, x => {
+    ccDial(g, x + 6, cy, 3.6, (s.t / 4000) % (Math.PI * 2), 'clock');
+    ccDial(g, x + 15, cy, 3.6, Math.sin(s.t / 1500) * 0.6, 'compass');
+  }]);
+  if (s.jetpack) chips.push([W, x => ccJetChip(g, x + (W - ccJetChip.width(s.jetpack)) / 2, cy, s.jetpack)]);
+  const cds = s.artifactCooldowns || [];
+  if (cds.length) {   // every Artifact on cooldown in one chip: its icon (placeholder gem), shaded by what is left
+    const cw = cds.length * 9, w = Math.max(W, cw + 3);
+    chips.push([w, x => cds.forEach((it, k) => {
+      const cx = x + (w - cw) / 2 + 9 * k + 4.5;
+      g.beginPath(); g.moveTo(cx, cy - 2.6); g.lineTo(cx + 2.4, cy); g.lineTo(cx, cy + 2.6); g.lineTo(cx - 2.4, cy); g.closePath();
+      g.fillStyle = it.color; g.fill();
+      g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(cx - 3.5, cy - 3.5, 7, 7 * it.left);
+    })]);
+  }
+  if (!chips.length) return null;
+  let x = -(chips.reduce((a, [w]) => a + w + 2, 0) - 2) / 2;
+  for (const [w, draw] of chips) { ccFloatPlate(g, x, y, w, h); draw(x); x += w + 2; }
   return y;
 }
+/** The Mekanism jetpack's chip (a jetpack, or a MekaSuit's jetpack unit): the hydrogen left (percent, no sign) in the
+ *  digits' pixel font at the follower count's size, coloured by the mode: N normal green, V vector orange, H hover
+ *  cyan, D disabled red. (x, cy): its left edge and centre line. */
+const CC_JET = { D: '#ff5a4e', V: '#ffa040', N: '#62e07a', H: '#3fe0ff' };
+function ccJetChip(g, x, cy, jet) {
+  ccNumber(g, String(Math.round(jet.fuel * 100)), x, cy - 2.35, CC_JET[jet.mode], 'rgba(0,0,0,0.8)', 0.94);
+}
+/** The content's width. */
+ccJetChip.width = jet => ccNumberWidth(String(Math.round(jet.fuel * 100)), 0.94);
 /** Create's marks over hotbar slots: toolbox-linked slots (red liquid corner chips), the schematic tool's slot (cyan). */
 function ccSlotMarks(g, s) {
   for (const i of s.toolboxSlots || []) ccToolboxChips(g, i, false);

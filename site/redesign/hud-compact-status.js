@@ -125,6 +125,18 @@ function ccAttackShade(g, s, [sx, sy]) {
   g.fillStyle = 'rgba(255,190,90,0.8)'; g.fillRect(x, y + h - 1, 16, 1);
 }
 
+/** The hotbar's slot numbers (the config's "Hotbar numbers"): 1 to 9 at each socket's top left in the effects' white
+ *  digits (0.625 set, at 1.2x) inside their black outline, the outline's corner on the item's; clear of the item count
+ *  (bottom right). Shown always, or while the numbers key is held (the page: All numbers). The game: CompactHud.slotNumbers. */
+const CC_SLOT_NUM = { k: 0.75, at: 1.5 };   // inside the selection ring (its line reaches 1.2 into the socket)
+function ccSlotNumbers(g, s) {
+  if (s.hotbarNumbers !== 'always' && !s.numbers) return;
+  for (let i = 0; i < 9; i++) {
+    const [x, y] = CC.slot(i);
+    ccOutlinedNumber(g, String(i + 1), x + 1 + CC_SLOT_NUM.at, y + 1 + CC_SLOT_NUM.at, '#ffffff', CC_SLOT_NUM.k);
+  }
+}
+
 /** Absorption: gold segments from the health's end, as far as they fit (the number gives the rest). */
 function ccAbsorb(g, s, [x, y, w, h], max) {
   if (!s.absorb) return;

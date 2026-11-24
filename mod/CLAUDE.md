@@ -106,7 +106,12 @@ not a spectator.
   GUI px (pose scale) so the 8x textures land texel for texel; positions are the page's layout (x from the screen
   centre, the bar's bottom at 50) times 8. Items at vanilla's exact spots (bottom - 19, centre - 88 + 20 i), so mods that
   mark hotbar slots line up. Sets `gui.leftHeight/rightHeight` to 33 for later layers. Key "Show HUD numbers (hold)",
-  Left Alt by default (Controls); numbers also show while a screen is open. No dark mode on it (`HudLayers.MAIN`).
+  Left Alt by default (Controls); numbers also show while a screen is open (`HudFrame.nums`). No dark mode on it
+  (`HudLayers.MAIN`).
+- Hotbar numbers (`UiConfig.HOTBAR_NUMBERS`, HOLD | ALWAYS, default HOLD; `HudFrame.slotNums` = `nums` or ALWAYS):
+  `CompactHud.hotbarItems` (both modes and `VanillaHud`) ends with `slotNumbers`: the `digits` WHITE row at 1.2x
+  (`SLOT_NUM_K` 0.75 font px), glyphs 0.75 px in from each item's top left (the outline's corner on it), z 300 (over item
+  counts at 200 and the attack veil at 250). The page's `ccSlotNumbers` / `CC_SLOT_NUM`.
 - In game the whole bar (items included) is drawn at the config's size (`UiConfig.HUD_SCALE`, 1.0) around the screen's
   bottom centre.
 - Classes: `CompactHud` (registration, the plate, hotbar, XP pipe and level, dash dial, floating plates,
@@ -160,9 +165,7 @@ not a spectator.
   either mode) or `draw` (ACTION_BAR: the rail above the left wing, inside the modes' K pose); hover tooltip while a
   screen is open; worn gear as cyan sockets in the buffs line (`GearStatus.Gear`: fraction, name,
   the mod's amount text, the worn item rendered as the icon; percent, no sign, in the `CYAN` digit row; effect times in
-  `BUFF` / `DEBUFF`). `GearStatus` reads (bytecode of the pack's jars): MekaSuit energy (`HudExtras.mekaSuit`); Mekanism
-  jetpack / MekaSuit chest with the jetpack unit enabled: chemical tank 0 through `Capabilities.CHEMICAL.item()`
-  (hydrogen); Ad Astra Jet Suit energy `getEnergy(stack, ModifyOnlyContext)` (full set; no separate fuel); a Create
+  `BUFF` / `DEBUFF`). `GearStatus` reads (bytecode of the pack's jars): MekaSuit energy (`HudExtras.mekaSuit`); Ad Astra Jet Suit energy `getEnergy(stack, ModifyOnlyContext)` (full set; no separate fuel); a Create
   Jetpack in flight (`HudStats.jetpackFlight`: the tanks' air falling out of water, and 3 s after; the first tank as
   the icon); the Helium Flamingo's charge (its item as the icon) and an aircraft's hull (the vehicle's pick item), from
   `HudExtras.flamingo` / `aircraftHealth`. The ring and bar row 1 are breathing only (`HudStats.backtank`: under water
@@ -177,5 +180,8 @@ not a spectator.
   1 mB a tick under water; Ad Astra space suit full set, `getOxygenAmount` over `FluidAmounts.toPlatformAmount(tankSize)`,
   1 mB per 12 ticks without air (`OxygenApi.API.hasOxygen`) and per 12 with the eyes in water (`inventoryTick`). Hidden: Creating Space's
   `creatingspace:remaining_oxygen` layer (its O2 dial alone). Kept: Mekanism's top-left `MekanismHUD` (one layer for all
-  its gear's lines, not separable) and Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
+  its gear's lines), except the jetpack's: `MekanismJetpackHudMixin` (`ItemJetpack.addHUDStrings`) and
+  `MekanismJetpackUnitHudMixin` (`ModuleJetpackUnit.addHUDElements`), optional config `mekanism.mixins.json`, leave them
+  out while the bar is active, since the instrument plate's jetpack chip shows them (`GearStatus.jetpack`:
+  `IJetpackItem.getPrimaryJetpack`, `getJetpackMode`, tank 0; not a gear status any more) and Ad Astra's overlay (oxygen, battery and the rocket launch bar in one draw call). The bar hides those mods' own layers (`REPLACED`).
 

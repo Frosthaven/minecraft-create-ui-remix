@@ -23,10 +23,18 @@ public final class UiConfig {
         @Override public Component getTranslatedName() { return Component.translatable("haven_create_ui_ux.config.effects_anchor." + name().toLowerCase(java.util.Locale.ROOT)); }
     }
 
+    /** When the hotbar's slot numbers (1 to 9, top left of each socket) show: while the numbers key is held (and while a
+     *  screen is open, as the meter numbers; the default), or always. */
+    public enum HotbarNumbers implements TranslatableEnum {
+        HOLD, ALWAYS;
+        @Override public Component getTranslatedName() { return Component.translatable("haven_create_ui_ux.config.hotbar_numbers." + name().toLowerCase(java.util.Locale.ROOT)); }
+    }
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.EnumValue<MeterDisplay> METER_DISPLAY;
     public static final ModConfigSpec.EnumValue<PrimaryMana> PRIMARY_MANA;
     public static final ModConfigSpec.EnumValue<EffectsAnchor> EFFECTS_ANCHOR;
+    public static final ModConfigSpec.EnumValue<HotbarNumbers> HOTBAR_NUMBERS;
     public static final ModConfigSpec.DoubleValue HUD_SCALE;
     public static final ModConfigSpec.DoubleValue SIDE_SCALE;
 
@@ -39,6 +47,8 @@ public final class UiConfig {
                 .translation("haven_create_ui_ux.config.primary_mana").defineEnum("primaryMana", PrimaryMana.IRONS);
         EFFECTS_ANCHOR = b.comment("Where buffs and debuffs show: Top left of the screen (buffs in the first row, debuffs in the row below, as vanilla orders them), or Action bar (a rail above its left wing, debuffs above buffs).")
                 .translation("haven_create_ui_ux.config.effects_anchor").defineEnum("effectsAnchor", EffectsAnchor.TOP_LEFT);
+        HOTBAR_NUMBERS = b.comment("The hotbar's slot numbers (1 to 9, top left of each socket): Hold (while the HUD numbers key is held or a screen is open) or Always.")
+                .translation("haven_create_ui_ux.config.hotbar_numbers").defineEnum("hotbarNumbers", HotbarNumbers.HOLD);
         HUD_SCALE = b.comment("The action bar's size, relative to the GUI scale.")
                 .translation("haven_create_ui_ux.config.hud_scale").defineInRange("hudScale", 1.0, 0.5, 2.0);
         SIDE_SCALE = b.comment("The side bars' size (orbs or meters, the offhand, the dash), relative to their design; they stay attached to the action bar.")

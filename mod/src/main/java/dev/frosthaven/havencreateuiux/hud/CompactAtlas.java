@@ -25,6 +25,8 @@ final class CompactAtlas {
     // 0.625 digit rows: effect times in their kind's tint (BUFF, DEBUFF, CYAN for the MekaSuit and fuelled
     // gear), never by time left.
     static final int WHITE = 0, DIM = 1, GREEN = 2, BLACK = 3, RED = 4, CYAN = 5, BUFF = 6, DEBUFF = 7;
+    /** The digit rows in the jetpack modes' colours: N normal, V vector, H hover, D disabled. */
+    static int jetRow(char mode) { return 8 + "NVHD".indexOf(mode); }
     static final String GLYPHS = "0123456789/:+";
     static final List<String> TINTS = List.of("blood", "poison", "wither", "frozen", "broth", "hunger", "mount", "irons", "ars",
             "armor", "air", "tank", "flamingo", "hull", "black");

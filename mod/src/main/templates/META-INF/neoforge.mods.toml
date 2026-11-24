@@ -33,6 +33,10 @@ config="${mod_id}.sophisticated.mixins.json"
 [[mixins]]
 config="${mod_id}.bosses.mixins.json"
 
+# Targets Mekanism (its jetpack's HUD lines; the instrument plate's chip shows them), so optional.
+[[mixins]]
+config="${mod_id}.mekanism.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
