@@ -7,7 +7,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'src/main/resources/assets/haven_create_ui_ux/key_hints/blocks.json')
 FILL = {'fill bucket', 'withdraw', 'fill bottle', 'fill'}
 EMPTY = {'empty bucket', 'deposit', 'pour in', 'empty'}
-HANDS = {'empty', 'any', 'nonempty', 'item', 'tag', 'class', 'block_item', 'same_block', 'not_same_block', 'fluid_container'}
+HANDS = {'empty', 'any', 'nonempty', 'item', 'tag', 'not_tag', 'class', 'block_item', 'same_block', 'not_same_block', 'fluid_container'}
 WHEN = {'face', 'state', 'has_items', 'has_fluid', 'held_full', 'creative', 'id'}
 by = {}
 for f in sorted(glob.glob(os.path.join(HERE, 'data*.jsonl'))):
@@ -90,13 +90,15 @@ def gather(kind, ids_key):
             o = json.loads(line)
             if o.get('kind', 'item' if 'items' in f else 'entity' if 'entities' in f else None) != kind or o.get('source') in DROP: continue
             cls = o['class']
-            cur = out.get(cls)
-            if cur is None: out[cls] = {'class': cls, ids_key: o.get(ids_key, []), 'skip': o.get('skip'), 'rows': list(o.get('rows', []))}
+            # one entry per class AND id set: records of one class with different ids keep their own rows (Waxed Up's
+            # coating waxes, its oxidiser oxidises; an empty spool removes wire, a full one connects)
+            key = (cls, tuple(sorted(o.get(ids_key, []))))
+            cur = out.get(key)
+            if cur is None: out[key] = {'class': cls, ids_key: sorted(o.get(ids_key, [])), 'skip': o.get('skip'), 'rows': list(o.get('rows', []))}
             else:
                 if o.get('skip') and not cur['rows']: cur['skip'] = o['skip']
                 cur['rows'] += [r for r in o.get('rows', []) if r not in cur['rows']]
-                cur[ids_key] = sorted(set(cur[ids_key]) | set(o.get(ids_key, [])))
-    return sorted(out.values(), key=lambda e: e['class'])
+    return sorted(out.values(), key=lambda e: (e['class'], e[ids_key]))
 for kind, key, name in (('entity', 'entities', 'entities.json'), ('item', 'items', 'items.json')):
     es = gather(kind, key)
     with open(os.path.join(os.path.dirname(OUT), name), 'w') as w: json.dump(es, w, separators=(',', ':'))

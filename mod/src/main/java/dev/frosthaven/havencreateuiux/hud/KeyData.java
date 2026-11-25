@@ -37,7 +37,8 @@ import net.neoforged.neoforge.capabilities.Capabilities;
  * "none" or "trap": nothing shows on that block, not even the fallback (a trap: SecurityCraft's disguised mines).
  */
 final class KeyData {
-    enum Result { NO_ENTRY, SKIP, ADDED, NOTHING }
+    /** SPECIFIC: a row for this held item matched, so its click takes the use key (no Open fallback) */
+    enum Result { NO_ENTRY, SKIP, ADDED, SPECIFIC, NOTHING }
 
     private record Hand(String type, List<String> values) {}
     private record Row(String label, boolean sneak, Hand hand, List<JsonObject> when) {}
@@ -117,15 +118,25 @@ final class KeyData {
         if (e.skip() != null) return Result.SKIP;
         boolean handsEmpty = hand.isEmpty() && p.getOffhandItem().isEmpty();
         int before = rows.size();
+        List<Row> hit = new java.util.ArrayList<>();
         for (Row r : e.rows()) {
             if (r.sneak() && !hand.isEmpty()) continue;                         // sneaking with an item skips block use
             if (!r.sneak() && p.isSecondaryUseActive() && !handsEmpty) continue;
             if (!hand(r.hand(), hand, state) || !when(r.when(), mc, state, bh)) continue;
+            hit.add(r);
+        }
+        // an item's own use (useItemOn, or an event for that item) takes the click before the block's use without an
+        // item: a row for this item replaces the rows for any hand on the same key (toolbox Dye, not Dye and Open)
+        boolean specific = hit.stream().anyMatch(r -> !r.sneak() && SPECIFIC.contains(r.hand().type()));
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Row r : hit) {
+            if (specific && !r.sneak() && !SPECIFIC.contains(r.hand().type())) continue;
             String label = r.label().equals("Fill or empty") ? fillOrEmpty(hand) : r.label();
+            if (!seen.add((r.sneak() ? "s:" : "u:") + label)) continue;      // one row per label and key
             if (r.sneak()) KeyRules.add(rows, label, "key.sneak", "key.use");
             else KeyRules.add(rows, label, "key.use");
         }
-        return rows.size() > before ? Result.ADDED : Result.NOTHING;
+        return rows.size() > before ? (specific ? Result.SPECIFIC : Result.ADDED) : Result.NOTHING;
     }
 
     /** "Fill or empty" rows in the short words: a full container empties into the block, an empty one fills from it
@@ -137,6 +148,8 @@ final class KeyData {
         return full ? (bucket ? "Empty bucket" : "Empty tank") : (bucket ? "Fill bucket" : "Fill tank");
     }
 
+    private static final java.util.Set<String> SPECIFIC = java.util.Set.of("item", "tag", "class", "same_block", "fluid_container");
+
     private static boolean hand(Hand h, ItemStack s, BlockState state) {
         return switch (h.type()) {
             case "empty" -> s.isEmpty();
@@ -144,6 +157,7 @@ final class KeyData {
             case "nonempty" -> !s.isEmpty();
             case "item" -> h.values().contains(BuiltInRegistries.ITEM.getKey(s.getItem()).toString());
             case "tag" -> h.values().stream().anyMatch(t -> s.is(TagKey.create(Registries.ITEM, ResourceLocation.parse(t))));
+            case "not_tag" -> h.values().stream().noneMatch(t -> s.is(TagKey.create(Registries.ITEM, ResourceLocation.parse(t))));
             case "class" -> h.values().stream().anyMatch(c -> Reflect.is(s.getItem(), c));
             case "block_item" -> s.getItem() instanceof BlockItem;
             case "same_block" -> s.getItem() instanceof BlockItem bi && bi.getBlock() == state.getBlock();

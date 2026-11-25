@@ -28,10 +28,10 @@ final class KeyBlocks {
     private static final net.neoforged.neoforge.common.ItemAbility[] TOOL_USES = {
             net.neoforged.neoforge.common.ItemAbilities.AXE_SCRAPE, net.neoforged.neoforge.common.ItemAbilities.AXE_WAX_OFF,
             net.neoforged.neoforge.common.ItemAbilities.AXE_STRIP, net.neoforged.neoforge.common.ItemAbilities.HOE_TILL,
-            net.neoforged.neoforge.common.ItemAbilities.SHOVEL_FLATTEN};
-    private static final String[] TOOL_WORDS = {"Scrape", "Remove wax", "Strip", "Till", "Make path"};
-    /** Till and path need an open top; scrape, wax off and strip do not. */
-    private static final boolean[] TOOL_OPEN_TOP = {false, false, false, true, true};
+            net.neoforged.neoforge.common.ItemAbilities.SHOVEL_DOUSE, net.neoforged.neoforge.common.ItemAbilities.SHOVEL_FLATTEN};
+    private static final String[] TOOL_WORDS = {"Scrape", "Remove wax", "Strip", "Till", "Put out", "Make path"};
+    /** Till and path need an open top; scrape, wax off, strip and douse (a lit campfire, a brazier) do not. */
+    private static final boolean[] TOOL_OPEN_TOP = {false, false, false, true, false, true};
 
     /** Seats by their mods' block classes: Create's seat (sits on use unless sneaking), Handcrafted's chairs, couches,
      *  benches and cushions, Bits 'n' Bobs' chair. */
@@ -40,6 +40,27 @@ final class KeyBlocks {
                 || Reflect.is(b, "earth.terrarium.handcrafted.common.blocks.ChairBlock") || Reflect.is(b, "earth.terrarium.handcrafted.common.blocks.CouchBlock")
                 || Reflect.is(b, "earth.terrarium.handcrafted.common.blocks.BenchBlock") || Reflect.is(b, "earth.terrarium.handcrafted.common.blocks.CushionBlock")
                 || Reflect.is(b, "com.kipti.bnb.content.chair.ChairBlock");
+    }
+
+    /** What use on a seat does, or null for the block's other rules (KeyRules): Create's SeatBlock.useItemOn in its order:
+     *  a dye of another colour dyes it; a seat a player sits on does nothing; a mob on the player's lead is seated
+     *  (getLeashed); else the player sits (a mob sitting there is put off). Handcrafted seats with a cushion item take the
+     *  cushion (the audited data rows). "" = no row. */
+    static String seatWord(Minecraft mc, LocalPlayer p, ItemStack hand, net.minecraft.world.level.block.state.BlockState state, BlockHitResult bh) {
+        var b = state.getBlock();
+        if (!seat(b) || p.isSecondaryUseActive()) return null;
+        if (hand.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("handcrafted", "cushions")))) return null;
+        String seat = "com.simibubi.create.content.contraptions.actors.seat.SeatBlock";
+        if (!Reflect.is(b, seat)) return "Sit";
+        var dye = net.minecraft.world.item.DyeColor.getColor(hand);
+        if (dye != null && dye != Reflect.call(b, "getColor")) return "Dye";
+        var seats = mc.level.getEntitiesOfClass(net.minecraft.world.entity.Entity.class, new net.minecraft.world.phys.AABB(bh.getBlockPos()),
+                e -> Reflect.is(e, "com.simibubi.create.content.contraptions.actors.seat.SeatEntity"));
+        if (!seats.isEmpty() && !seats.get(0).getPassengers().isEmpty()) {
+            return seats.get(0).getPassengers().get(0) instanceof net.minecraft.world.entity.player.Player ? "" : "Sit";
+        }
+        Object leashed = Reflect.callStatic(seat, "getLeashed", mc.level, p);
+        return leashed instanceof com.google.common.base.Optional<?> o && o.isPresent() ? "Seat mob" : "Sit";
     }
 
     /** Farming and fire on use, as the game decides it: flint and steel or a fire charge (light, ignite, start a fire); bone meal on what it grows (BonemealableBlock.isValidBonemealTarget),
@@ -59,6 +80,18 @@ final class KeyBlocks {
             if (TOOL_OPEN_TOP[i] && (bh.getDirection() == net.minecraft.core.Direction.DOWN || !mc.level.isEmptyBlock(pos.above()))) continue;
             var ctx = new net.minecraft.world.item.context.UseOnContext(p, net.minecraft.world.InteractionHand.MAIN_HAND, bh);
             if (state.getToolModifiedState(ctx, TOOL_USES[i], true) != null) return TOOL_WORDS[i];
+        }
+        // Create: Oxidation's own handler (CreateOxidizedNeoForge.onRightClickBlock, an event before the block's use): on a
+        // block it oxidizes, honeycomb waxes; an AxeItem (only: a Mekanism paxel is a DiggerItem) removes wax, else scrapes
+        String ox = "dev.mrmulle.createoxidized.OxidationProperties";
+        if (Reflect.cls(ox) != null && Reflect.bool(Reflect.callStatic(ox, "isOxidizable", state))) {
+            boolean waxed = Reflect.getStatic(ox, "WAXED") instanceof net.minecraft.world.level.block.state.properties.BooleanProperty w && state.hasProperty(w) && state.getValue(w);
+            Object stage = Reflect.getStatic(ox, "STAGE") instanceof net.minecraft.world.level.block.state.properties.Property<?> st && state.hasProperty(st) ? state.getValue(st) : null;
+            if (hand.is(net.minecraft.world.item.Items.HONEYCOMB) && !waxed) return "Wax";
+            if (hand.getItem() instanceof net.minecraft.world.item.AxeItem) {
+                if (waxed) return "Remove wax";
+                if (stage != null && !String.valueOf(stage).equalsIgnoreCase("unaffected")) return "Scrape";
+            }
         }
         if (hand.getItem() instanceof net.minecraft.world.item.HoneycombItem && net.minecraft.world.item.HoneycombItem.getWaxed(state).isPresent()) return "Wax";
         if (hand.getItem() instanceof net.minecraft.world.item.FlintAndSteelItem || hand.getItem() instanceof net.minecraft.world.item.FireChargeItem) {

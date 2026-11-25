@@ -85,7 +85,7 @@ final class KeyMods {
     /** Stateful: standing on an ElevatorID elevator, jump goes up and sneak goes down. */
     static void elevator(List<KeyRules.Row> rows, LocalPlayer p) {
         if (Reflect.cls("com.vsngarcia.ElevatorBlockBase") == null || !p.onGround()) return;
-        var below = p.level().getBlockState(p.blockPosition().below());
+        var below = p.level().getBlockState(KeySable.below(p));   // on a ship: its block
         if (!Reflect.is(below.getBlock(), "com.vsngarcia.ElevatorBlockBase")) return;
         KeyRules.add(rows, "Up", "key.jump");
         KeyRules.add(rows, "Down", "key.sneak");
@@ -190,5 +190,53 @@ final class KeyMods {
         boolean started = Reflect.call(supplier, "get") instanceof net.minecraft.core.component.DataComponentType<?> type && hand.has(type);
         KeyRules.add(rows, started ? "Connect" : "Start wire", "key.use");
         return true;
+    }
+
+
+    /** Sophisticated Storage on its front face (StorageBlockBase.tryAddUpgrade, main hand; sneaking through
+     *  CommonEventHandler.onSneakItemBlockInteraction too): an upgrade item goes in. A limited barrel's front takes any
+     *  item (deposit) and a dye colours its count (LimitedBarrelBlock). True when it decided. */
+    static boolean sophisticatedFront(List<KeyRules.Row> rows, net.minecraft.world.item.ItemStack hand, BlockState state, BlockHitResult bh) {
+        Object b = state.getBlock();
+        if (hand.isEmpty() || !Reflect.is(b, "net.p3pp3rf1y.sophisticatedstorage.block.StorageBlockBase")) return false;
+        if (Reflect.call(b, "getFacing", state) != bh.getDirection()) return false;
+        if (Reflect.is(hand.getItem(), "net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeItemBase")) {
+            KeyRules.add(rows, "Add upgrade", "key.use");
+            KeyRules.add(rows, "Add upgrade", "key.sneak", "key.use");
+            return true;
+        }
+        if (!Reflect.is(b, "net.p3pp3rf1y.sophisticatedstorage.block.LimitedBarrelBlock")) return false;
+        if (hand.getItem() instanceof net.minecraft.world.item.DyeItem) {
+            KeyRules.add(rows, "Dye count", "key.use");
+            KeyRules.add(rows, "Dye all counts", "key.sneak", "key.use");
+        } else KeyRules.add(rows, "Deposit", "key.use");
+        return true;
+    }
+
+    /** Farmer's Delight cutting board (CuttingBoardBlock$ToolCarvingEvent.onSneakPlaceTool): sneaking with a tool, a
+     *  trident or shears in the main hand on an empty board places it there. True when it decided. */
+    static boolean cuttingBoard(List<KeyRules.Row> rows, Minecraft mc, LocalPlayer p, net.minecraft.world.item.ItemStack hand, BlockState state, BlockHitResult bh) {
+        if (!Reflect.is(state.getBlock(), "vectorwing.farmersdelight.common.block.CuttingBoardBlock")) return false;
+        var item = hand.getItem();
+        if (!(item instanceof net.minecraft.world.item.TieredItem || item instanceof net.minecraft.world.item.TridentItem || item instanceof net.minecraft.world.item.ShearsItem)) return false;
+        if (!Reflect.bool(Reflect.call(mc.level.getBlockEntity(bh.getBlockPos()), "isEmpty"))) return false;
+        KeyRules.add(rows, "Place tool", "key.sneak", "key.use");
+        return false;   // the plain click's rows (carving recipes) still come from the data
+    }
+
+    /** Drekki Rancher's DrekkiInteract, in its order: food it eats now feeds; at work a sneak click opens it; an empty hand's
+     *  sneak click pets; a saddled Mature takes its owner on a plain click; else a plain click opens its screen. */
+    static void drekki(List<KeyRules.Row> rows, LocalPlayer p, Entity d, net.minecraft.world.item.ItemStack hand) {
+        if (!Reflect.bool(Reflect.call(d, "live"))) return;
+        boolean mine = p.getUUID().equals(Reflect.call(d, "owner")), ghost = Reflect.bool(Reflect.call(d, "ghost"));
+        int job = Reflect.call(d, "job") instanceof Integer j ? j : 0;
+        String interact = "dev.frosthaven.ranchercompanion.entity.DrekkiInteract";
+        if (mine && !ghost && Reflect.bool(Reflect.callStatic(interact, "handFeeds", d, hand))) { KeyRules.add(rows, "Feed", "key.use"); return; }
+        if (job > 0) { if (mine) KeyRules.add(rows, "Drekki inventory", "key.sneak", "key.use"); return; }
+        boolean opens = mine && Reflect.bool(Reflect.callStatic(interact, "opensScreen", hand));
+        boolean ride = opens && Reflect.bool(Reflect.call(d, "rideable")) && !d.isVehicle() && !p.isPassenger();
+        if (opens) KeyRules.add(rows, ride ? "Ride" : "Drekki inventory", "key.use");
+        if (hand.isEmpty() && !ghost) KeyRules.add(rows, "Pet", "key.sneak", "key.use");
+        else if (ride) KeyRules.add(rows, "Drekki inventory", "key.sneak", "key.use");   // only when use rides: else use already opens it
     }
 }

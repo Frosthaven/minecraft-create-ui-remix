@@ -1,6 +1,7 @@
 package dev.frosthaven.havencreateuiux.hud;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
 import java.util.WeakHashMap;
@@ -40,7 +41,9 @@ public final class SlotRead {
     /** A slot's one line (its ammo, else its Mekanism mode), its digit row, and whether it is a Mekanism mode item (held,
      *  its slot shows Mekanism's item mode key). An item with ammo and a mode (the Electric Bow) shows only its ammo. A
      *  gun's fire mode and ammo choice are chips (GunRead). */
-    record Badge(String text, int row) {}
+    record Badge(String text, int row, String total, int totalRow) {
+        Badge(String text, int row) { this(text, row, null, 0); }
+    }
 
     private SlotRead() {}
 
@@ -49,7 +52,9 @@ public final class SlotRead {
         try {
             String[] ammo = ammo(p, s);   // {text, "low" | "empty" | null}
             String[] mode = mode(s);      // {text, "green" | "dim" | null}
-            if (ammo != null) return new Badge(ammo[0], row(ammo[1]));
+            if (ammo != null) return ammo.length > 2 && ammo[2] != null
+                    ? new Badge(ammo[0], row(ammo[1]), ammo[2], ammo[2].equals("0") ? row("empty") : CompactAtlas.DIM)
+                    : new Badge(ammo[0], row(ammo[1]));
             if (mode == null) return null;
             int modeRow = mode[1] == null ? CompactAtlas.WHITE : mode[1].equals("green") ? CompactAtlas.jetRow('N') : CompactAtlas.DIM;
             return new Badge(mode[0], modeRow);
@@ -92,21 +97,28 @@ public final class SlotRead {
 
     private static String[] ammo(Player p, ItemStack s) {
         if (isNtgl(s)) return ntgl(p, s);
-        if (s.getItem() instanceof CrossbowItem) {
+        if (s.getItem() instanceof CrossbowItem w) {   // loaded over 1, and below it what it can load next (arrows, rockets)
             ChargedProjectiles c = s.get(DataComponents.CHARGED_PROJECTILES);
             boolean loaded = c != null && !c.isEmpty();
-            return new String[] {loaded ? "1/1" : "0/1", loaded ? null : "empty"};
+            int n = projectiles(p, w);
+            return new String[] {loaded ? "1/1" : "0/1", loaded ? null : "empty", String.valueOf(Math.min(n, CAP))};
         }
         if (s.getItem() instanceof ProjectileWeaponItem w) {
             if (w.getClass().getName().endsWith("ElectroZapperItem")) return null;   // a battery, no projectiles
-            Predicate<ItemStack> ok = w.getAllSupportedProjectiles();
-            int n = 0;
-            Inventory inv = p.getInventory();
-            for (int i = 0; i < inv.getContainerSize(); i++) { ItemStack it = inv.getItem(i); if (!it.isEmpty() && ok.test(it)) n += it.getCount(); }
+            int n = projectiles(p, w);
             HudLog.changed("ammo:" + s.getItem(), n == 0, "slot ammo: {} reads its projectiles from the inventory ({} now)", s.getItem(), n);
             return new String[] {String.valueOf(Math.min(n, CAP)), n == 0 ? "empty" : null};
         }
         return null;
+    }
+
+    /** The inventory's items (offhand included) this weapon fires: its own getAllSupportedProjectiles(). */
+    private static int projectiles(Player p, ProjectileWeaponItem w) {
+        Predicate<ItemStack> ok = w.getAllSupportedProjectiles();
+        int n = 0;
+        Inventory inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) { ItemStack it = inv.getItem(i); if (!it.isEmpty() && ok.test(it)) n += it.getCount(); }
+        return n;
     }
 
     private static String[] ntgl(Player p, ItemStack s) {
@@ -125,7 +137,37 @@ public final class SlotRead {
         int count = s.get(ammoCount.get()) instanceof Integer i ? i : 0;
         String state = count == 0 ? "empty" : count <= c[1] * 0.25 ? "low" : null;
         String text = c[2] == 1 ? String.valueOf(Math.round(100.0 * count / c[1])) : Math.min(count, CAP) + "/" + Math.min(c[1], CAP);
-        return new String[] {text, state};
+        Integer total = reserve(p, s, now);
+        // a bar or percent gun (Blazegun fuel, Pneumatic Hammer air) counts in fuel units: its total in the top line's
+        // unit, a percent of one full magazine (16 coal in a Blazegun: 128)
+        if (total != null && c[2] == 1) total = (int) Math.round(100.0 * total / c[1]);
+        return new String[] {text, state, total == null ? null : String.valueOf(Math.min(total, CAP))};
+    }
+
+    private static final Map<ItemStack, long[]> RESERVE = new WeakHashMap<>();
+    private static Method inventoryAmmo;
+
+    /** The rounds a reload can take from the inventory, as NTGL's own HUD counts them
+     *  (WeaponHud.getInventoryAmmoCount(gun, inventory): every stack the gun's current ammo accepts, count times its
+     *  value): it follows the ammo kind chosen and works for either hand. Read at most every 100 ms; null when absent. */
+    private static Integer reserve(Player p, ItemStack s, long now) {
+        long[] c = RESERVE.get(s);
+        if (c != null && now - c[0] < 100) return c[1] < 0 ? null : (int) c[1];
+        long n = -1;
+        try {
+            if (inventoryAmmo == null) {
+                Class<?> hud = Reflect.cls("com.nukateam.ntgl.client.render.hud.WeaponHud");
+                if (hud != null) {
+                    inventoryAmmo = hud.getDeclaredMethod("getInventoryAmmoCount", ItemStack.class, net.minecraft.world.entity.player.Inventory.class);
+                    inventoryAmmo.setAccessible(true);
+                }
+            }
+            if (inventoryAmmo != null && inventoryAmmo.invoke(null, s, p.getInventory()) instanceof Integer i) n = i;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            HudLog.error("ntgl-reserve", "NTGL's inventory ammo count could not be read (no ammo total)", e);
+        }
+        RESERVE.put(s, new long[] {now, n});
+        return n < 0 ? null : (int) n;
     }
 
     /** {now, capacity (0: no ammo shown), 1 when the counter is a bar or percent}. */

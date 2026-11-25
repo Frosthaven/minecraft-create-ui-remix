@@ -82,7 +82,8 @@ final class KeyThingData {
     }
 
     private static Entry find(Table t, Object thing, String id) {
-        Object r = t.resolved.computeIfAbsent(thing instanceof Entity e ? e.getType() : thing, k -> {
+        // by type and class: vehicle parts (Ad Astra's, NeoForge PartEntity) share their parent's type with another class
+        Object r = t.resolved.computeIfAbsent(thing instanceof Entity e ? List.of(e.getType(), e.getClass()) : thing, k -> {
             Entry e = t.byId.get(id);
             if (e == null) for (var p : t.byPattern) if (p.getKey().matcher(id).matches()) { e = p.getValue(); break; }
             if (e == null) {

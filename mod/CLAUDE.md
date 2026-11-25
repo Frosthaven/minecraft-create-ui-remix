@@ -215,7 +215,9 @@ not a spectator.
   NTGL's `ntgl:ammo` layer (`REPLACED`; its fire mode, ammo type icon and fuel bars go with it). `MekanismHandHudMixin` (optional
   `mekanism.mixins.json`, gated on `CompactHud.active()`): Mekanism's top-left `MekanismHUD.render` reads the hand slots'
   mode items (`IModeItem`) and the Meka-Tool (`IModuleContainerItem`) as empty (`SlotRead.hideHandHud`), so their "Mode:"
-  lines are left out; armor lines and the centred mode-change message stay. Logs: `slot ammo:` /
+  lines are left out; armor lines and the centred mode-change message stay. Ammo total (1.6.1, `SlotBadges`): under the
+  loaded count, the inventory's reserve for the current ammo kind from NTGL's own `WeaponHud.getInventoryAmmoCount`
+  (cached 100 ms; bar guns as a percent of the magazine), and for bows and crossbows the accepted projectiles. Logs: `slot ammo:` /
   `slot mode:` once per item and value change.
 
 ## Contextual and stateful key hints (`KeyRules`, `KeyHintsHud`, 1.6.0)
@@ -265,6 +267,18 @@ General rules first; data adds rows; a fallback only where nothing else spoke. A
   animals, item frames, cauldrons, ...). `KeyBlocks`: seats, tool uses (`getToolModifiedState`, scrape and wax off before
   strip), farm words, levers/buttons/doors/trapdoors, Open for screens, Diagonal Blocks angles, hatchery eggs.
 - `KeyMods`: Carry On (its key, else sneak, with both hands empty and its config) and ElevatorID (jump up, sneak down).
+- `KeyWrench` (1.6.1): any `c:tools/wrench` on Create `IWrenchable` blocks (the word from the `onWrenched` override class:
+  Toggle window, Remove casing, Cut belt, Remove bracket, ...; none on casings and tracks), AE2, Refined Storage, Mekanism
+  `BlockBase`, FramedBlocks, Pipez sides; Refurbished Furniture's wrench gets no rows (its event cancels every click).
+- `KeyColonies` (1.6.1): MineColonies citizens, visitors, huts, barrel, crops and the Structurize / MineColonies tools.
+- `KeyAddons` (1.6.1): event and mob uses: Cataclysm stun (no rows), Waxed Up bottle filling, Pipez sides and destination
+  tool, Easy Villagers blocks, Climbable Ropes grab, Living Things elephant (reads `Tamed`, not the owner), Steam 'n' Rails
+  conductor, Curios equip on use (`canEquipFromUse` per free slot). `KeyRiding`: mounts and vehicles, plus Hypertube travel
+  and rope climbing (no vehicle). `KeySable`: ship blocks are hit in plot space; distances and the block underfoot go
+  through Sable's `projectOutOfSubLevel` / `getTrackingSubLevel`.
+- In-game test: `item replace ... weapon.mainhand` follows the server's selected slot, which can differ from the client's
+  right after a join: fill all nine hotbar slots. Thin blocks (shafts, cables, fences, valves) need the crosshair aimed at
+  their centre (`execute anchored eyes facing`). Prompts log only on change: an unchanged scene has no new line.
 - Data (`assets/haven_create_ui_ux/key_hints/`): `blocks.json` (`KeyData`), `entities.json` and `items.json`
   (`KeyThingData`: an entity's interact code; an item's use in the air (stateful), on a block or on an entity). Every
   "when" must hold; one the reader does not know fails, so a row never shows on a guess.

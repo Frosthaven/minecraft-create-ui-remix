@@ -58,6 +58,11 @@ final class SlotBadges {
     private static void draw(GuiGraphics g, SlotRead.Badge b, ItemStack s, int x, int y) {
         double right = x + EDGE, bottom = s.getCount() > 1 ? y + 8 : y + EDGE;   // above a stack count
         double w = digitsWidth(b.text()) * TS, f = Math.min(F, (right - x + 0.25) / w);   // the slot numbers' size; a wider text shrinks to span the socket
+        if (b.total() != null) {   // a gun's inventory total at the bottom, its loaded rounds one line above
+            double tw = digitsWidth(b.total()) * TS, tf = Math.min(F, (right - x + 0.25) / tw);
+            text(g, b.total(), b.totalRow(), right - tw * tf, bottom - LINE * tf, tf);
+            bottom -= LINE * tf + 0.5;
+        }
         text(g, b.text(), b.row(), right - w * f, bottom - LINE * f, f);
     }
 

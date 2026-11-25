@@ -36,6 +36,10 @@ public final class KeyHintsHud {
 
     private KeyHintsHud() {}
 
+    private static int cachedTick = -1;
+    private static List<KeyRules.Row> cachedPrompts;
+    private static List<KeyRules.Group> cachedHints;
+
     /** The Escape menu: the global keys in the stateful key hints' place, over the menu. */
     public static void onScreenRender(net.neoforged.neoforge.client.event.ScreenEvent.Render.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -63,11 +67,19 @@ public final class KeyHintsHud {
         if (mc.player == null || mc.options.hideGui || mc.screen != null || !CompactHud.active()) return;
         try {
             beginOrder();
-            List<KeyRules.Row> prompts = UiConfig.KEY_PROMPTS.get() ? KeyRules.prompts(mc, mc.player) : List.of();
-            List<KeyRules.Group> hints = UiConfig.KEY_HINTS.get() ? KeyRules.hints(mc, mc.player) : List.of();
-            HudLog.changed("key-prompts", describe(prompts), "key prompts: {}", describe(prompts));
-            HudLog.changed("key-hints", hints.stream().map(h -> h.title() + " " + describe(h.rows())).toList().toString(), "key hints: {}",
-                    hints.stream().map(h -> h.title() + " " + describe(h.rows())).toList());
+            // the rules (reflection, entity scans) once per client tick: what they read changes at most that often
+            int tick = mc.gui.getGuiTicks();
+            if (tick != cachedTick || cachedPrompts == null) {
+                cachedTick = tick;
+                cachedPrompts = UiConfig.KEY_PROMPTS.get() ? KeyRules.prompts(mc, mc.player) : List.of();
+                cachedHints = UiConfig.KEY_HINTS.get() ? KeyRules.hints(mc, mc.player) : List.of();
+                List<KeyRules.Row> pr = cachedPrompts; List<KeyRules.Group> hi = cachedHints;
+                HudLog.changed("key-prompts", describe(pr), "key prompts: {}", describe(pr));
+                HudLog.changed("key-hints", hi.stream().map(h -> h.title() + " " + describe(h.rows())).toList().toString(), "key hints: {}",
+                        hi.stream().map(h -> h.title() + " " + describe(h.rows())).toList());
+            }
+            List<KeyRules.Row> prompts = cachedPrompts;
+            List<KeyRules.Group> hints = cachedHints;
             float top = Float.isNaN(barTop) ? g.guiHeight() - 40 : barTop;
             if (!prompts.isEmpty()) prompts(g, mc.font, prompts, top);
             if (!hints.isEmpty()) hints(g, mc.font, hints);

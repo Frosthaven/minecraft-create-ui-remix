@@ -43,7 +43,9 @@ final class KeyVanilla {
             KeyRules.add(rows, "Add chest", "key.use");   // AbstractChestedHorse.mobInteract: llama, donkey, mule
             return true;
         }
-        if (e instanceof net.minecraft.world.entity.TamableAnimal t) {   // wolves: bone, cats: fish, parrots: seeds; own pets sit or stand
+        // wolves: bone, cats: fish, parrots: seeds; own pets sit or stand. Vanilla's own pets only: a mod's TamableAnimal
+        // has its own mobInteract (Living Things' elephant is ridden, never sits)
+        if (e instanceof net.minecraft.world.entity.TamableAnimal t && t.getClass().getName().startsWith("net.minecraft.")) {
             boolean tameItem = t instanceof net.minecraft.world.entity.animal.Wolf ? hand.is(Items.BONE)
                     : t instanceof net.minecraft.world.entity.animal.Parrot ? hand.is(net.minecraft.tags.ItemTags.PARROT_FOOD) : t.isFood(hand);
             if (!t.isTame() && tameItem && !(t instanceof net.minecraft.world.entity.animal.Wolf w && w.isAngry())) { KeyRules.add(rows, "Tame", "key.use"); return true; }
@@ -111,7 +113,12 @@ final class KeyVanilla {
         var pos = bh.getBlockPos();
         String w = null;
         if (b instanceof net.minecraft.world.level.block.CakeBlock) {   // CakeBlock.useItemOn / useWithoutItem
-            if (hand.is(net.minecraft.tags.ItemTags.CANDLES) && state.getValue(net.minecraft.world.level.block.CakeBlock.BITES) == 0) w = "Add candle";
+            // events first: Farmer's Delight's knife cuts a slice (KnifeItem$KnifeEvents.onCakeInteraction: a knife ability
+            // or farmersdelight:tools/knives); Amendments stacks a cake on a cake (DoubleCakeConversion)
+            if (hand.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("farmersdelight", "tools/knives")))
+                    && Reflect.cls("vectorwing.farmersdelight.common.item.KnifeItem") != null) w = "Cut slice";
+            else if (hand.is(Items.CAKE) && Reflect.cls("net.mehvahdjukaar.amendments.Amendments") != null) w = "Stack cake";
+            else if (hand.is(net.minecraft.tags.ItemTags.CANDLES) && state.getValue(net.minecraft.world.level.block.CakeBlock.BITES) == 0) w = "Add candle";
             else if (p.canEat(false)) w = "Eat";
         } else if (b instanceof net.minecraft.world.level.block.ComposterBlock) {   // ComposterBlock: COMPOSTABLES, level 8 full
             int level = state.getValue(net.minecraft.world.level.block.ComposterBlock.LEVEL);
@@ -159,6 +166,10 @@ final class KeyVanilla {
             if (hand.getItem() instanceof net.minecraft.world.item.DyeItem) w = "Dye";
             else if (hand.is(Items.GLOW_INK_SAC)) w = "Glow";
             else if (hand.is(Items.HONEYCOMB)) w = "Wax";
+            // Amendments (items_on_signs): another item on a hanging sign is shown on it (HangingSignDisplayItem)
+            else if (!hand.isEmpty() && !(hand.getItem() instanceof net.minecraft.world.item.SignApplicator) && b instanceof net.minecraft.world.level.block.SignBlock
+                    && (b instanceof net.minecraft.world.level.block.CeilingHangingSignBlock || b instanceof net.minecraft.world.level.block.WallHangingSignBlock)
+                    && Reflect.cls("net.mehvahdjukaar.amendments.Amendments") != null) w = "Display item";
             else if (hand.isEmpty() || !(hand.getItem() instanceof net.minecraft.world.item.SignApplicator)) w = "Edit";
         } else if (b instanceof net.minecraft.world.level.block.CampfireBlock) {   // a food it can cook goes on a free spot
             if (mc.level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.CampfireBlockEntity cb && cb.getCookableRecipe(hand).isPresent()) w = "Cook";
