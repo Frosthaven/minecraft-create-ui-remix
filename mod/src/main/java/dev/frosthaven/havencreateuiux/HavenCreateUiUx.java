@@ -68,9 +68,9 @@ public final class HavenCreateUiUx {
         // The compact action bar (hud/CompactHud): its layer, the Left Alt numbers key, the layers it replaces.
         modBus.addListener(RegisterGuiLayersEvent.class, CompactHud::register);
         // the bar's mipmapped textures are built before any world (on the first tick after a resource reload ends), not
-        // on the first frame in a world (a 160-320 ms stall at join, traintest rig 2026-11-24). Not inside the reload: work
-        // on the render thread there widened a Steam 'n' Rails race (its phantom track sprites uploaded against an atlas
-        // without mip levels, "Index 1 out of bounds for length 1" in SpriteContents.upload: a crash at start, 2026-11-25).
+        // on the first frame in a world (a 160-320 ms stall at join, traintest rig 2026-11-24). Not inside the reload, to
+        // keep render-thread work out of it. The Steam 'n' Rails start crash seen in the rig ("Index 1 out of bounds for
+        // length 1" in SpriteContents.upload from its PhantomSpriteManager) is not caused by this: it also came with 1.6.1.
         modBus.addListener(net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent.class,
                 e -> e.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) rm -> { HudLayers.packsChanged(); texturesPending = true; }));
         NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.client.event.ClientTickEvent.Post.class, e -> {
