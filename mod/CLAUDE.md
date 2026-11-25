@@ -311,6 +311,7 @@ reader case before a new key. Rows whose condition cannot be written are dropped
   `HINTS_SCALE` times it, for the right legend and the middle prompts (scaled about their bottom centre). 1 is the size
   before the option.
 - Load cost (1.7.0, traintest profile 2026-11-24/25): a client reload listener builds the bar's mipmapped textures
-  (`CompactHud.installTextures`) on the loading screen, not on the first frame in a world (a 160-320 ms stall at join),
+  (`CompactHud.installTextures`) on the first client tick after the reload ends (no loading overlay; never inside the reload:
+  that widened a Steam 'n' Rails sprite race, a start crash 2026-11-25), not on the first frame in a world (a 160-320 ms stall at join),
   and clears the per-reload answers: `HudLayers.createHudPack()` (asked for every HUD layer of every frame; it walked
   every selected pack id) and `PackScreens.namespaces()` (it copied the pack list on every draw).

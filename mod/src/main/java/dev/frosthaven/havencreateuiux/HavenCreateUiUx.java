@@ -45,6 +45,8 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  */
 @Mod(value = HavenCreateUiUx.ID, dist = Dist.CLIENT)
 public final class HavenCreateUiUx {
+    /** Set by the resource reload listener; the next client tick without the loading overlay builds the bar's textures. */
+    private static volatile boolean texturesPending;
     public static final String ID = "haven_create_ui_ux";
     private static final String DME = "darkmodeeverywhere";
     private static final int DME_DEFAULT_X = 32;
@@ -65,10 +67,15 @@ public final class HavenCreateUiUx {
                 event.registerReloadListener((ResourceManagerReloadListener) manager -> SplitBlit.reload()));
         // The compact action bar (hud/CompactHud): its layer, the Left Alt numbers key, the layers it replaces.
         modBus.addListener(RegisterGuiLayersEvent.class, CompactHud::register);
-        // the bar's mipmapped textures are built on the loading screen, not on the first frame in a world (a 160-320 ms
-        // stall at join, traintest rig 2026-11-24); the texture manager reloads them with every resource reload after
+        // the bar's mipmapped textures are built before any world (on the first tick after a resource reload ends), not
+        // on the first frame in a world (a 160-320 ms stall at join, traintest rig 2026-11-24). Not inside the reload: work
+        // on the render thread there widened a Steam 'n' Rails race (its phantom track sprites uploaded against an atlas
+        // without mip levels, "Index 1 out of bounds for length 1" in SpriteContents.upload: a crash at start, 2026-11-25).
         modBus.addListener(net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent.class,
-                e -> e.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) rm -> { HudLayers.packsChanged(); CompactHud.installTextures(); }));
+                e -> e.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) rm -> { HudLayers.packsChanged(); texturesPending = true; }));
+        NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.client.event.ClientTickEvent.Post.class, e -> {
+            if (texturesPending && net.minecraft.client.Minecraft.getInstance().getOverlay() == null) { texturesPending = false; CompactHud.installTextures(); }
+        });
         modBus.addListener(RegisterKeyMappingsEvent.class, CompactHud::registerKeys);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, CompactHud::onLayerPre);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Render.Post.class, CompactHud::onScreenRender);
