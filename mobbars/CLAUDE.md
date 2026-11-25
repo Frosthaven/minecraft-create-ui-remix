@@ -27,9 +27,13 @@ toggled in the client config (`haven_mob_health_bars-client.toml`); `notHostileW
   splits at the same size, health on the top 75 %, the durability left (sum of max damage - damage over sum of max
   damage) on the bottom 25 % (0.35 of 1.4 model px) in steel grey #9aa1a8, no trail. Slots HEAD, CHEST, LEGS, FEET and BODY (wolf armour; horse
   armour only with a `max_damage` component, vanilla's is not damageable), plus a Drekki's barding
-  (`DrekkiEntity.bardingItem()` by MethodHandle). Below 100 % it counts as damaged for WHEN_DAMAGED. Computed at most once
+  (`DrekkiEntity.bardingItem()` by MethodHandle). Below 100 % it counts as damaged for WHEN_DAMAGED, which covers every
+  non-hostile bar: other mobs and friendly (blue) players (`notHostileWhen`; hostile mobs and players always show). Computed at most once
   per client tick per entity (`WeakHashMap`, keyed by game time), only for entities that passed the other filters.
   The client sees other entities' wear: vanilla resends a worn stack when its components change (`equipmentHasChanged`).
+  Players are read in `RenderPlayerEvent.Pre` at HIGHEST (`ArmourWear.beforePlayerRender`): Cosmetic Armor Reworked swaps
+  the worn armour for the cosmetic stacks (EMPTY for a "show skin" slot) from its Pre (HIGH) to its Post (LOW), the window
+  the bar draws in, so players who hide their armour got no strip (2026-11-24, both players on the server hide all four).
   Drekki Rancher (to 0.5.1) keeps the barding stack on the server only (synced: tier and glint), so the client reads
   EMPTY and a Drekki gets no strip until that mod syncs the stack.
 - Iris: skipped in the shadow pass (`IrisApi.isRenderingShadowPass`, by reflection). Hidden with F1.

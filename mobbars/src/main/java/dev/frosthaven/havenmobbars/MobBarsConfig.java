@@ -31,7 +31,7 @@ public final class MobBarsConfig {
                 .translation("haven_mob_health_bars.config.hostile").define("hostile", true);
         NOT_HOSTILE = b.comment("Bars on every other mob: animals, villagers, pets, golems, neutral mobs (green).")
                 .translation("haven_mob_health_bars.config.not_hostile").define("notHostile", true);
-        NOT_HOSTILE_WHEN = b.comment("When the other mobs' bars show: WHEN_DAMAGED (below full health; the default) or ALWAYS.")
+        NOT_HOSTILE_WHEN = b.comment("When the bars of non-hostile mobs and friendly players show: WHEN_DAMAGED (below full health or worn armour below full durability; the default) or ALWAYS.")
                 .translation("haven_mob_health_bars.config.not_hostile_when").defineEnum("notHostileWhen", When.WHEN_DAMAGED);
         FRIENDLY_PLAYERS = b.comment("Bars on other players who have not hit a player in the last 30 seconds (blue).")
                 .translation("haven_mob_health_bars.config.friendly_players").define("friendlyPlayers", true);

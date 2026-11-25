@@ -5,9 +5,11 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Map;
 import java.util.WeakHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 
 /**
  * The worn armour's durability left (0..1) for the bar's bottom strip: sum of (max damage - damage) over sum of max
@@ -17,6 +19,10 @@ import net.minecraft.world.item.ItemStack;
  * Computed at most once per client tick per entity and cached ({@link WeakHashMap}); a frame that draws the bar only
  * reads the cache. The client sees other entities' armour damage because vanilla sends an equipment packet whenever a
  * worn stack's components change ({@code LivingEntity.equipmentHasChanged}: {@code ItemStack.matches}).
+ *
+ * Players are read before their render starts ({@link #beforePlayerRender}): Cosmetic Armor Reworked puts the cosmetic
+ * stacks (EMPTY for a slot set to show the skin) into the worn armour from its {@code RenderPlayerEvent.Pre} (HIGH) to
+ * its {@code .Post} (LOW), and the bar is drawn inside that window, so it read hidden armour as no armour.
  */
 final class ArmourWear {
     static final float NONE = -1;
@@ -44,6 +50,14 @@ final class ArmourWear {
             c.left = compute(e);
         }
         return c.left;
+    }
+
+    /** {@code RenderPlayerEvent.Pre} at HIGHEST, before Cosmetic Armor Reworked swaps the armour: fills this tick's
+     *  entry from the real stacks, so the bar's read later in the same render gets them from the cache. */
+    static void beforePlayerRender(RenderPlayerEvent.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !MobBarsConfig.ENABLED.get() || !MobBarsConfig.ARMOUR.get()) return;
+        of(event.getEntity(), mc.level.getGameTime());
     }
 
     private static float compute(LivingEntity e) {

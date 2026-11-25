@@ -71,13 +71,23 @@ public final class HudLayers {
         anyLayer = false;
     }
 
-    /** A selected resource pack named like "haven-create-hud" / "Create HUD". */
+    /** null until computed; the pack selection changes only with a resource reload, which clears it (packsChanged). */
+    private static Boolean createHudPack;
+
+    /** A selected resource pack named like "haven-create-hud" / "Create HUD". Asked for every HUD layer of every frame:
+     *  computed once per resource reload (it walked and rewrote every selected pack id each time, 2026-11-25 profile). */
     public static boolean createHudPack() {
-        for (String id : Minecraft.getInstance().getResourcePackRepository().getSelectedIds()) {
-            if (isCreateHudPack(id)) return true;
+        Boolean c = createHudPack;
+        if (c == null) {
+            boolean found = false;
+            for (String id : Minecraft.getInstance().getResourcePackRepository().getSelectedIds()) if (isCreateHudPack(id)) { found = true; break; }
+            createHudPack = c = found;
         }
-        return false;
+        return c;
     }
+
+    /** From the reload listener: the selected packs may have changed. */
+    public static void packsChanged() { createHudPack = null; PackScreens.packsChanged(); }
 
     public static boolean isCreateHudPack(String id) {
         return id.toLowerCase(Locale.ROOT).replace(' ', '-').replace('_', '-').contains("create-hud");

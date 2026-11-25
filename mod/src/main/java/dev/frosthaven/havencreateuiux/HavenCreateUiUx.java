@@ -65,6 +65,10 @@ public final class HavenCreateUiUx {
                 event.registerReloadListener((ResourceManagerReloadListener) manager -> SplitBlit.reload()));
         // The compact action bar (hud/CompactHud): its layer, the Left Alt numbers key, the layers it replaces.
         modBus.addListener(RegisterGuiLayersEvent.class, CompactHud::register);
+        // the bar's mipmapped textures are built on the loading screen, not on the first frame in a world (a 160-320 ms
+        // stall at join, traintest rig 2026-11-24); the texture manager reloads them with every resource reload after
+        modBus.addListener(net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent.class,
+                e -> e.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) rm -> { HudLayers.packsChanged(); CompactHud.installTextures(); }));
         modBus.addListener(RegisterKeyMappingsEvent.class, CompactHud::registerKeys);
         NeoForge.EVENT_BUS.addListener(RenderGuiLayerEvent.Pre.class, CompactHud::onLayerPre);
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Render.Post.class, CompactHud::onScreenRender);

@@ -25,7 +25,7 @@ public final class PackScreens {
 
     /** Class name to the ids of the mods in its jar. */
     private static final Map<String, Set<String>> MODS = new ConcurrentHashMap<>();
-    private static List<String> packIds = List.of();
+    private static List<String> packIds;   // null: compute on the next call
     private static Set<String> packNamespaces = Set.of();
 
     private PackScreens() {}
@@ -71,7 +71,11 @@ public final class PackScreens {
     }
 
     /** Asset namespaces of the selected Create HUD pack, read again when the selection changes. */
+    /** From the reload listener: recompute the namespaces on the next call. */
+    static void packsChanged() { packIds = null; }
+
     private static Set<String> namespaces() {
+        if (packIds != null) return packNamespaces;   // one answer per resource reload (it copied the pack list on every draw)
         var repository = Minecraft.getInstance().getResourcePackRepository();
         List<String> ids = List.copyOf(repository.getSelectedIds());
         if (!ids.equals(packIds)) {

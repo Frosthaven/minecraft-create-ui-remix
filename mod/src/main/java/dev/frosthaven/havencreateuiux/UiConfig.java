@@ -39,6 +39,7 @@ public final class UiConfig {
     public static final ModConfigSpec.DoubleValue SIDE_SCALE;
     public static final ModConfigSpec.BooleanValue KEY_PROMPTS;
     public static final ModConfigSpec.BooleanValue KEY_HINTS;
+    public static final ModConfigSpec.DoubleValue KEY_HINT_SCALE;
 
     static {
         var b = new ModConfigSpec.Builder();
@@ -61,6 +62,8 @@ public final class UiConfig {
                 .translation("haven_create_ui_ux.config.key_prompts").define("keyPrompts", true);
         KEY_HINTS = b.comment("Stateful key hints: the keys for what you ride, hold and wear (a gun's reload and ammo, a MekaSuit's modes), bottom right of the screen.")
                 .translation("haven_create_ui_ux.config.key_hints").define("keyHints", true);
+        KEY_HINT_SCALE = b.comment("The key hints' text size, both the line above the action bar and the legend at the bottom right (1: the default size).")
+                .translation("haven_create_ui_ux.config.key_hint_scale").defineInRange("keyHintScale", 1.0, 0.5, 2.0);
         b.pop();
         SPEC = b.build();
     }

@@ -9,6 +9,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
@@ -23,6 +24,8 @@ public final class HavenMobHealthBars {
         container.registerConfig(ModConfig.Type.CLIENT, MobBarsConfig.SPEC);
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderNameTagEvent.class, NameTags::onNameTag);   // before Post, same render call
+        // players' real armour, before Cosmetic Armor Reworked swaps in the cosmetic stacks (its Pre listener is HIGH)
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderPlayerEvent.Pre.class, ArmourWear::beforePlayerRender);
         NeoForge.EVENT_BUS.addListener(RenderLivingEvent.Post.class, MobBars::onRender);
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, LookTarget::onTick);   // the looked-at entity, once a tick
     }

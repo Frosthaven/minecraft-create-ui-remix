@@ -22,5 +22,6 @@
   "haven_create_ui_ux.config.key_prompts": "Contextual key hints (what you look at)",
   "haven_create_ui_ux.config.key_prompts.tooltip": "The keys for what you look at (ride, trade, rotate with a wrench), one line above the action bar.",
   "haven_create_ui_ux.config.key_hints": "Stateful key hints (what you ride, hold and wear)",
+  "haven_create_ui_ux.config.key_hint_scale": "Key hint text size",
   "haven_create_ui_ux.config.key_hints.tooltip": "The keys for what you ride, hold and wear (a gun's reload and ammo, a MekaSuit's modes), bottom right of the screen."
 }

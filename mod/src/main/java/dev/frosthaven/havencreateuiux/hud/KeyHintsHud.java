@@ -102,11 +102,19 @@ public final class KeyHintsHud {
         int total = -SPLIT * 4;
         for (KeyRules.Row r : rows) total += capsWidth(caps(r)) + 3 + font.width(r.label()) + SPLIT * 4;
         int x = (g.guiWidth() - total) / 2, y = Math.round(top) - PROMPT_GAP - ROW;
+        // drawn at hintsScale() about the line's bottom centre (just above the bar), like the legend about its corner
+        var pose = g.pose();
+        pose.pushPose();
+        float cx = g.guiWidth() / 2f, by = Math.round(top) - PROMPT_GAP;
+        pose.translate(cx, by, 0);
+        pose.scale(hintsScale(), hintsScale(), 1);
+        pose.translate(-cx, -by, 0);
         for (KeyRules.Row r : rows) {
             x += drawCaps(g, caps(r), x, y + (ROW - CAP_H) / 2, r.either()) + 3;
             text(g, font, r.label(), x, y + 1, TEXT);
             x += font.width(r.label()) + SPLIT * 4;
         }
+        pose.popPose();
     }
 
     /** Bottom right: the keys column at the right edge, the words right-aligned before it, a dim heading per group. */
@@ -121,7 +129,7 @@ public final class KeyHintsHud {
         int right = g.guiWidth() - 6, bottom = g.guiHeight() - (wings ? (int) Math.ceil(36 * CompactHud.scale()) : 6);
         int y = bottom - lines * (ROW + GAP) + GAP - GROUP_GAP * Math.max(0, groups.size() - 1), wordsRight = right - capsCol - 4;
         // drawn at HINTS_SCALE about the bottom-right corner; top: the stack's top on screen
-        int top = Math.round(bottom - (bottom - y) * HINTS_SCALE);
+        int top = Math.round(bottom - (bottom - y) * hintsScale());
         // too many rows for the screen: the stack's top runs past the top edge (logged on change, so tests and players
         // can tell; the rows still draw)
         HudLog.changed("key-hints-tall", lines + " " + (top < 4), top < 4 ? "key hints: {} lines reach past the top of the screen ({} px tall, {} px free)"
@@ -133,7 +141,7 @@ public final class KeyHintsHud {
         var pose = g.pose();
         pose.pushPose();
         pose.translate(right, bottom, 0);
-        pose.scale(HINTS_SCALE, HINTS_SCALE, 1);
+        pose.scale(hintsScale(), hintsScale(), 1);
         pose.translate(-right, -bottom, 0);
         boolean first = true;
         for (KeyRules.Group gr : groups) {
@@ -157,6 +165,9 @@ public final class KeyHintsHud {
     /** The right-side legend's size (the stateful key hints and the Escape menu's keys): 84 % of the prompts' size, so a
      *  full set of worn and held gear stays clear of the screen's top corner. */
     private static final float HINTS_SCALE = 0.84f;
+
+    /** Both key hint parts' size: HINTS_SCALE times the player's "keyHintScale" (1 = the default). */
+    static float hintsScale() { return HINTS_SCALE * UiConfig.KEY_HINT_SCALE.get().floatValue(); }
     /** The space above each group of the right-side legend but the first (GUI px, before HINTS_SCALE). */
     private static final int GROUP_GAP = 10;
 

@@ -109,8 +109,9 @@ public final class MobBars {
         float trail = trail(e, hp);
         // Worn armour's durability left (ArmourWear: once per client tick per entity), NONE without damageable armour.
         float armour = MobBarsConfig.ARMOUR.get() ? ArmourWear.of(e, mc.level.getGameTime()) : ArmourWear.NONE;
-        // Other mobs WHEN_DAMAGED: no bar at full health (once the damage trail has drained) and full armour.
-        if (col == NOT_HOSTILE && MobBarsConfig.NOT_HOSTILE_WHEN.get() == MobBarsConfig.When.WHEN_DAMAGED && hp >= max && trail <= hp
+        // Non-hostile (other mobs and friendly players) WHEN_DAMAGED: no bar at full health (once the damage trail has
+        // drained) and full armour; worn armour below full durability counts as damaged.
+        if ((col == NOT_HOSTILE || col == PLAYER) && MobBarsConfig.NOT_HOSTILE_WHEN.get() == MobBarsConfig.When.WHEN_DAMAGED && hp >= max && trail <= hp
                 && (armour == ArmourWear.NONE || armour >= 1)) return;
         if (armour != ArmourWear.NONE && !loggedArmour) { loggedArmour = true; LOG.once("armour", "first armour strip drawn: {} ({}% durability left)",
                 e.getType().getDescriptionId(), Math.round(armour * 100)); }

@@ -265,7 +265,9 @@ General rules first; data adds rows; a fallback only where nothing else spoke. A
 - `KeyVanilla`: vanilla blocks, entities and held uses by vanilla's own checks (signs, campfire cooking, brushing, leads
   on fences, armor stands, chest minecarts and boats, Bucketable catch, llama/donkey chests, taming, own pets sit/stand,
   animals, item frames, cauldrons, ...). `KeyBlocks`: seats, tool uses (`getToolModifiedState`, scrape and wax off before
-  strip), farm words, levers/buttons/doors/trapdoors, Open for screens, Diagonal Blocks angles, hatchery eggs.
+  strip), farm words, levers/buttons/doors/trapdoors, Open for screens, Diagonal Blocks angles, hatchery eggs. On a block
+  with a screen (chests, barrels, any inventory) a tool use other than Create: Oxidation's own scrape event shows Open on
+  M2 and the tool word on sneak + M2 (1.7.0): M2 opens the screen there.
 - `KeyMods`: Carry On (its key, else sneak, with both hands empty and its config) and ElevatorID (jump up, sneak down).
 - `KeyWrench` (1.6.1): any `c:tools/wrench` on Create `IWrenchable` blocks (the word from the `onWrenched` override class:
   Toggle window, Remove casing, Cut belt, Remove bracket, ...; none on casings and tracks), AE2, Refined Storage, Mekanism
@@ -305,3 +307,10 @@ reader case before a new key. Rows whose condition cannot be written are dropped
 - The right-side legend draws at `HINTS_SCALE` (0.84) with `GROUP_GAP` between groups; its height and any overlap with
   JourneyMap's minimap are logged (`key hints: N lines fit`, `the stack's top ... JourneyMap minimap`).
 - `%` is a glyph of the digits strip (key punctuation row, white); regenerate `parts.png` with `tools/hudpack.py`.
+- "Key hint text size" (`keyHintScale`, client config, 0.5 to 2.0, default 1; 1.7.0): `KeyHintsHud.hintsScale()` is
+  `HINTS_SCALE` times it, for the right legend and the middle prompts (scaled about their bottom centre). 1 is the size
+  before the option.
+- Load cost (1.7.0, traintest profile 2026-11-24/25): a client reload listener builds the bar's mipmapped textures
+  (`CompactHud.installTextures`) on the loading screen, not on the first frame in a world (a 160-320 ms stall at join),
+  and clears the per-reload answers: `HudLayers.createHudPack()` (asked for every HUD layer of every frame; it walked
+  every selected pack id) and `PackScreens.namespaces()` (it copied the pack list on every draw).

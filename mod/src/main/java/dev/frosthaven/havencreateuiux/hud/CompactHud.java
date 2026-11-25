@@ -205,9 +205,12 @@ public final class CompactHud {
     static final double MID = 24.4, XP_Y = 25.6, XP_H_U = 3, XP_X0 = -88.5, XP_X1 = 88.5;
     static final double LEVEL_K = 0.85, LEVEL_H = 6.6, ICON_W = 9, ICON_H = 7;   // readable at GUI scale 2-3
 
+    /** The bar's textures in the texture manager (each built once; from the reload listener, so before any world). */
+    public static void installTextures() { MipTexture.install(TEXTURES); }
+
     private static void render(GuiGraphics g, DeltaTracker delta) {
         if (!active()) return;
-        MipTexture.install(TEXTURES);
+        MipTexture.install(TEXTURES);   // a no-op once installed (the reload listener did it on the loading screen)
         beginOrder();
         var pose = g.pose();
         pose.pushPose();

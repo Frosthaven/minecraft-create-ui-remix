@@ -63,6 +63,37 @@ final class KeyBlocks {
         return leashed instanceof com.google.common.base.Optional<?> o && o.isPresent() ? "Seat mob" : "Sit";
     }
 
+    /** Create: Oxidation's own handler (CreateOxidizedNeoForge.onRightClickBlock, an event before the block's use): on a
+     *  block it oxidizes, honeycomb waxes; an AxeItem (only: a Mekanism paxel is a DiggerItem) removes wax, else scrapes. */
+    static String oxidationWord(ItemStack hand, net.minecraft.world.level.block.state.BlockState state) {
+        String ox = "dev.mrmulle.createoxidized.OxidationProperties";
+        if (Reflect.cls(ox) != null && Reflect.bool(Reflect.callStatic(ox, "isOxidizable", state))) {
+            boolean waxed = Reflect.getStatic(ox, "WAXED") instanceof net.minecraft.world.level.block.state.properties.BooleanProperty w && state.hasProperty(w) && state.getValue(w);
+            Object stage = Reflect.getStatic(ox, "STAGE") instanceof net.minecraft.world.level.block.state.properties.Property<?> st && state.hasProperty(st) ? state.getValue(st) : null;
+            if (hand.is(net.minecraft.world.item.Items.HONEYCOMB) && !waxed) return "Wax";
+            if (hand.getItem() instanceof net.minecraft.world.item.AxeItem) {
+                if (waxed) return "Remove wax";
+                if (stage != null && !String.valueOf(stage).equalsIgnoreCase("unaffected")) return "Scrape";
+            }
+        }
+        return null;
+    }
+
+    /** Farm and tool words as rows. Create: Oxidation's event runs before the block's use (plain use). The other words
+     *  come from the held item's useOn, which runs only when the block's own use passes: on a block that opens a screen,
+     *  plain use opens it, and the item acts only while sneaking (a vanilla copper chest: Open, sneak Scrape). */
+    static boolean farm(List<KeyRules.Row> rows, Minecraft mc, LocalPlayer p, ItemStack hand, net.minecraft.world.level.block.state.BlockState state, BlockHitResult bh) {
+        String ox = oxidationWord(hand, state);
+        if (ox != null) { KeyRules.add(rows, ox, "key.use"); return true; }
+        String w = farmWord(mc, p, hand, state, bh);
+        if (w == null) return false;
+        if (opensScreen(mc, state, bh.getBlockPos())) {
+            KeyRules.add(rows, "Open", "key.use");
+            KeyRules.add(rows, w, "key.sneak", "key.use");
+        } else KeyRules.add(rows, w, "key.use");
+        return true;
+    }
+
     /** Farming and fire on use, as the game decides it: flint and steel or a fire charge (light, ignite, start a fire); bone meal on what it grows (BonemealableBlock.isValidBonemealTarget),
      *  a plant item on a spot it can stand (top face, Block.canSurvive), a tool that changes the block (NeoForge's
      *  getToolModifiedState with HOE_TILL, AXE_STRIP, SHOVEL_FLATTEN, simulated: modded logs and soils count), a mature
@@ -80,18 +111,6 @@ final class KeyBlocks {
             if (TOOL_OPEN_TOP[i] && (bh.getDirection() == net.minecraft.core.Direction.DOWN || !mc.level.isEmptyBlock(pos.above()))) continue;
             var ctx = new net.minecraft.world.item.context.UseOnContext(p, net.minecraft.world.InteractionHand.MAIN_HAND, bh);
             if (state.getToolModifiedState(ctx, TOOL_USES[i], true) != null) return TOOL_WORDS[i];
-        }
-        // Create: Oxidation's own handler (CreateOxidizedNeoForge.onRightClickBlock, an event before the block's use): on a
-        // block it oxidizes, honeycomb waxes; an AxeItem (only: a Mekanism paxel is a DiggerItem) removes wax, else scrapes
-        String ox = "dev.mrmulle.createoxidized.OxidationProperties";
-        if (Reflect.cls(ox) != null && Reflect.bool(Reflect.callStatic(ox, "isOxidizable", state))) {
-            boolean waxed = Reflect.getStatic(ox, "WAXED") instanceof net.minecraft.world.level.block.state.properties.BooleanProperty w && state.hasProperty(w) && state.getValue(w);
-            Object stage = Reflect.getStatic(ox, "STAGE") instanceof net.minecraft.world.level.block.state.properties.Property<?> st && state.hasProperty(st) ? state.getValue(st) : null;
-            if (hand.is(net.minecraft.world.item.Items.HONEYCOMB) && !waxed) return "Wax";
-            if (hand.getItem() instanceof net.minecraft.world.item.AxeItem) {
-                if (waxed) return "Remove wax";
-                if (stage != null && !String.valueOf(stage).equalsIgnoreCase("unaffected")) return "Scrape";
-            }
         }
         if (hand.getItem() instanceof net.minecraft.world.item.HoneycombItem && net.minecraft.world.item.HoneycombItem.getWaxed(state).isPresent()) return "Wax";
         if (hand.getItem() instanceof net.minecraft.world.item.FlintAndSteelItem || hand.getItem() instanceof net.minecraft.world.item.FireChargeItem) {

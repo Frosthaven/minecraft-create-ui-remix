@@ -147,8 +147,8 @@ final class KeyRules {
                 // Create's mechanical crafter (KeyCreate.crafter)
             } else if (Reflect.is(state.getBlock(), "dev.frosthaven.ranchercompanion.block.HatcheryBlock")) {
                 KeyBlocks.hatchery(rows, mc, hand, state, bh);
-            } else if (KeyBlocks.farmWord(mc, p, hand, state, bh) != null) {
-                add(rows, KeyBlocks.farmWord(mc, p, hand, state, bh), "key.use");
+            } else if (KeyBlocks.farm(rows, mc, p, hand, state, bh)) {
+                // farm and tool words; on a block with a screen the item acts only while sneaking (KeyBlocks.farm)
             } else if (KeyBlocks.seatWord(mc, p, hand, state, bh) instanceof String seatWord) {
                 if (!seatWord.isEmpty()) add(rows, seatWord, "key.use");   // seats (KeyBlocks.seatWord)
             } else if (!(p.isSecondaryUseActive() && !(hand.isEmpty() && p.getOffhandItem().isEmpty())) && KeyVanilla.block(rows, mc, p, hand, state, bh)) {
