@@ -147,6 +147,10 @@ final class KeyRules {
                 // Create's mechanical crafter (KeyCreate.crafter)
             } else if (Reflect.is(state.getBlock(), "dev.frosthaven.ranchercompanion.block.HatcheryBlock")) {
                 KeyBlocks.hatchery(rows, mc, hand, state, bh);
+            } else if (Reflect.is(state.getBlock(), "dev.frosthaven.ranchercompanion.block.TombstoneBlock")) {
+                // Drekki Rancher's tombstone: its own data rows only (Pay Respects with flint and steel, Put out candle,
+                // Open), so the general flint and steel words ("Start fire") never take its place
+                KeyData.rows(rows, mc, p, hand, state, bh);
             } else if (KeyBlocks.farm(rows, mc, p, hand, state, bh)) {
                 // farm and tool words; on a block with a screen the item acts only while sneaking (KeyBlocks.farm)
             } else if (KeyBlocks.seatWord(mc, p, hand, state, bh) instanceof String seatWord) {
