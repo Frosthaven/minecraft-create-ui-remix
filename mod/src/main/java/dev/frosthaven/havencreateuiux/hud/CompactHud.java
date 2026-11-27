@@ -209,7 +209,9 @@ public final class CompactHud {
     public static void installTextures() { MipTexture.install(TEXTURES); }
 
     private static void render(GuiGraphics g, DeltaTracker delta) {
-        if (!active()) return;
+        /* F1 hides the interface: NeoForge does not hide a mod's own layer, each layer checks (Shane, 2026-11-27: the bar
+           stayed on screen with F1); the hidden vanilla layers stay hidden too, so nothing of the HUD shows */
+        if (!active() || Minecraft.getInstance().options.hideGui) return;
         MipTexture.install(TEXTURES);   // a no-op once installed (the reload listener did it on the loading screen)
         beginOrder();
         var pose = g.pose();
