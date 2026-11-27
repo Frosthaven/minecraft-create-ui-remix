@@ -281,6 +281,7 @@ final class KeyRules {
             SlotRead.Badge b = SlotRead.read(p, s);
             add(rows, "Mode", b == null ? null : b.text(), false, "key.sneak", "key.mekanism.mode");
         }
+        charge(rows, s);
         group(out, s.getHoverName().getString() + " (offhand)", rows);
     }
 
@@ -305,6 +306,7 @@ final class KeyRules {
                 add(rows, "Mode", b == null ? null : b.text(), false, "key.mekanism.mode");
             }
             if (Reflect.is(s.getItem(), "mekanism.common.content.gear.IModuleContainerItem")) add(rows, "Modules", "key.mekanism.module_tweaker");
+            charge(rows, s);
             if (id.startsWith("ars_nouveau:") && id.endsWith("_spell_book")) {
                 add(rows, "Previous spell", "key.ars_nouveau.previous_slot");
                 add(rows, "Next spell", "key.ars_nouveau.next_slot");
@@ -390,6 +392,15 @@ final class KeyRules {
             if (title == null) title = chest.getHoverName().getString();
         }
         group(out, title == null ? "Worn" : title, rows);
+    }
+
+    /** A held item that stores energy (the Atomic Disassembler, the Meka-Tool, any Forge Energy item): a Charge readout row
+     *  with what it holds, red EMPTY at none (Shane, 2026-11-27: the charge was only the slot's bar, under the mode). */
+    static void charge(List<Row> rows, ItemStack s) {
+        var e = s.getCapability(net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.ITEM);
+        if (e == null || e.getMaxEnergyStored() <= 0) return;
+        float frac = (float) e.getEnergyStored() / e.getMaxEnergyStored();
+        add(rows, "Charge", fuel(frac), frac <= 0f);
     }
 
     /** A fuel or charge left as a state tag: "73%", or EMPTY (shown red) at none. */
