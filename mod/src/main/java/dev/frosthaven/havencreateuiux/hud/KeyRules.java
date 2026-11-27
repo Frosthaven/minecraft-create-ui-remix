@@ -25,8 +25,12 @@ import net.minecraft.world.phys.EntityHitResult;
 final class KeyRules {
     /** One action: its keys pressed together (in order), its words, and a state tag (fire mode, ammo, mode) or null. */
     /** off: a control shown although it cannot act now (its words red), so every control of a device stays in view. */
-    record Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either, int tint, boolean off) {
+    /** charge: a held item's charge as a second tag on the same row ("73%", red EMPTY), or null */
+    record Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either, int tint, boolean off, String charge) {
+        Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either, int tint, boolean off) { this(keys, label, state, red, either, tint, off, null); }
         Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either, int tint) { this(keys, label, state, red, either, tint, false); }
+        /** this row with a charge tag beside its state */
+        Row withCharge(String c) { return new Row(keys, label, state, red, either, tint, off, c); }
         Row(List<KeyMapping> keys, String label, String state, boolean red, boolean either) { this(keys, label, state, red, either, -1, false); }
         Row(List<KeyMapping> keys, String label, String state, boolean red) { this(keys, label, state, red, false, -1, false); }
     }
@@ -394,12 +398,16 @@ final class KeyRules {
         group(out, title == null ? "Worn" : title, rows);
     }
 
-    /** A held item that stores energy (the Atomic Disassembler, the Meka-Tool, any Forge Energy item): a Charge readout row
-     *  with what it holds, red EMPTY at none (Shane, 2026-11-27: the charge was only the slot's bar, under the mode). */
+    /** A held item that stores energy (the Atomic Disassembler, the Meka-Tool, any Forge Energy item): what it holds, red
+     *  EMPTY at none (Shane, 2026-11-27: the charge was only the slot's bar, under the mode). On the Mode row when the item
+     *  has one, as a second tag beside the mode (Shane, 2026-11-27: "on the line with the existing hotkey for mode swap,
+     *  not its own line"); else a Charge row of its own. */
     static void charge(List<Row> rows, ItemStack s) {
         var e = s.getCapability(net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.ITEM);
         if (e == null || e.getMaxEnergyStored() <= 0) return;
         float frac = (float) e.getEnergyStored() / e.getMaxEnergyStored();
+        for (int i = 0; i < rows.size(); i++)
+            if (rows.get(i).label().equals("Mode")) { rows.set(i, rows.get(i).withCharge(fuel(frac))); return; }
         add(rows, "Charge", fuel(frac), frac <= 0f);
     }
 

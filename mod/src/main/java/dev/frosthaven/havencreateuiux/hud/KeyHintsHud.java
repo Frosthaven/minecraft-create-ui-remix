@@ -93,7 +93,7 @@ public final class KeyHintsHud {
     private static String describe(List<KeyRules.Row> rows) {
         List<String> out = new ArrayList<>();
         for (KeyRules.Row r : rows) out.add(String.join(r.either() ? "/" : "+", caps(r)) + " " + r.label() + (r.off() ? " (off)" : "")
-                + (r.state() == null ? "" : " [" + r.state() + "]"));
+                + (r.state() == null ? "" : " [" + r.state() + "]") + (r.charge() == null ? "" : " [" + r.charge() + "]"));
         return out.toString();
     }
 
@@ -155,7 +155,9 @@ public final class KeyHintsHud {
                 drawCaps(g, c, right - capsWidth(c), y + (ROW - CAP_H) / 2, r.either());
                 int wx = wordsRight - font.width(r.label());
                 text(g, font, r.label(), wx, y + 1, r.off() ? OFF : BRASS);   // red words: shown, cannot act now
-                if (r.state() != null) tag(g, r.state(), wx - 3, y + (ROW - CAP_H) / 2, r.red(), r.tint());
+                int tx = wx - 3;
+                if (r.state() != null) { tag(g, r.state(), tx, y + (ROW - CAP_H) / 2, r.red(), r.tint()); tx -= capW(r.state()) + 2; }
+                if (r.charge() != null) tag(g, r.charge(), tx, y + (ROW - CAP_H) / 2, r.charge().equals("EMPTY"), -1);   // left of the mode: [73%] [INSTANT] Mode
                 y += ROW + GAP;
             }
         }
