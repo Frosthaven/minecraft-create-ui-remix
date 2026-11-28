@@ -207,7 +207,8 @@ final class KeyBlocks {
     }
 
     /** Drekki Rancher's HatcheryBlock: an Intriguing Egg goes in the nest, a dye of another colour recolours it; any other
-     *  hand: on the nest (top face) with a ready egg it hatches, else its screen opens. */
+     *  hand: on the nest (top face) with a ready egg it hatches, with an egg not ready yet and an empty hand it takes the
+     *  egg back (Drekki Rancher 0.8.4), else its screen opens. */
     static void hatchery(List<KeyRules.Row> rows, Minecraft mc, ItemStack hand, net.minecraft.world.level.block.state.BlockState state, BlockHitResult bh) {
         if (KeyRules.id(hand).equals("rancher_companion:intriguing_egg")) { KeyRules.add(rows, "Place egg", "key.use"); return; }
         if (hand.getItem() instanceof net.minecraft.world.item.DyeItem dye) {
@@ -215,9 +216,11 @@ final class KeyBlocks {
             if (color.isEmpty() || !Integer.valueOf(dye.getDyeColor().getId() + 1).equals(state.getValue(color.get()))) { KeyRules.add(rows, "Dye", "key.use"); return; }
         }
         var be = mc.level.getBlockEntity(bh.getBlockPos());
-        boolean ready = bh.getDirection() == net.minecraft.core.Direction.UP && be != null && Reflect.bool(Reflect.call(be, "hasEgg"))
-                && Reflect.bool(Reflect.callStatic("dev.frosthaven.ranchercompanion.look.Incubation", "ready", Reflect.call(be, "incubation")));
-        KeyRules.add(rows, ready ? "Hatch" : "Open", "key.use");
+        boolean egg = bh.getDirection() == net.minecraft.core.Direction.UP && be != null && Reflect.bool(Reflect.call(be, "hasEgg"));
+        boolean ready = egg && Reflect.bool(Reflect.callStatic("dev.frosthaven.ranchercompanion.look.Incubation", "ready", Reflect.call(be, "incubation")));
+        /* taking it back: a takeEgg in Ranch (0.8.4+); an older Drekki Rancher opens the screen there */
+        boolean take = egg && !ready && hand.isEmpty() && Reflect.method(Reflect.cls("dev.frosthaven.ranchercompanion.ranch.Ranch"), "takeEgg", 2) != null;
+        KeyRules.add(rows, ready ? "Hatch" : take ? "Take egg" : "Open", "key.use");
     }
 
     /** Diagonal Fences / Walls / Windows (their Diagonal Blocks library, DiagonalBlockHandler.onUseBlock): sneak-use with an
